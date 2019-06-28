@@ -6,14 +6,23 @@
 #define INI_FILE "kitchen_sync.ini"
 #define PROJECTS "kitchen_sync.prj"
 #define MAX_LINE 512
-#define WINDOW_WIDTH 1024
-#define WINDOW_HEIGHT 800
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 720
 #define WINDOW_HEIGHT_MINIMUM 200
-#define ID_MAIN_TEXTBOX 20
-#define ID_MAIN_LISTBOX 21
+#define ID_LISTBOX_PROJECTS 20
+#define ID_LISTBOX_PAIRS 21
+#define ID_PROGRESS_BAR 22
+#define ID_BUTTON_PREVIEW 23
+#define ID_BUTTON_SYNC 24
 
-#define assert(expression) if(!(expression)) {*(int *)0 = 0;}
+#define DEV_MODE 1
 #define arrayCount(array) (sizeof(array) / sizeof((array)[0]))
+
+#if DEV_MODE
+#define assert(expression) if(!(expression)) {*(int *)0 = 0;}
+#else
+#define assert(expression)
+#endif
 
 #include <stdio.h>
 #include <stdlib.h> // rand()
@@ -54,12 +63,14 @@ static struct ProjectNode *projectsHead = NULL;
 
 static LRESULT CALLBACK mainWndProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customListboxProc(HWND, UINT, WPARAM, LPARAM);
-static LRESULT CALLBACK customTextProc(HWND, UINT, WPARAM, LPARAM);
+//static LRESULT CALLBACK customTextProc(HWND, UINT, WPARAM, LPARAM);
 static WNDPROC originalListboxProc;
-static WNDPROC originalTextProc;
+//static WNDPROC originalTextProc;
+//static HWND textboxHwnd;
 static HWND mainHwnd;
-static HWND listboxHwnd;
-static HWND textboxHwnd;
+static HWND listboxProjectsHwnd;
+static HWND listboxPairsHwnd;
+
 static void shutDown(void);
 static void centerWindow(HWND);
 static void clearArray(char *, int);
@@ -145,20 +156,27 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	static HWND buttonPreviewHwnd, buttonSyncHwnd;
+
 	switch (msg)
 	{
 		case WM_CREATE:
 			// listbox
-			listboxHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
+			listboxProjectsHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 				WS_VISIBLE | WS_CHILD | LBS_DISABLENOSCROLL | LBS_NOSEL | WS_BORDER | WS_VSCROLL,
-				10, 10, WINDOW_WIDTH-40, 100, hwnd, (HMENU)ID_MAIN_LISTBOX, NULL, NULL);
-			originalListboxProc = (WNDPROC)SetWindowLongPtr(listboxHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
+				10, 10, 500, 400, hwnd, (HMENU)ID_LISTBOX_PROJECTS, NULL, NULL);
+			originalListboxProc = (WNDPROC)SetWindowLongPtr(listboxProjectsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
+
+			listboxPairsHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
+				WS_VISIBLE | WS_CHILD | LBS_DISABLENOSCROLL | LBS_NOSEL | WS_BORDER | WS_VSCROLL,
+				520, 10, WINDOW_WIDTH-500-45, WINDOW_HEIGHT - 160, hwnd, (HMENU)ID_LISTBOX_PAIRS, NULL, NULL);
+			originalListboxProc = (WNDPROC)SetWindowLongPtr(listboxPairsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
 			// textbox
-			textboxHwnd = CreateWindowEx(WS_EX_LEFT, L"Edit", L"",
-				WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP,
-				10, 210, WINDOW_WIDTH-40, 25, hwnd, (HMENU)ID_MAIN_TEXTBOX, NULL, NULL);
-			originalTextProc = (WNDPROC)SetWindowLongPtr(textboxHwnd, GWLP_WNDPROC, (LONG_PTR)customTextProc);
+			//textboxHwnd = CreateWindowEx(WS_EX_LEFT, L"Edit", L"",
+			//	WS_VISIBLE | WS_CHILD | WS_BORDER | WS_TABSTOP,
+			//	10, 210, WINDOW_WIDTH-40, 25, hwnd, (HMENU)ID_MAIN_TEXTBOX, NULL, NULL);
+			//originalTextProc = (WNDPROC)SetWindowLongPtr(textboxHwnd, GWLP_WNDPROC, (LONG_PTR)customTextProc);
 
 			break;
 		case WM_COMMAND:
@@ -169,20 +187,20 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			break;
 		case WM_SIZE:
 		{
-			RECT rc = {0};
-			GetWindowRect(hwnd, &rc);
-			int windowHeight = rc.bottom - rc.top;
+			//RECT rc = {0};
+			//GetWindowRect(hwnd, &rc);
+			//int windowHeight = rc.bottom - rc.top;
 
 			// resize listbox & textbox to fit window
-			SetWindowPos(listboxHwnd, HWND_TOP, 10, 10, WINDOW_WIDTH - 40, windowHeight - 90, SWP_SHOWWINDOW);
-			SetWindowPos(textboxHwnd, HWND_TOP, 10, windowHeight - 75, WINDOW_WIDTH - 40, 25, SWP_SHOWWINDOW);
+			//SetWindowPos(listboxProjectsHwnd, HWND_TOP, 10, 10, 500, windowHeight - 320, SWP_SHOWWINDOW);
+			//SetWindowPos(listboxPairsHwnd, HWND_TOP, 520, 10, WINDOW_WIDTH-500-45, 25, SWP_SHOWWINDOW);
 
 			// maintain main window width
-			SetWindowPos(hwnd, HWND_TOP, rc.left, rc.top, WINDOW_WIDTH, windowHeight, SWP_SHOWWINDOW);
+			//SetWindowPos(hwnd, HWND_TOP, rc.left, rc.top, WINDOW_WIDTH, windowHeight, SWP_SHOWWINDOW);
 
 			// force minimum height
-			if (windowHeight < WINDOW_HEIGHT_MINIMUM)
-				SetWindowPos(hwnd, HWND_TOP, rc.left, rc.top, WINDOW_WIDTH, WINDOW_HEIGHT_MINIMUM, SWP_SHOWWINDOW);
+			//if (windowHeight < WINDOW_HEIGHT_MINIMUM)
+			//	SetWindowPos(hwnd, HWND_TOP, rc.left, rc.top, WINDOW_WIDTH, WINDOW_HEIGHT_MINIMUM, SWP_SHOWWINDOW);
 		}
 			break;
 		case WM_KEYUP:
@@ -216,36 +234,36 @@ LRESULT CALLBACK customListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 	return CallWindowProc(originalListboxProc, hwnd, msg, wParam, lParam);
 }
 
-LRESULT CALLBACK customTextProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch (msg)
-	{
-		case WM_KEYUP:
-			switch (wParam)
-			{
-				case VK_ESCAPE:
-					shutDown();
-					break;
-				case VK_RETURN:
-				{
-					wchar_t text[MAX_LINE];
-					GetWindowText(hwnd, text, MAX_LINE);
-					if (wcslen(text) > 0)
-					{
-					}
-				}
-					break;
-				case 'A': // CTRL A
-					if (GetAsyncKeyState(VK_CONTROL))
-					{
-						writeFileW(LOG_FILE, L"CTRL A");
-					}
-					break;
-			}
-			break;
-	}
-	return CallWindowProc(originalTextProc, hwnd, msg, wParam, lParam);
-}
+//LRESULT CALLBACK customTextProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+//{
+//	switch (msg)
+//	{
+//		case WM_KEYUP:
+//			switch (wParam)
+//			{
+//				case VK_ESCAPE:
+//					shutDown();
+//					break;
+//				case VK_RETURN:
+//				{
+//					wchar_t text[MAX_LINE];
+//					GetWindowText(hwnd, text, MAX_LINE);
+//					if (wcslen(text) > 0)
+//					{
+//					}
+//				}
+//					break;
+//				case 'A': // CTRL A
+//					if (GetAsyncKeyState(VK_CONTROL))
+//					{
+//						writeFileW(LOG_FILE, L"CTRL A");
+//					}
+//					break;
+//			}
+//			break;
+//	}
+//	return CallWindowProc(originalTextProc, hwnd, msg, wParam, lParam);
+//}
 
 static void shutDown(void)
 {
@@ -371,7 +389,6 @@ static void readSettings(char *filename, HWND hwnd)
 	int windowHeight = 0;
 	int windowCol = 0;
 	int windowRow = 0;
-	//char line[MAX_LINE];
 	char *line = (char *)malloc(MAX_LINE);
 	if (!line)
 	{
@@ -385,7 +402,6 @@ static void readSettings(char *filename, HWND hwnd)
 		if (line[0] == '#')
 			continue;
 
-		//char setting[MAX_LINE] = {0};
 		char *setting = (char *)calloc(MAX_LINE, sizeof(char));
 		if (!setting)
 		{
@@ -393,7 +409,6 @@ static void readSettings(char *filename, HWND hwnd)
 			fclose(f);
 			return;
 		}
-		//char value[MAX_LINE] = {0};
 		char *value = (char *)calloc(MAX_LINE, sizeof(char));
 		if (!value)
 		{
@@ -450,7 +465,6 @@ static void loadProjects(char *filename, struct ProjectNode **head_ref)
 		return;
 	}
 
-	//wchar_t line[MAX_LINE*4];
 	wchar_t *line = (wchar_t *)malloc(MAX_LINE * 4);
 	if (!line)
 	{
@@ -464,7 +478,6 @@ static void loadProjects(char *filename, struct ProjectNode **head_ref)
 		if (line[0] == '#' || line[0] == '\n' || line[0] == '\0')
 			continue;
 
-		//wchar_t name[MAX_LINE] = {0};
 		wchar_t *name = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 		if (!name)
 		{
@@ -472,7 +485,6 @@ static void loadProjects(char *filename, struct ProjectNode **head_ref)
 			fclose(f);
 			return;
 		}
-		//wchar_t source[MAX_LINE] = {0};
 		wchar_t *source = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 		if (!source)
 		{
@@ -480,7 +492,6 @@ static void loadProjects(char *filename, struct ProjectNode **head_ref)
 			fclose(f);
 			return;
 		}
-		//wchar_t destination[MAX_LINE] = {0};
 		wchar_t *destination = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 		if (!destination)
 		{
@@ -510,7 +521,6 @@ static void loadProjects(char *filename, struct ProjectNode **head_ref)
 			*d++ = *l++;
 		*d = '\0';
 
-		//wchar_t buf[MAX_LINE * 4] = {0};
 		wchar_t *buf = (wchar_t *)calloc(MAX_LINE * 4, sizeof(wchar_t));
 		if (!buf)
 		{
@@ -574,7 +584,6 @@ static void saveProjects(char *filename, struct ProjectNode **head_ref)
 
 	while (current != NULL)
 	{
-		//wchar_t buf[MAX_LINE*4] = {0};
 		wchar_t *buf = (wchar_t *)calloc(MAX_LINE*4, sizeof(wchar_t));
 		if (!buf)
 		{
@@ -629,7 +638,7 @@ static void appendPairNode(struct PairNode **head_ref, struct Pair pair)
 
 	newPairNode->next = NULL;
 
-	// if list is empty make newPairNode into head
+	// if list is empty set newPairNode as head
 	if (*head_ref == NULL)
 	{
 		*head_ref = newPairNode;
@@ -680,7 +689,7 @@ static void appendProjectNode(struct ProjectNode **head_ref, struct Project proj
 
 	newProjectNode->next = NULL;
 
-	// if list is empty make newProjectNode into head
+	// if list is empty set newProjectNode as head
 	if (*head_ref == NULL)
 	{
 		*head_ref = newProjectNode;
@@ -694,6 +703,7 @@ static void appendProjectNode(struct ProjectNode **head_ref, struct Project proj
 	last->next = newProjectNode;
 }
 
+#if 0
 // Given a reference (pointer to pointer) to the head of a list
 // and a position, deletes the node at the given position
 static void deletePairNode(struct PairNode **head_ref, int position)
@@ -704,7 +714,7 @@ static void deletePairNode(struct PairNode **head_ref, int position)
 	// store current head node
 	struct PairNode *temp = *head_ref;
 
-	// remove head
+	// if head is to be removed
 	if (position == 0)
 	{
 		*head_ref = temp->next;
@@ -716,12 +726,12 @@ static void deletePairNode(struct PairNode **head_ref, int position)
 	for (int i = 0; temp != NULL && i < position-1; ++i)
 		temp = temp->next;
 
-	// if position is more than number of nodes
+	// if position is off the end
 	if (temp == NULL || temp->next == NULL)
 		return;
 
 	// node temp->next is the node to be deleted
-	// store pointer to the next from node to be deleted
+	// store pointer to the next node after the node to be deleted
 	struct PairNode *next = temp->next->next;
 
 	// unlink the node from the list
@@ -741,7 +751,7 @@ static void deleteProjectNode(struct ProjectNode **head_ref, int position)
 	// store current head node
 	struct ProjectNode *temp = *head_ref;
 
-	// remove head
+	// head is to be removed
 	if (position == 0)
 	{
 		*head_ref = temp->next;
@@ -753,12 +763,12 @@ static void deleteProjectNode(struct ProjectNode **head_ref, int position)
 	for (int i = 0; temp != NULL && i < position-1; ++i)
 		temp = temp->next;
 
-	// if position is more than number of nodes
+	// if position is off the end
 	if (temp == NULL || temp->next == NULL)
 		return;
 
 	// node temp->next is the node to be deleted
-	// store pointer to the next from node to be deleted
+	// store pointer to the next node after the node to be deleted
 	struct ProjectNode *next = temp->next->next;
 
 	// unlink the node from the list
@@ -782,7 +792,6 @@ static void deletePairList(struct PairNode **head_ref)
 		current = next;
 	}
 
-	// de-reference head to remove head back in the caller
 	*head_ref = NULL;
 }
 
@@ -800,9 +809,9 @@ static void deleteProjectList(struct ProjectNode **head_ref)
 		current = next;
 	}
 
-	// de-reference head to remove head back in the caller
 	*head_ref = NULL;
 }
+#endif
 
 // count nodes in list
 static int countPairNodes(struct PairNode *head)
