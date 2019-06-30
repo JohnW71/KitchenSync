@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define UNICODE
 #define _UNICODE
+#define DEV_MODE 1
 
 #define LOG_FILE "kitchen_sync.log"
 #define INI_FILE "kitchen_sync.ini"
@@ -14,8 +15,13 @@
 #define ID_PROGRESS_BAR 22
 #define ID_BUTTON_PREVIEW 23
 #define ID_BUTTON_SYNC 24
+#define ID_BUTTON_ADD_PROJECT 25
+#define ID_BUTTON_OK 26
+#define ID_BUTTON_CANCEL 27
+#define ID_GET_PROJECT_NAME_LABEL 28
+#define ID_GET_PROJECT_NAME_TEXT 29
+#define ID_TIMER1 30
 
-#define DEV_MODE 1
 #define arrayCount(array) (sizeof(array) / sizeof((array)[0]))
 
 #if DEV_MODE
@@ -28,8 +34,9 @@
 #include <stdlib.h> // rand()
 #include <time.h> // time()
 //#include <stdint.h>
-//#include <stdbool.h>
+#include <stdbool.h>
 #include <windows.h>
+#include <windowsx.h>
 
 #include "kitchen_sync.h"
 
@@ -64,12 +71,18 @@ static struct ProjectNode *projectsHead = NULL;
 static LRESULT CALLBACK mainWndProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customListboxProc(HWND, UINT, WPARAM, LPARAM);
 //static LRESULT CALLBACK customTextProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK getProjectNameWndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK customGetProjectNameProc(HWND, UINT, WPARAM, LPARAM);
 static WNDPROC originalListboxProc;
 //static WNDPROC originalTextProc;
+static WNDPROC originalGetProjectNameProc;
 //static HWND textboxHwnd;
 static HWND mainHwnd;
-static HWND listboxProjectsHwnd;
-static HWND listboxPairsHwnd;
+static HWND getProjectNameHwnd;
+static HWND lbProjectsHwnd;
+static HWND lbPairsHwnd;
+static HWND bGetProjectNameOK;
+static HINSTANCE instance;
 
 static void shutDown(void);
 static void centerWindow(HWND);
@@ -91,10 +104,13 @@ static void deletePairList(struct PairNode **);
 static void deleteProjectList(struct ProjectNode **);
 static int countPairNodes(struct PairNode *);
 static int countProjectNodes(struct ProjectNode *);
+static void getProjectName(void);
+static bool listboxDoubleClicked = false;
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
 {
 	srand((unsigned int)time(NULL));
+	instance = hInstance;
 
 	WNDCLASSEX wc = {0};
 	wc.cbSize = sizeof(WNDCLASSEX);
@@ -156,21 +172,34 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	static HWND buttonPreviewHwnd, buttonSyncHwnd;
+	static HWND bPreview, bSync, bAddProject;
+	static bool listboxClicked = false;
 
 	switch (msg)
 	{
 		case WM_CREATE:
 			// listbox
-			listboxProjectsHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
-				WS_VISIBLE | WS_CHILD | LBS_DISABLENOSCROLL | LBS_NOSEL | WS_BORDER | WS_VSCROLL,
+			lbProjectsHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
+				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
 				10, 10, 500, 400, hwnd, (HMENU)ID_LISTBOX_PROJECTS, NULL, NULL);
-			originalListboxProc = (WNDPROC)SetWindowLongPtr(listboxProjectsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
+			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbProjectsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
-			listboxPairsHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
-				WS_VISIBLE | WS_CHILD | LBS_DISABLENOSCROLL | LBS_NOSEL | WS_BORDER | WS_VSCROLL,
+			lbPairsHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
+				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
 				520, 10, WINDOW_WIDTH-500-45, WINDOW_HEIGHT - 160, hwnd, (HMENU)ID_LISTBOX_PAIRS, NULL, NULL);
-			originalListboxProc = (WNDPROC)SetWindowLongPtr(listboxPairsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
+			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbPairsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
+
+			bPreview = CreateWindowEx(WS_EX_LEFT, L"Button", L"Preview",
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_DISABLED,
+				390, 420, 120, 50, hwnd, (HMENU)ID_BUTTON_PREVIEW, NULL, NULL);
+
+			bSync = CreateWindowEx(WS_EX_LEFT, L"Button", L"Sync",
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_DISABLED,
+				390, 480, 120, 50, hwnd, (HMENU)ID_BUTTON_SYNC, NULL, NULL);
+
+			bAddProject = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add Project",
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
+				10, 420, 120, 50, hwnd, (HMENU)ID_BUTTON_ADD_PROJECT, NULL, NULL);
 
 			// textbox
 			//textboxHwnd = CreateWindowEx(WS_EX_LEFT, L"Edit", L"",
@@ -184,6 +213,88 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			// {
 			// 	shutDown(mainHwnd);
 			// }
+
+			if (LOWORD(wParam) == ID_LISTBOX_PROJECTS)
+			{
+				//writeFileW(LOG_FILE, L"Listbox clicked");
+
+				//// a row was selected
+				//if (HIWORD(wParam) == LBN_SELCHANGE)
+				//{
+				//	// get row index
+				//	LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
+
+				//	if (selectedRow != LB_ERR)
+				//	{
+				//	}
+				//}
+
+				if (listboxDoubleClicked)
+				{
+					// a row was double-clicked
+					if (HIWORD(wParam) == LBN_DBLCLK)
+					{
+						writeFileW(LOG_FILE, L"Listbox row double clicked");
+
+						// get row index
+						LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
+
+						if (selectedRow != LB_ERR)
+						{
+							wchar_t selectedName[MAX_LINE] = {0};
+							int nameLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedName);
+
+							if (nameLen > 0)
+							{
+								// add folder pair
+								writeFileW(LOG_FILE, L"Listbox row namelen > 0");
+							}
+							else
+							{
+								// add project
+								writeFileW(LOG_FILE, L"Listbox empty row double clicked");
+								getProjectName();
+							}
+						}
+					}
+					else
+					{
+						// add project
+						writeFileW(LOG_FILE, L"Listbox space double clicked");
+						getProjectName();
+					}
+
+				}
+				listboxDoubleClicked = false;
+			}
+
+			//if (LOWORD(wParam) == ID_LISTBOX_PAIRS)
+			//{
+			//	// a row was selected
+			//	if (HIWORD(wParam) == LBN_SELCHANGE)
+			//	{
+			//		// get row index
+			//		LRESULT selectedRow = SendMessage(lbPairsHwnd, LB_GETCURSEL, 0, 0);
+
+			//		if (selectedRow != LB_ERR)
+			//		{
+			//			// store selected row in case of Del key?
+			//		}
+			//	}
+
+			//	// a row was double-clicked
+			//	if (HIWORD(wParam) == LBN_DBLCLK)
+			//	{
+			//		// get row index
+			//		LRESULT selectedRow = SendMessage(lbPairsHwnd, LB_GETCURSEL, 0, 0);
+
+			//		if (selectedRow != LB_ERR)
+			//		{
+			//			// edit file pair
+			//		}
+			//	}
+			//}
+
 			break;
 		case WM_SIZE:
 		{
@@ -222,6 +333,29 @@ LRESULT CALLBACK customListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 {
 	switch (msg)
 	{
+		case WM_LBUTTONDBLCLK:
+		{
+			listboxDoubleClicked = true;
+			writeFileW(LOG_FILE, L"Listbox double clicked");
+
+			//int xPos = GET_X_LPARAM(lParam);
+			//int yPos = GET_Y_LPARAM(lParam);
+
+			//RECT r;
+			//HWND h = GetDlgItem(lbProjectsHwnd, ID_LISTBOX_PROJECTS);
+			//GetWindowRect(h, &r); //get window rect of control relative to screen
+			//POINT pt = {r.left, r.top}; //new point object using rect x, y
+			//ScreenToClient(lbProjectsHwnd, &pt);
+
+			//wchar_t buf[100] = {0};
+			//swprintf(buf, 100, L"xPos:%d yPos:%d dlg left:%d dlg top:%d", xPos, yPos, pt.x, pt.y);
+			//writeFileW(LOG_FILE, buf);
+
+
+			//getProjectName();
+
+		}
+		break;
 		case WM_KEYUP:
 			switch (wParam)
 			{
@@ -264,6 +398,136 @@ LRESULT CALLBACK customListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 //	}
 //	return CallWindowProc(originalTextProc, hwnd, msg, wParam, lParam);
 //}
+
+static void getProjectName(void)
+{
+	static WNDCLASSEX wcGetProjectName = {0};
+	static bool getProjectNameClassRegistered = false;
+
+	if (!getProjectNameClassRegistered)
+	{
+		wcGetProjectName.cbSize = sizeof(WNDCLASSEX);
+		wcGetProjectName.cbClsExtra = 0;
+		wcGetProjectName.cbWndExtra = 0;
+		wcGetProjectName.hbrBackground = (HBRUSH)COLOR_WINDOW;
+		wcGetProjectName.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wcGetProjectName.hIcon = NULL;
+		wcGetProjectName.hIconSm = NULL;
+		wcGetProjectName.hInstance = instance;
+		wcGetProjectName.lpfnWndProc = getProjectNameWndProc;
+		wcGetProjectName.lpszClassName = L"GetProjectName";
+		wcGetProjectName.lpszMenuName = NULL;
+		wcGetProjectName.style = CS_HREDRAW | CS_VREDRAW;
+
+		if (!RegisterClassEx(&wcGetProjectName))
+		{
+			MessageBox(NULL, L"Get Project Name window registration failed", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			return;
+		}
+		else
+			getProjectNameClassRegistered = true;
+	}
+
+	getProjectNameHwnd = CreateWindowEx(WS_EX_LEFT,
+		wcGetProjectName.lpszClassName,
+		L"Add new project",
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
+		CW_USEDEFAULT, CW_USEDEFAULT,
+		435, 130,
+		NULL, NULL,
+		instance, NULL);
+
+	if (!getProjectNameHwnd)
+	{
+		MessageBox(NULL, L"Get Project Name window creation failed", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return;
+	}
+
+	ShowWindow(getProjectNameHwnd, SW_SHOW);
+}
+
+static LRESULT CALLBACK getProjectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	static HWND bGetProjectNameCancel, lGetProjectName, eGetProjectName;
+
+	switch (msg)
+	{
+		case WM_CREATE:
+			SetTimer(hwnd, ID_TIMER1, 100, NULL);
+
+			lGetProjectName = CreateWindowEx(WS_EX_LEFT, L"Static", L"Enter project name",
+				WS_VISIBLE | WS_CHILD,
+				10, 15, 150, 25, hwnd, (HMENU)ID_GET_PROJECT_NAME_LABEL, NULL, NULL);
+
+			eGetProjectName = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER,
+				140, 10, 170, 25, hwnd, (HMENU)ID_GET_PROJECT_NAME_TEXT, NULL, NULL);
+			originalGetProjectNameProc = (WNDPROC)SetWindowLongPtr(eGetProjectName, GWLP_WNDPROC, (LONG_PTR)customGetProjectNameProc);
+
+			bGetProjectNameOK = CreateWindowEx(WS_EX_LEFT, L"Button", L"OK",
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
+				320, 10, 80, 25, hwnd, (HMENU)ID_BUTTON_OK, NULL, NULL);
+
+			bGetProjectNameCancel = CreateWindowEx(WS_EX_LEFT, L"Button", L"Cancel",
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
+				320, 45, 80, 25, hwnd, (HMENU)ID_BUTTON_CANCEL, NULL, NULL);
+
+			SendMessage(eGetProjectName, EM_LIMITTEXT, MAX_LINE, 0);
+			centerWindow(hwnd);
+			break;
+		case WM_COMMAND:
+			if (LOWORD(wParam) == ID_BUTTON_OK)
+			{
+				wchar_t name[MAX_LINE];
+				GetWindowText(eGetProjectName, name, MAX_LINE);
+				wchar_t buf[100] = {0};
+				swprintf(buf, 100, L"New project name: %s", name);
+				writeFileW(LOG_FILE, buf);
+				DestroyWindow(hwnd);
+			}
+
+			if (LOWORD(wParam) == ID_BUTTON_CANCEL)
+			{
+				DestroyWindow(hwnd);
+			}
+			break;
+		case WM_TIMER:
+			if (wParam == ID_TIMER1)
+			{
+				SetFocus(eGetProjectName);
+				KillTimer(hwnd, ID_TIMER1);
+			}
+			break;
+		case WM_DESTROY:
+			DestroyWindow(hwnd);
+			break;
+	}
+	return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+static LRESULT CALLBACK customGetProjectNameProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
+		case WM_KEYUP:
+			switch (wParam)
+			{
+				case VK_ESCAPE:
+					DestroyWindow(getProjectNameHwnd);
+					break;
+				case VK_RETURN:
+					SendMessage(bGetProjectNameOK, BM_CLICK, 0, 0);
+					break;
+				case 'A': // CTRL A
+					if (GetAsyncKeyState(VK_CONTROL))
+						SendMessage(hwnd, EM_SETSEL, 0, -1);
+					break;
+			}
+			break;
+	}
+
+	return CallWindowProc(originalGetProjectNameProc, hwnd, msg, wParam, lParam);
+}
 
 static void shutDown(void)
 {
@@ -546,26 +810,63 @@ static void loadProjects(char *filename, struct ProjectNode **head_ref)
 	fclose(f);
 	
 	// add test data
-	struct Project project = {0};
-	wchar_t name[100] = L"name";
-	wchar_t source[100] = L"source";
-	wchar_t destination[100] = L"destination";
+	//struct Project project = {0};
+	//wchar_t name[100] = L"name";
+	//wchar_t source[100] = L"source";
+	//wchar_t destination[100] = L"destination";
 
-	int rn = rand() % 1024;
-	rn = rand() % 1024;
+	//int rn = rand() % 1024;
+	//rn = rand() % 1024;
 
-	clearArrayW(buf, 100);
+	//clearArrayW(buf, 100);
 
-	swprintf(buf, 100, L"%s%d", name, rn);
-	wcscpy_s(project.name, 100, buf);
+	//swprintf(buf, 100, L"%s%d", name, rn);
+	//wcscpy_s(project.name, 100, buf);
 
-	swprintf(buf, 100, L"%s%d", source, rn);
-	wcscpy_s(project.pair.source, 100, buf);
+	//swprintf(buf, 100, L"%s%d", source, rn);
+	//wcscpy_s(project.pair.source, 100, buf);
 
-	swprintf(buf, 100, L"%s%d", destination, rn);
-	wcscpy_s(project.pair.destination, 100, buf);
+	//swprintf(buf, 100, L"%s%d", destination, rn);
+	//wcscpy_s(project.pair.destination, 100, buf);
 
-	appendProjectNode(head_ref, project);
+	//appendProjectNode(head_ref, project);
+
+	// populate listbox
+	wchar_t *currentProjectName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
+	if (!currentProjectName)
+	{
+		writeFileW(LOG_FILE, L"Failed to allocate memory for currentProjectName from projects file");
+		return;
+	}
+
+	int position = 0;
+	struct ProjectNode *current = projectsHead;
+
+	while (current != NULL)
+	{
+		// add folder pair, into a new or existing project section
+		if (wcscmp(currentProjectName, current->project.name) != 0) // new project section
+		{
+			// add blank line between each project
+			if (position > 0)
+				SendMessage(lbProjectsHwnd, LB_ADDSTRING, position++, (LPARAM)"");
+
+			SendMessage(lbProjectsHwnd, LB_ADDSTRING, position++, (LPARAM)current->project.name);
+		}
+
+		wchar_t *buffer = (wchar_t *)calloc(MAX_LINE*4, sizeof(wchar_t));
+		if (!buffer)
+		{
+			writeFileW(LOG_FILE, L"Failed to allocate memory for folder pair buffer from projects file");
+			return;
+		}
+
+		swprintf(buffer, MAX_LINE*4, L"%s -> %s", current->project.pair.source, current->project.pair.destination);
+		SendMessage(lbProjectsHwnd, LB_ADDSTRING, position++, (LPARAM)buffer);
+
+		wcscpy_s(currentProjectName, MAX_LINE, current->project.name);
+		current = current->next;
+	}
 }
 
 static void saveProjects(char *filename, struct ProjectNode **head_ref)
