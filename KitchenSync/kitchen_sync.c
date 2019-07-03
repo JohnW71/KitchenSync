@@ -74,12 +74,16 @@ static LRESULT CALLBACK customListboxProc(HWND, UINT, WPARAM, LPARAM);
 //static LRESULT CALLBACK customTextProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK getProjectNameWndProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customGetProjectNameProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK editProjectNameWndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK customEditProjectNameProc(HWND, UINT, WPARAM, LPARAM);
 static WNDPROC originalListboxProc;
 //static WNDPROC originalTextProc;
 static WNDPROC originalGetProjectNameProc;
+static WNDPROC originalEditProjectNameProc;
 //static HWND textboxHwnd;
 static HWND mainHwnd;
 static HWND getProjectNameHwnd;
+static HWND editProjectNameHwnd;
 static HWND lbProjectsHwnd;
 static HWND lbPairsHwnd;
 static HWND bGetProjectNameOK;
@@ -103,13 +107,15 @@ static void deletePairNode(struct PairNode **, int);
 static void deleteProjectNode(struct ProjectNode **, int);
 static void deletePairList(struct PairNode **);
 static void deleteProjectList(struct ProjectNode **);
+static void getProjectName(void);
+static void editProjectName(wchar_t *);
 static int countPairNodes(struct PairNode *);
 static int countProjectNodes(struct ProjectNode *);
-static void getProjectName(void);
 static bool isProjectName(wchar_t *, int);
 
 //static bool listboxDoubleClicked = false;
 static bool showingGetProject = false;
+static bool showingEditProject = false;
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
 {
@@ -253,41 +259,41 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 						if (textLen > 0)
 						{
-							//if (isProjectName(selectedRowText, textLen))
-							//	//editProjectName();
+							if (isProjectName(selectedRowText, textLen))
+								editProjectName(selectedRowText);
 							//else
-							//	//editFolderPair();
+								//editFolderPair();
 						}
 					}
 				}
 			}
 
-			//if (LOWORD(wParam) == ID_LISTBOX_PAIRS)
-			//{
-			//	// a row was selected
-			//	if (HIWORD(wParam) == LBN_SELCHANGE)
-			//	{
-			//		// get row index
-			//		LRESULT selectedRow = SendMessage(lbPairsHwnd, LB_GETCURSEL, 0, 0);
+			if (LOWORD(wParam) == ID_LISTBOX_PAIRS)
+			{
+				// a row was selected
+				if (HIWORD(wParam) == LBN_SELCHANGE)
+				{
+					// get row index
+					LRESULT selectedRow = SendMessage(lbPairsHwnd, LB_GETCURSEL, 0, 0);
 
-			//		if (selectedRow != LB_ERR)
-			//		{
-			//			// store selected row in case of Del key?
-			//		}
-			//	}
+					if (selectedRow != LB_ERR)
+					{
+						// store selected row in case of Del key?
+					}
+				}
 
-			//	// a row was double-clicked
-			//	if (HIWORD(wParam) == LBN_DBLCLK)
-			//	{
-			//		// get row index
-			//		LRESULT selectedRow = SendMessage(lbPairsHwnd, LB_GETCURSEL, 0, 0);
+				// a row was double-clicked
+				if (HIWORD(wParam) == LBN_DBLCLK)
+				{
+					// get row index
+					LRESULT selectedRow = SendMessage(lbPairsHwnd, LB_GETCURSEL, 0, 0);
 
-			//		if (selectedRow != LB_ERR)
-			//		{
-			//			// edit file pair
-			//		}
-			//	}
-			//}
+					if (selectedRow != LB_ERR)
+					{
+						// edit file pair
+					}
+				}
+			}
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PROJECT)
 			{
@@ -534,6 +540,141 @@ static LRESULT CALLBACK customGetProjectNameProc(HWND hwnd, UINT msg, WPARAM wPa
 	}
 
 	return CallWindowProc(originalGetProjectNameProc, hwnd, msg, wParam, lParam);
+}
+
+static void editProjectName(wchar_t *text)
+{
+	static WNDCLASSEX wcEditProjectName = {0};
+	static bool editProjectNameClassRegistered = false;
+
+	if (showingEditProject)
+		return;
+	showingEditProject = true;
+
+	if (!editProjectNameClassRegistered)
+	{
+		wcEditProjectName.cbSize = sizeof(WNDCLASSEX);
+		wcEditProjectName.cbClsExtra = 0;
+		wcEditProjectName.cbWndExtra = 0;
+		wcEditProjectName.hbrBackground = (HBRUSH)COLOR_WINDOW;
+		wcEditProjectName.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wcEditProjectName.hIcon = NULL;
+		wcEditProjectName.hIconSm = NULL;
+		wcEditProjectName.hInstance = instance;
+		wcEditProjectName.lpfnWndProc = editProjectNameWndProc;
+		wcEditProjectName.lpszClassName = L"EditProjectName";
+		wcEditProjectName.lpszMenuName = NULL;
+		wcEditProjectName.style = CS_HREDRAW | CS_VREDRAW;
+
+		if (!RegisterClassEx(&wcEditProjectName))
+		{
+			MessageBox(NULL, L"Edit Project Name window registration failed", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			return;
+		}
+		else
+			editProjectNameClassRegistered = true;
+	}
+
+	editProjectNameHwnd = CreateWindowEx(WS_EX_LEFT,
+		wcEditProjectName.lpszClassName,
+		L"Edit project",
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
+		CW_USEDEFAULT, CW_USEDEFAULT,
+		435, 130,
+		NULL, NULL,
+		instance, NULL);
+
+	if (!editProjectNameHwnd)
+	{
+		MessageBox(NULL, L"Edit Project Name window creation failed", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return;
+	}
+
+	ShowWindow(editProjectNameHwnd, SW_SHOW);
+}
+
+static LRESULT CALLBACK editProjectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	static HWND bGetProjectNameCancel, lGetProjectName, eGetProjectName;
+
+	switch (msg)
+	{
+		case WM_CREATE:
+			SetTimer(hwnd, ID_TIMER1, 100, NULL);
+
+			lGetProjectName = CreateWindowEx(WS_EX_LEFT, L"Static", L"Enter project name",
+				WS_VISIBLE | WS_CHILD,
+				10, 15, 150, 25, hwnd, (HMENU)ID_GET_PROJECT_NAME_LABEL, NULL, NULL);
+
+			eGetProjectName = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER,
+				140, 10, 170, 25, hwnd, (HMENU)ID_GET_PROJECT_NAME_TEXT, NULL, NULL);
+			originalGetProjectNameProc = (WNDPROC)SetWindowLongPtr(eGetProjectName, GWLP_WNDPROC, (LONG_PTR)customGetProjectNameProc);
+
+			bGetProjectNameOK = CreateWindowEx(WS_EX_LEFT, L"Button", L"OK",
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
+				320, 10, 80, 25, hwnd, (HMENU)ID_BUTTON_OK, NULL, NULL);
+
+			bGetProjectNameCancel = CreateWindowEx(WS_EX_LEFT, L"Button", L"Cancel",
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
+				320, 45, 80, 25, hwnd, (HMENU)ID_BUTTON_CANCEL, NULL, NULL);
+
+			SendMessage(eGetProjectName, EM_LIMITTEXT, MAX_LINE, 0);
+			centerWindow(hwnd);
+			break;
+		case WM_COMMAND:
+			if (LOWORD(wParam) == ID_BUTTON_OK)
+			{
+				//wchar_t name[MAX_LINE];
+				//GetWindowText(eGetProjectName, name, MAX_LINE);
+				//wchar_t buf[100] = {0};
+				//swprintf(buf, 100, L"New project name: %s", name);
+				//writeFileW(LOG_FILE, buf);
+				DestroyWindow(hwnd);
+			}
+
+			if (LOWORD(wParam) == ID_BUTTON_CANCEL)
+			{
+				DestroyWindow(hwnd);
+			}
+			break;
+		case WM_TIMER:
+			if (wParam == ID_TIMER1)
+			{
+				SetFocus(eGetProjectName);
+				KillTimer(hwnd, ID_TIMER1);
+			}
+			break;
+		case WM_DESTROY:
+			showingEditProject = false;
+			DestroyWindow(hwnd);
+			break;
+	}
+	return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+static LRESULT CALLBACK customEditProjectNameProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
+		case WM_KEYUP:
+			switch (wParam)
+			{
+				case VK_ESCAPE:
+					DestroyWindow(editProjectNameHwnd);
+					break;
+				case VK_RETURN:
+					SendMessage(bGetProjectNameOK, BM_CLICK, 0, 0);
+					break;
+				case 'A': // CTRL A
+					if (GetAsyncKeyState(VK_CONTROL))
+						SendMessage(hwnd, EM_SETSEL, 0, -1);
+					break;
+			}
+			break;
+	}
+
+	return CallWindowProc(originalEditProjectNameProc, hwnd, msg, wParam, lParam);
 }
 
 static void shutDown(void)
