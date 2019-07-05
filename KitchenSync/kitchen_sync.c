@@ -107,6 +107,7 @@ static void deletePairList(struct PairNode **);
 static void deleteProjectList(struct ProjectNode **);
 static void addProjectName(void);
 static void editProjectName(void);
+static void fillListbox(struct ProjectNode **);
 static int countPairNodes(struct PairNode *);
 static int countProjectNodes(struct ProjectNode *);
 static bool isProjectName(wchar_t *, int);
@@ -591,11 +592,27 @@ static LRESULT CALLBACK editProjectNameWndProc(HWND hwnd, UINT msg, WPARAM wPara
 		case WM_COMMAND:
 			if (LOWORD(wParam) == ID_BUTTON_OK)
 			{
-				//wchar_t name[MAX_LINE];
-				//GetWindowText(addProjectName, name, MAX_LINE);
-				//wchar_t buf[100] = {0};
-				//swprintf(buf, 100, L"New project name: %s", name);
-				//writeFileW(LOG_FILE, buf);
+				wchar_t newProjectName[MAX_LINE];
+				GetWindowText(eEditProjectName, newProjectName, MAX_LINE);
+				wchar_t buf[100] = {0};
+				swprintf(buf, 100, L"New project name: %s", newProjectName);
+				writeFileW(LOG_FILE, buf);
+
+				if (wcscmp(projectName, newProjectName) != 0)
+				{
+					// replace all occurrences of old project name with new name
+					struct ProjectNode *current = projectsHead;
+					while (current != NULL)
+					{
+						if (wcscmp(current->project.name, projectName) == 0)
+							wcscpy_s(current->project.name, MAX_LINE, newProjectName);
+
+						current = current->next;
+					}
+				}
+
+				SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
+				fillListbox(&projectsHead);
 				DestroyWindow(hwnd);
 			}
 
@@ -631,7 +648,7 @@ static LRESULT CALLBACK customEditProjectNameProc(HWND hwnd, UINT msg, WPARAM wP
 					DestroyWindow(editProjectNameHwnd);
 					break;
 				case VK_RETURN:
-					SendMessage(bAddProjectNameOK, BM_CLICK, 0, 0);
+					SendMessage(bEditProjectNameOK, BM_CLICK, 0, 0);
 					break;
 				case 'A': // CTRL A
 					if (GetAsyncKeyState(VK_CONTROL))
@@ -852,7 +869,7 @@ static void loadProjects(char *filename, struct ProjectNode **head_ref)
 		return;
 	}
 
-	while (fgetws(line, MAX_LINE*2, f) != NULL)
+	while (fgetws(line, MAX_LINE * 2, f) != NULL)
 	{
 		if (line[0] == '#' || line[0] == '\n' || line[0] == '\0')
 			continue;
@@ -923,7 +940,7 @@ static void loadProjects(char *filename, struct ProjectNode **head_ref)
 	writeFileW(LOG_FILE, buf);
 
 	fclose(f);
-	
+
 	// add test data
 	//struct Project project = {0};
 	//wchar_t name[100] = L"name";
@@ -946,6 +963,11 @@ static void loadProjects(char *filename, struct ProjectNode **head_ref)
 
 	//appendProjectNode(head_ref, project);
 
+	fillListbox(head_ref);
+}
+
+static void fillListbox(struct ProjectNode **head_ref)
+{
 	// populate listbox
 	wchar_t *currentProjectName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 	if (!currentProjectName)
