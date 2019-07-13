@@ -76,23 +76,18 @@ static struct ProjectNode *projectsHead = NULL;
 
 static LRESULT CALLBACK mainWndProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customListboxProc(HWND, UINT, WPARAM, LPARAM);
-static LRESULT CALLBACK addProjectNameWndProc(HWND, UINT, WPARAM, LPARAM);
-static LRESULT CALLBACK customAddProjectNameProc(HWND, UINT, WPARAM, LPARAM);
-static LRESULT CALLBACK editProjectNameWndProc(HWND, UINT, WPARAM, LPARAM);
-static LRESULT CALLBACK customEditProjectNameProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK projectNameWndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK customProjectNameProc(HWND, UINT, WPARAM, LPARAM);
 static WNDPROC originalListboxProc;
-static WNDPROC originalAddProjectNameProc;
-static WNDPROC originalEditProjectNameProc;
+static WNDPROC originalProjectNameProc;
 static HWND mainHwnd;
 static HWND tabHwnd;
-static HWND addProjectNameHwnd;
-static HWND editProjectNameHwnd;
+static HWND projectNameHwnd;
 static HWND lbProjectsHwnd;
 static HWND lbPairsHwnd;
 static HWND lbSourceHwnd;
 static HWND lbDestHwnd;
-static HWND bAddProjectNameOK;
-static HWND bEditProjectNameOK;
+static HWND bProjectNameOK;
 static HINSTANCE instance;
 
 static void shutDown(void);
@@ -113,16 +108,14 @@ static void deletePairNode(struct PairNode **, int);
 static void deleteProjectNode(struct ProjectNode **, int);
 static void deletePairList(struct PairNode **);
 static void deleteProjectList(struct ProjectNode **);
-static void addProjectName(void);
-static void editProjectName(void);
+static void getProjectName(void);
 static void fillListbox(struct ProjectNode **);
 static int countPairNodes(struct PairNode *);
 static int countProjectNodes(struct ProjectNode *);
 static bool isProjectName(wchar_t *, int);
 
 static int page = 0;
-static bool showingAddProject = false;
-static bool showingEditProject = false;
+static bool showingProjectName = false;
 static wchar_t projectName[MAX_LINE] = {0};
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
@@ -238,7 +231,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			// folder pairs listbox
 			lbPairsHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
-				10, 80, rc.right-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_PAIRS, NULL, NULL);
+				10, 80, rc.right-20, rc.bottom-110, hwnd, (HMENU)ID_LISTBOX_PAIRS, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbPairsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
 			// source folders listbox
@@ -391,7 +384,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							if (isProjectName(selectedRowText, textLen))
 							{
 								wcscpy_s(projectName, MAX_LINE, selectedRowText);
-								editProjectName();
+								getProjectName();
 							}
 							//else
 								//editFolderPair();
@@ -429,12 +422,13 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PROJECT)
 			{
-				addProjectName();
+				getProjectName();
 			}
 			if (LOWORD(wParam) == ID_BUTTON_ADD_FOLDERS)
 			{
+#if DEV_MODE
 				writeFileW(LOG_FILE, L"add folder pair");
-
+#endif
 /*				wchar_t szFileName[MAX_LINE] = {0};
 
 				OPENFILENAME ofn = {0};
@@ -531,253 +525,151 @@ LRESULT CALLBACK customListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 	return CallWindowProc(originalListboxProc, hwnd, msg, wParam, lParam);
 }
 
-static void addProjectName(void)
+static void getProjectName(void)
 {
-	static WNDCLASSEX wcaddProjectName = {0};
-	static bool addProjectNameClassRegistered = false;
+	static WNDCLASSEX wcProjectName = {0};
+	static bool projectNameClassRegistered = false;
 
-	if (showingAddProject)
+	if (showingProjectName)
 		return;
-	showingAddProject = true;
+	showingProjectName = true;
 
-	if (!addProjectNameClassRegistered)
+	if (!projectNameClassRegistered)
 	{
-		wcaddProjectName.cbSize = sizeof(WNDCLASSEX);
-		wcaddProjectName.cbClsExtra = 0;
-		wcaddProjectName.cbWndExtra = 0;
-		wcaddProjectName.hbrBackground = (HBRUSH)COLOR_WINDOW;
-		wcaddProjectName.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wcaddProjectName.hIcon = NULL;
-		wcaddProjectName.hIconSm = NULL;
-		wcaddProjectName.hInstance = instance;
-		wcaddProjectName.lpfnWndProc = addProjectNameWndProc;
-		wcaddProjectName.lpszClassName = L"addProjectName";
-		wcaddProjectName.lpszMenuName = NULL;
-		wcaddProjectName.style = CS_HREDRAW | CS_VREDRAW;
+		wcProjectName.cbSize = sizeof(WNDCLASSEX);
+		wcProjectName.cbClsExtra = 0;
+		wcProjectName.cbWndExtra = 0;
+		wcProjectName.hbrBackground = (HBRUSH)COLOR_WINDOW;
+		wcProjectName.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wcProjectName.hIcon = NULL;
+		wcProjectName.hIconSm = NULL;
+		wcProjectName.hInstance = instance;
+		wcProjectName.lpfnWndProc = projectNameWndProc;
+		wcProjectName.lpszClassName = L"getProjectName";
+		wcProjectName.lpszMenuName = NULL;
+		wcProjectName.style = CS_HREDRAW | CS_VREDRAW;
 
-		if (!RegisterClassEx(&wcaddProjectName))
+		if (!RegisterClassEx(&wcProjectName))
 		{
-			MessageBox(NULL, L"Add Project Name window registration failed", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			MessageBox(NULL, L"Get Project Name window registration failed", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
 		else
-			addProjectNameClassRegistered = true;
+			projectNameClassRegistered = true;
 	}
 
-	addProjectNameHwnd = CreateWindowEx(WS_EX_LEFT,
-		wcaddProjectName.lpszClassName,
-		L"Add new project",
+	projectNameHwnd = CreateWindowEx(WS_EX_LEFT,
+		wcProjectName.lpszClassName,
+		L"Get Project Name",
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		435, 130,
 		NULL, NULL,
 		instance, NULL);
 
-	if (!addProjectNameHwnd)
+	if (!projectNameHwnd)
 	{
 		MessageBox(NULL, L"Get Project Name window creation failed", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 
-	ShowWindow(addProjectNameHwnd, SW_SHOW);
+	ShowWindow(projectNameHwnd, SW_SHOW);
 }
 
-static LRESULT CALLBACK addProjectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	static HWND bAddProjectNameCancel, lAddProjectName, eAddProjectName;
+	static HWND bProjectNameCancel, lProjectName, eProjectName;
 
 	switch (msg)
 	{
 		case WM_CREATE:
 			SetTimer(hwnd, ID_TIMER1, 100, NULL);
 
-			lAddProjectName = CreateWindowEx(WS_EX_LEFT, L"Static", L"Enter project name",
+			lProjectName = CreateWindowEx(WS_EX_LEFT, L"Static", L"Enter project name",
 				WS_VISIBLE | WS_CHILD,
 				10, 15, 150, 25, hwnd, (HMENU)ID_ADD_PROJECT_NAME_LABEL, NULL, NULL);
 
-			eAddProjectName = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
+			eProjectName = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER,
 				140, 10, 170, 25, hwnd, (HMENU)ID_ADD_PROJECT_NAME_TEXT, NULL, NULL);
-			originalAddProjectNameProc = (WNDPROC)SetWindowLongPtr(eAddProjectName, GWLP_WNDPROC, (LONG_PTR)customAddProjectNameProc);
+			originalProjectNameProc = (WNDPROC)SetWindowLongPtr(eProjectName, GWLP_WNDPROC, (LONG_PTR)customProjectNameProc);
 
-			bAddProjectNameOK = CreateWindowEx(WS_EX_LEFT, L"Button", L"OK",
+			bProjectNameOK = CreateWindowEx(WS_EX_LEFT, L"Button", L"OK",
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
 				320, 10, 80, 25, hwnd, (HMENU)ID_BUTTON_OK, NULL, NULL);
 
-			bAddProjectNameCancel = CreateWindowEx(WS_EX_LEFT, L"Button", L"Cancel",
+			bProjectNameCancel = CreateWindowEx(WS_EX_LEFT, L"Button", L"Cancel",
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
 				320, 45, 80, 25, hwnd, (HMENU)ID_BUTTON_CANCEL, NULL, NULL);
 
-			SendMessage(eAddProjectName, EM_LIMITTEXT, MAX_LINE, 0);
-			centerWindow(hwnd);
-			break;
-		case WM_COMMAND:
-			if (LOWORD(wParam) == ID_BUTTON_OK)
-			{
-				wchar_t newProjectName[MAX_LINE];
-				GetWindowText(eAddProjectName, newProjectName, MAX_LINE);
-				wchar_t buf[100] = {0};
-				swprintf(buf, 100, L"New project name: %s", newProjectName);
-				writeFileW(LOG_FILE, buf);
-
-				//TODO get first folder pair and then store name & pair
-
-				struct Project project = {0};
-				wcscpy_s(project.name, MAX_LINE, newProjectName);
-				wcscpy_s(project.pair.source, MAX_LINE, L"source");
-				wcscpy_s(project.pair.destination, MAX_LINE, L"destination");
-
-				appendProjectNode(&projectsHead, project);
-				SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
-				fillListbox(&projectsHead);
-				DestroyWindow(hwnd);
-			}
-
-			if (LOWORD(wParam) == ID_BUTTON_CANCEL)
-			{
-				DestroyWindow(hwnd);
-			}
-			break;
-		case WM_TIMER:
-			if (wParam == ID_TIMER1)
-			{
-				SetFocus(eAddProjectName);
-				KillTimer(hwnd, ID_TIMER1);
-			}
-			break;
-		case WM_DESTROY:
-			showingAddProject = false;
-			DestroyWindow(hwnd);
-			break;
-	}
-	return DefWindowProc(hwnd, msg, wParam, lParam);
-}
-
-static LRESULT CALLBACK customAddProjectNameProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch (msg)
-	{
-		case WM_KEYUP:
-			switch (wParam)
-			{
-				case VK_ESCAPE:
-					DestroyWindow(addProjectNameHwnd);
-					break;
-				case VK_RETURN:
-					SendMessage(bAddProjectNameOK, BM_CLICK, 0, 0);
-					break;
-				case 'A': // CTRL A
-					if (GetAsyncKeyState(VK_CONTROL))
-						SendMessage(hwnd, EM_SETSEL, 0, -1);
-					break;
-			}
-			break;
-	}
-
-	return CallWindowProc(originalAddProjectNameProc, hwnd, msg, wParam, lParam);
-}
-
-static void editProjectName(void)
-{
-	static WNDCLASSEX wcEditProjectName = {0};
-	static bool editProjectNameClassRegistered = false;
-
-	if (showingEditProject)
-		return;
-	showingEditProject = true;
-
-	if (!editProjectNameClassRegistered)
-	{
-		wcEditProjectName.cbSize = sizeof(WNDCLASSEX);
-		wcEditProjectName.cbClsExtra = 0;
-		wcEditProjectName.cbWndExtra = 0;
-		wcEditProjectName.hbrBackground = (HBRUSH)COLOR_WINDOW;
-		wcEditProjectName.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wcEditProjectName.hIcon = NULL;
-		wcEditProjectName.hIconSm = NULL;
-		wcEditProjectName.hInstance = instance;
-		wcEditProjectName.lpfnWndProc = editProjectNameWndProc;
-		wcEditProjectName.lpszClassName = L"EditProjectName";
-		wcEditProjectName.lpszMenuName = NULL;
-		wcEditProjectName.style = CS_HREDRAW | CS_VREDRAW;
-
-		if (!RegisterClassEx(&wcEditProjectName))
-		{
-			MessageBox(NULL, L"Edit Project Name window registration failed", L"Error", MB_ICONEXCLAMATION | MB_OK);
-			return;
-		}
-		else
-			editProjectNameClassRegistered = true;
-	}
-
-	editProjectNameHwnd = CreateWindowEx(WS_EX_LEFT,
-		wcEditProjectName.lpszClassName,
-		L"Edit project",
-		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
-		CW_USEDEFAULT, CW_USEDEFAULT,
-		435, 130,
-		NULL, NULL,
-		instance, NULL);
-
-	if (!editProjectNameHwnd)
-	{
-		MessageBox(NULL, L"Edit Project Name window creation failed", L"Error", MB_ICONEXCLAMATION | MB_OK);
-		return;
-	}
-
-	ShowWindow(editProjectNameHwnd, SW_SHOW);
-}
-
-static LRESULT CALLBACK editProjectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	static HWND bEditProjectNameCancel, lEditProjectName, eEditProjectName;
-
-	switch (msg)
-	{
-		case WM_CREATE:
-			SetTimer(hwnd, ID_TIMER1, 100, NULL);
-
-			lEditProjectName = CreateWindowEx(WS_EX_LEFT, L"Static", L"Enter project name",
-				WS_VISIBLE | WS_CHILD,
-				10, 15, 150, 25, hwnd, (HMENU)ID_ADD_PROJECT_NAME_LABEL, NULL, NULL);
-
-			eEditProjectName = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
-				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER,
-				140, 10, 170, 25, hwnd, (HMENU)ID_ADD_PROJECT_NAME_TEXT, NULL, NULL);
-			originalEditProjectNameProc = (WNDPROC)SetWindowLongPtr(eEditProjectName, GWLP_WNDPROC, (LONG_PTR)customEditProjectNameProc);
-
-			bEditProjectNameOK = CreateWindowEx(WS_EX_LEFT, L"Button", L"OK",
-				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
-				320, 10, 80, 25, hwnd, (HMENU)ID_BUTTON_OK, NULL, NULL);
-
-			bEditProjectNameCancel = CreateWindowEx(WS_EX_LEFT, L"Button", L"Cancel",
-				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
-				320, 45, 80, 25, hwnd, (HMENU)ID_BUTTON_CANCEL, NULL, NULL);
-
-			SendMessage(eEditProjectName, EM_LIMITTEXT, MAX_LINE, 0);
+			SendMessage(eProjectName, EM_LIMITTEXT, MAX_LINE, 0);
 			if (wcslen(projectName) > 0)
-				SetWindowText(eEditProjectName, projectName);
+				SetWindowText(eProjectName, projectName);
 			centerWindow(hwnd);
 			break;
 		case WM_COMMAND:
 			if (LOWORD(wParam) == ID_BUTTON_OK)
 			{
 				wchar_t newProjectName[MAX_LINE];
-				GetWindowText(eEditProjectName, newProjectName, MAX_LINE);
+				GetWindowText(eProjectName, newProjectName, MAX_LINE);
+
+				// blank project name
+				if (wcslen(newProjectName) == 0)
+				{
+					writeFileW(LOG_FILE, L"Blank name used");
+					DestroyWindow(hwnd);
+					break;
+				}
+
+#if DEV_MODE
 				wchar_t buf[100] = {0};
 				swprintf(buf, 100, L"New project name: %s", newProjectName);
 				writeFileW(LOG_FILE, buf);
+#endif
 
-				if (wcscmp(projectName, newProjectName) != 0)
+				// new project being added
+				if (wcslen(newProjectName) > 0 && wcslen(projectName) == 0)
+				{
+					// check if pre-existing name used
+					bool existing = false;
+					struct ProjectNode *node = projectsHead;
+					while (node != NULL)
+					{
+						if (wcscmp(node->project.name, newProjectName) == 0)
+						{
+							writeFileW(LOG_FILE, L"Pre-existing name used");
+							existing = true;
+							break;
+						}
+
+						node = node->next;
+					}
+
+					if (!existing)
+					{
+						writeFileW(LOG_FILE, L"New project added");
+						struct Project project = {0};
+						wcscpy_s(project.name, MAX_LINE, newProjectName);
+						wcscpy_s(project.pair.source, MAX_LINE, L"source");
+						wcscpy_s(project.pair.destination, MAX_LINE, L"destination");
+
+						//TODO how to handle the folder pair when adding a new project?
+
+						appendProjectNode(&projectsHead, project);
+					}
+				}
+
+				// existing project being renamed
+				if (wcslen(newProjectName) > 0 && wcslen(projectName) > 0)
 				{
 					// replace all occurrences of old project name with new name
-					struct ProjectNode *current = projectsHead;
-					while (current != NULL)
+					struct ProjectNode *node = projectsHead;
+					while (node != NULL)
 					{
-						if (wcscmp(current->project.name, projectName) == 0)
-							wcscpy_s(current->project.name, MAX_LINE, newProjectName);
+						if (wcscmp(node->project.name, projectName) == 0)
+							wcscpy_s(node->project.name, MAX_LINE, newProjectName);
 
-						current = current->next;
+						node = node->next;
 					}
 				}
 
@@ -794,20 +686,20 @@ static LRESULT CALLBACK editProjectNameWndProc(HWND hwnd, UINT msg, WPARAM wPara
 		case WM_TIMER:
 			if (wParam == ID_TIMER1)
 			{
-				SetFocus(eEditProjectName);
+				SetFocus(eProjectName);
 				KillTimer(hwnd, ID_TIMER1);
 			}
 			break;
 		case WM_DESTROY:
+			showingProjectName = false;
 			clearArrayW(projectName, MAX_LINE);
-			showingEditProject = false;
 			DestroyWindow(hwnd);
 			break;
 	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-static LRESULT CALLBACK customEditProjectNameProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK customProjectNameProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
@@ -815,10 +707,10 @@ static LRESULT CALLBACK customEditProjectNameProc(HWND hwnd, UINT msg, WPARAM wP
 			switch (wParam)
 			{
 				case VK_ESCAPE:
-					DestroyWindow(editProjectNameHwnd);
+					DestroyWindow(projectNameHwnd);
 					break;
 				case VK_RETURN:
-					SendMessage(bEditProjectNameOK, BM_CLICK, 0, 0);
+					SendMessage(bProjectNameOK, BM_CLICK, 0, 0);
 					break;
 				case 'A': // CTRL A
 					if (GetAsyncKeyState(VK_CONTROL))
@@ -828,7 +720,7 @@ static LRESULT CALLBACK customEditProjectNameProc(HWND hwnd, UINT msg, WPARAM wP
 			break;
 	}
 
-	return CallWindowProc(originalEditProjectNameProc, hwnd, msg, wParam, lParam);
+	return CallWindowProc(originalProjectNameProc, hwnd, msg, wParam, lParam);
 }
 
 static void shutDown(void)
@@ -918,7 +810,9 @@ static void writeFileW(char *filename, wchar_t *text)
 
 static void writeSettings(char *filename, HWND hwnd)
 {
+#if DEV_MODE
 	writeFileW(LOG_FILE, L"writeSettings()");
+#endif
 
 	FILE *f = fopen(filename, "w");
 	if (f == NULL)
@@ -941,7 +835,9 @@ static void writeSettings(char *filename, HWND hwnd)
 
 static void readSettings(char *filename, HWND hwnd)
 {
+#if DEV_MODE
 	writeFileW(LOG_FILE, L"readSettings()");
+#endif
 
 	FILE *f = fopen(filename, "r");
 	if (f == NULL)
@@ -1022,7 +918,9 @@ static void readSettings(char *filename, HWND hwnd)
 
 static void loadProjects(char *filename, struct ProjectNode **head_ref)
 {
+#if DEV_MODE
 	writeFileW(LOG_FILE, L"loadProjects()");
+#endif
 
 	FILE *f = fopen(filename, "rt, ccs=UNICODE");
 	if (f == NULL)
@@ -1105,9 +1003,11 @@ static void loadProjects(char *filename, struct ProjectNode **head_ref)
 		appendProjectNode(head_ref, project);
 	}
 
+#if DEV_MODE
 	wchar_t buf[100] = {0};
 	swprintf(buf, 100, L"Loaded %d projects", countProjectNodes(*head_ref));
 	writeFileW(LOG_FILE, buf);
+#endif
 
 	fclose(f);
 
@@ -1178,7 +1078,9 @@ static void fillListbox(struct ProjectNode **head_ref)
 
 static void saveProjects(char *filename, struct ProjectNode **head_ref)
 {
+#if DEV_MODE
 	writeFileW(LOG_FILE, L"saveProjects()");
+#endif
 
 	FILE *f = fopen(filename, "wt, ccs=UNICODE");
 	if (f == NULL)
@@ -1209,9 +1111,11 @@ static void saveProjects(char *filename, struct ProjectNode **head_ref)
 		current = current->next;
 	}
 
+#if DEV_MODE
 	wchar_t buf[100] = {0};
 	swprintf(buf, 100, L"Saved %d projects", count);
 	writeFileW(LOG_FILE, buf);
+#endif
 
 	fclose(f);
 }
@@ -1219,7 +1123,9 @@ static void saveProjects(char *filename, struct ProjectNode **head_ref)
 // append a new node at the end
 static void appendPairNode(struct PairNode **head_ref, struct Pair pair)
 {
+#if DEV_MODE
 	writeFileW(LOG_FILE, L"appendPairNode()");
+#endif
 
 	struct PairNode *newPairNode = (struct PairNode *)malloc(sizeof(struct PairNode));
 
@@ -1263,7 +1169,9 @@ static void appendPairNode(struct PairNode **head_ref, struct Pair pair)
 // append a new node at the end
 static void appendProjectNode(struct ProjectNode **head_ref, struct Project project)
 {
+#if DEV_MODE
 	writeFileW(LOG_FILE, L"appendProjectNode()");
+#endif
 
 	struct ProjectNode *newProjectNode = (struct ProjectNode *)malloc(sizeof(struct ProjectNode));
 
