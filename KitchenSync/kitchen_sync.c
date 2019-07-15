@@ -110,11 +110,11 @@ static void deletePairList(struct PairNode **);
 static void deleteProjectList(struct ProjectNode **);
 static void getProjectName(void);
 static void fillListbox(struct ProjectNode **);
+static void sortProjectNodes(struct ProjectNode **);
 static int countPairNodes(struct PairNode *);
 static int countProjectNodes(struct ProjectNode *);
 static bool isProjectName(wchar_t *, int);
 
-static int page = 0;
 static bool showingProjectName = false;
 static wchar_t projectName[MAX_LINE] = {0};
 
@@ -201,8 +201,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			tabHwnd = CreateWindow(WC_TABCONTROL, L"",
 			WS_VISIBLE | WS_CHILD | WS_CLIPSIBLINGS,
-			5, 5, rc.right-10, rc.bottom-10, 
-			hwnd, NULL, instance, NULL);
+			5, 5, rc.right-10, rc.bottom-10, hwnd, NULL, instance, NULL);
 
 			if (tabHwnd == NULL)
 			{
@@ -222,29 +221,13 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			tie.pszText = L"Settings";
 			TabCtrl_InsertItem(tabHwnd, 3, &tie);
 
-			// projects listbox
+		// projects
+
+			// listbox
 			lbProjectsHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
 				10, 80, rc.right-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_PROJECTS, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbProjectsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
-
-			// folder pairs listbox
-			lbPairsHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
-				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
-				10, 80, rc.right-20, rc.bottom-110, hwnd, (HMENU)ID_LISTBOX_PAIRS, NULL, NULL);
-			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbPairsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
-
-			// source folders listbox
-			lbSourceHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
-				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
-				10, 80, (rc.right / 2)-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_SOURCE, NULL, NULL);
-			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbSourceHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
-
-			// destination folders listbox
-			lbDestHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
-				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
-				(rc.right / 2)+5, 80, (rc.right / 2)-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_DEST, NULL, NULL);
-			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbDestHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
 			bAddProject = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add Project",
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
@@ -262,13 +245,35 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_DISABLED,
 				400, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_PREVIEW, NULL, NULL);
 
-			bSync = CreateWindowEx(WS_EX_LEFT, L"Button", L"Sync",
-				WS_CHILD | WS_TABSTOP | WS_DISABLED,
-				10, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_SYNC, NULL, NULL);
+		// folder pairs
+
+			// source listbox
+			lbSourceHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
+				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
+				10, 80, (rc.right / 2)-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_SOURCE, NULL, NULL);
+			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbSourceHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
+
+			// destination listbox
+			lbDestHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
+				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
+				(rc.right / 2)+5, 80, (rc.right / 2)-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_DEST, NULL, NULL);
+			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbDestHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
 			bAddPair = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add Pair",
 				WS_CHILD | WS_TABSTOP | WS_DISABLED,
 				10, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_ADD_PAIR, NULL, NULL);
+
+		// sync
+
+			// listbox
+			lbPairsHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
+				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
+				10, 80, rc.right-20, rc.bottom-110, hwnd, (HMENU)ID_LISTBOX_PAIRS, NULL, NULL);
+			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbPairsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
+
+			bSync = CreateWindowEx(WS_EX_LEFT, L"Button", L"Sync",
+				WS_CHILD | WS_TABSTOP | WS_DISABLED,
+				10, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_SYNC, NULL, NULL);
 
 			break;
 		case WM_NOTIFY:
@@ -282,7 +287,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 				case TCN_SELCHANGE:
 				{
-					page = TabCtrl_GetCurSel(tabHwnd);
+					int page = TabCtrl_GetCurSel(tabHwnd);
 					switch (page)
 					{
 						case 0: // projects
@@ -356,15 +361,13 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 					// get row index
 					LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
-
 					if (selectedRow != LB_ERR)
 					{
 						wchar_t selectedRowText[MAX_LINE] = {0};
 						int textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
-						if (textLen > 0)
-							if (isProjectName(selectedRowText, textLen))
-								EnableWindow(bAddFolders, TRUE);
+						if (textLen > 0 && isProjectName(selectedRowText, textLen))
+							EnableWindow(bAddFolders, TRUE);
 					}
 				}
 
@@ -373,7 +376,6 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				{
 					// get row index
 					LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
-
 					if (selectedRow != LB_ERR)
 					{
 						wchar_t selectedRowText[MAX_LINE] = {0};
@@ -386,8 +388,11 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 								wcscpy_s(projectName, MAX_LINE, selectedRowText);
 								getProjectName();
 							}
-							//else
+							else
+							{
+								SendMessage(tabHwnd, TCM_SETCURFOCUS, 1, 0);
 								//editFolderPair();
+							}
 						}
 					}
 				}
@@ -400,7 +405,6 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				{
 					// get row index
 					LRESULT selectedRow = SendMessage(lbPairsHwnd, LB_GETCURSEL, 0, 0);
-
 					if (selectedRow != LB_ERR)
 					{
 						// store selected row in case of Del key?
@@ -412,7 +416,6 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				{
 					// get row index
 					LRESULT selectedRow = SendMessage(lbPairsHwnd, LB_GETCURSEL, 0, 0);
-
 					if (selectedRow != LB_ERR)
 					{
 						// edit file pair
@@ -424,11 +427,34 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				getProjectName();
 			}
+
 			if (LOWORD(wParam) == ID_BUTTON_ADD_FOLDERS)
 			{
 #if DEV_MODE
 				writeFileW(LOG_FILE, L"add folder pair");
 #endif
+				// get row index
+				LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
+				if (selectedRow != LB_ERR)
+				{
+					wchar_t selectedRowText[MAX_LINE] = {0};
+					int textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+					if (textLen > 0)
+					{
+						if (isProjectName(selectedRowText, textLen))
+						{
+							wcscpy_s(projectName, MAX_LINE, selectedRowText);
+#if DEV_MODE
+							wchar_t buf[100] = {0};
+							swprintf(buf, 100, L"Selected project name: %s", projectName);
+							writeFileW(LOG_FILE, buf);
+#endif
+							SendMessage(tabHwnd, TCM_SETCURFOCUS, 1, 0);
+						}
+					}
+				}
+
 /*				wchar_t szFileName[MAX_LINE] = {0};
 
 				OPENFILENAME ofn = {0};
@@ -654,6 +680,8 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 						wcscpy_s(project.pair.destination, MAX_LINE, L"destination");
 
 						//TODO how to handle the folder pair when adding a new project?
+						// store project name and change tab to Add Folders
+						// replace the "source" & "destination" pair or don't create them at all?
 
 						appendProjectNode(&projectsHead, project);
 					}
@@ -674,6 +702,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 				}
 
 				SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
+				sortProjectNodes(&projectsHead);
 				fillListbox(&projectsHead);
 				DestroyWindow(hwnd);
 			}
@@ -1120,6 +1149,15 @@ static void saveProjects(char *filename, struct ProjectNode **head_ref)
 	fclose(f);
 }
 
+// determine if project name by absence of > character
+static bool isProjectName(wchar_t *text, int len)
+{
+	for (int i = 0; i < len && text[i] != '\0'; ++i)
+		if (text[i] == '>')
+			return false;
+	return true;
+}
+
 // append a new node at the end
 static void appendPairNode(struct PairNode **head_ref, struct Pair pair)
 {
@@ -1212,7 +1250,7 @@ static void appendProjectNode(struct ProjectNode **head_ref, struct Project proj
 		return;
 	}
 
-	// divert current last node to newProjectNode
+	// point current last node to newProjectNode
 	struct ProjectNode *last = *head_ref;
 	while (last->next != NULL)
 		last = last->next;
@@ -1357,10 +1395,66 @@ static int countProjectNodes(struct ProjectNode *head)
 	return count;
 }
 
-static bool isProjectName(wchar_t *text, int len)
+// sort list
+static void sortProjectNodes(struct ProjectNode **head_ref)
 {
-	for (int i = 0; i < len && text[i] != '\0'; ++i)
-		if (text[i] == '>')
-			return false;
-	return true;
+	if (head_ref == NULL)
+	{
+		writeFileW(LOG_FILE, L"Can't sort empty list");
+		return;
+	}
+
+	struct ProjectNode *head = *head_ref;
+
+	if (head->next == NULL)
+	{
+		writeFileW(LOG_FILE, L"Can't sort only 1 entry");
+		return;
+	}
+
+	bool changed;
+
+	do
+	{
+		changed = false;
+
+		// swap head & second nodes
+		if (wcscmp(head->project.name, head->next->project.name) > 0)
+		{
+			struct ProjectNode *temp = head->next;
+
+			head->next = head->next->next;
+			temp->next = head;
+			*head_ref = temp;
+
+			changed = true;
+		}
+
+		//struct ProjectNode *previous = head;
+		//struct ProjectNode *middle = previous->next;
+		//struct ProjectNode *after = middle->next;
+
+		//if (after == NULL)
+		//{
+		//	writeFileW(LOG_FILE, L"Can't sort more, only 2 entries");
+		//	return;
+		//}
+
+		//while (middle != NULL && after != NULL)
+		//{
+		//	if (wcscmp(middle->project.name, after->project.name) > 0)
+		//	{
+		//		previous->next = after;
+		//		middle->next = after->next;
+		//		after->next = middle;
+
+		//		changed = true;
+		//	}
+
+		//	previous = previous->next;
+		//	middle = middle->next;
+		//	after = after->next;
+		//}
+	}
+	while (changed);
 }
