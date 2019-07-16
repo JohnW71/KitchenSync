@@ -1062,6 +1062,7 @@ static void loadProjects(char *filename, struct ProjectNode **head_ref)
 
 	//appendProjectNode(head_ref, project);
 
+	sortProjectNodes(head_ref);
 	fillListbox(head_ref);
 }
 
@@ -1430,31 +1431,34 @@ static void sortProjectNodes(struct ProjectNode **head_ref)
 			changed = true;
 		}
 
-		//struct ProjectNode *previous = head;
-		//struct ProjectNode *middle = previous->next;
-		//struct ProjectNode *after = middle->next;
+		struct ProjectNode *previous = head;
+		struct ProjectNode *current = head->next;
 
-		//if (after == NULL)
-		//{
-		//	writeFileW(LOG_FILE, L"Can't sort more, only 2 entries");
-		//	return;
-		//}
+		if (current->next == NULL)
+		{
+			writeFileW(LOG_FILE, L"Can't sort more, only 2 entries");
+			return;
+		}
 
-		//while (middle != NULL && after != NULL)
-		//{
-		//	if (wcscmp(middle->project.name, after->project.name) > 0)
-		//	{
-		//		previous->next = after;
-		//		middle->next = after->next;
-		//		after->next = middle;
+		while (current != NULL && current->next != NULL)
+		{
+			if (wcscmp(current->project.name, current->next->project.name) > 0)
+			{
+				struct ProjectNode *temp = current->next;
 
-		//		changed = true;
-		//	}
+				if (current->next->next != NULL)
+					current->next = current->next->next;
+				else
+					current->next = NULL;
+				temp->next = current;
+				previous->next = temp;
 
-		//	previous = previous->next;
-		//	middle = middle->next;
-		//	after = after->next;
-		//}
+				changed = true;
+			}
+
+			previous = previous->next;
+			current = current->next;
+		}
 	}
 	while (changed);
 }
