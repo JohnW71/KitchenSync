@@ -1399,7 +1399,7 @@ static int countProjectNodes(struct ProjectNode *head)
 // sort list
 static void sortProjectNodes(struct ProjectNode **head_ref)
 {
-	if (head_ref == NULL)
+	if (*head_ref == NULL)
 	{
 		writeFileW(LOG_FILE, L"Can't sort empty list");
 		return;
@@ -1427,7 +1427,7 @@ static void sortProjectNodes(struct ProjectNode **head_ref)
 			head->next = head->next->next;
 			temp->next = head;
 			*head_ref = temp;
-
+			head = *head_ref;
 			changed = true;
 		}
 
@@ -1455,9 +1455,10 @@ static void sortProjectNodes(struct ProjectNode **head_ref)
 
 				changed = true;
 			}
+			else
+				current = current->next;
 
 			previous = previous->next;
-			current = current->next;
 		}
 	}
 	while (changed);
