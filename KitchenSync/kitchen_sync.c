@@ -1440,9 +1440,12 @@ static void sortProjectNodes(struct ProjectNode **head_ref)
 			return;
 		}
 
+		// swap folder pairs
 		while (current != NULL && current->next != NULL)
 		{
-			if (wcscmp(current->project.name, current->next->project.name) > 0)
+			if (wcscmp(current->project.name, current->next->project.name) > 0 ||
+				(wcscmp(current->project.name, current->next->project.name) == 0 &&
+				 wcscmp(current->project.pair.source, current->next->project.pair.source) > 0))
 			{
 				struct ProjectNode *temp = current->next;
 
