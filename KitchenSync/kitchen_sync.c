@@ -24,8 +24,8 @@
 #define ID_BUTTON_DELETE 37
 #define ID_ADD_PROJECT_NAME_LABEL 40
 #define ID_ADD_PROJECT_NAME_TEXT 41
-#define ID_PROGRESS_BAR 42
-#define ID_TIMER1 43
+#define ID_PROGRESS_BAR 50
+#define ID_TIMER1 51
 
 #define arrayCount(array) (sizeof(array) / sizeof((array)[0]))
 
@@ -78,11 +78,15 @@ static LRESULT CALLBACK mainWndProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customListboxProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK projectNameWndProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customProjectNameProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK folderPairWndProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK customFolderPairProc(HWND, UINT, WPARAM, LPARAM);
 static WNDPROC originalListboxProc;
 static WNDPROC originalProjectNameProc;
+static WNDPROC originalFolderPairProc;
 static HWND mainHwnd;
 static HWND tabHwnd;
 static HWND projectNameHwnd;
+static HWND folderPairHwnd;
 static HWND lbProjectsHwnd;
 static HWND lbPairsHwnd;
 static HWND lbSourceHwnd;
@@ -109,12 +113,14 @@ static void deleteProjectNode(struct ProjectNode **, int);
 static void deletePairList(struct PairNode **);
 static void deleteProjectList(struct ProjectNode **);
 static void getProjectName(void);
+static void addFolderPair(void);
 static void fillListbox(struct ProjectNode **);
 static void sortProjectNodes(struct ProjectNode **);
 static int countPairNodes(struct PairNode *);
 static int countProjectNodes(struct ProjectNode *);
 static bool isProjectName(wchar_t *, int);
 
+static bool showingFolderPair = false;
 static bool showingProjectName = false;
 static wchar_t projectName[MAX_LINE] = {0};
 
@@ -260,7 +266,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbDestHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
 			bAddPair = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add Pair",
-				WS_CHILD | WS_TABSTOP | WS_DISABLED,
+				WS_CHILD | WS_TABSTOP,
 				10, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_ADD_PAIR, NULL, NULL);
 
 		// sync
@@ -292,6 +298,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					{
 						case 0: // projects
 						{
+							clearArrayW(projectName, MAX_LINE);
 							ShowWindow(lbProjectsHwnd, SW_SHOW);
 							ShowWindow(lbPairsHwnd, SW_HIDE);
 							ShowWindow(lbSourceHwnd, SW_HIDE);
@@ -453,6 +460,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							SendMessage(tabHwnd, TCM_SETCURFOCUS, 1, 0);
 						}
 					}
+					//TODO show add pair window
 				}
 
 /*				wchar_t szFileName[MAX_LINE] = {0};
@@ -478,6 +486,13 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					writeFileW(LOG_FILE, L"Read failed");
 				}*/
 			}
+
+			if (LOWORD(wParam) == ID_BUTTON_ADD_PAIR)
+			{
+				writeFileW(LOG_FILE, L"add pair");
+				addFolderPair();
+			}
+
 			break;
 		case WM_SIZE:
 		{
@@ -750,6 +765,207 @@ static LRESULT CALLBACK customProjectNameProc(HWND hwnd, UINT msg, WPARAM wParam
 	}
 
 	return CallWindowProc(originalProjectNameProc, hwnd, msg, wParam, lParam);
+}
+
+static void addFolderPair(void)
+{
+	static WNDCLASSEX wcFolderPair = {0};
+	static bool folderPairClassRegistered = false;
+
+	if (showingFolderPair)
+		return;
+	showingFolderPair = true;
+
+	if (!folderPairClassRegistered)
+	{
+		wcFolderPair.cbSize = sizeof(WNDCLASSEX);
+		wcFolderPair.cbClsExtra = 0;
+		wcFolderPair.cbWndExtra = 0;
+		wcFolderPair.hbrBackground = (HBRUSH)COLOR_WINDOW;
+		wcFolderPair.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wcFolderPair.hIcon = NULL;
+		wcFolderPair.hIconSm = NULL;
+		wcFolderPair.hInstance = instance;
+		wcFolderPair.lpfnWndProc = folderPairWndProc;
+		wcFolderPair.lpszClassName = L"addFolderPair";
+		wcFolderPair.lpszMenuName = NULL;
+		wcFolderPair.style = CS_HREDRAW | CS_VREDRAW;
+
+		if (!RegisterClassEx(&wcFolderPair))
+		{
+			MessageBox(NULL, L"Add Folder Pair window registration failed", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			return;
+		}
+		else
+			folderPairClassRegistered = true;
+	}
+
+	folderPairHwnd = CreateWindowEx(WS_EX_LEFT,
+		wcFolderPair.lpszClassName,
+		L"Add Folder Pair",
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
+		CW_USEDEFAULT, CW_USEDEFAULT,
+		435, 130,
+		NULL, NULL,
+		instance, NULL);
+
+	if (!folderPairHwnd)
+	{
+		MessageBox(NULL, L"Add Folder Pair window creation failed", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return;
+	}
+
+	ShowWindow(folderPairHwnd, SW_SHOW);
+}
+
+static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	static HWND bProjectNameCancel, lProjectName, eProjectName;
+
+	switch (msg)
+	{
+		case WM_CREATE:
+			SetTimer(hwnd, ID_TIMER1, 100, NULL);
+
+			lProjectName = CreateWindowEx(WS_EX_LEFT, L"Static", L"Enter project name",
+				WS_VISIBLE | WS_CHILD,
+				10, 15, 150, 25, hwnd, (HMENU)ID_ADD_PROJECT_NAME_LABEL, NULL, NULL);
+
+			eProjectName = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER,
+				140, 10, 170, 25, hwnd, (HMENU)ID_ADD_PROJECT_NAME_TEXT, NULL, NULL);
+			originalProjectNameProc = (WNDPROC)SetWindowLongPtr(eProjectName, GWLP_WNDPROC, (LONG_PTR)customProjectNameProc);
+
+			bProjectNameOK = CreateWindowEx(WS_EX_LEFT, L"Button", L"OK",
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
+				320, 10, 80, 25, hwnd, (HMENU)ID_BUTTON_OK, NULL, NULL);
+
+			bProjectNameCancel = CreateWindowEx(WS_EX_LEFT, L"Button", L"Cancel",
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
+				320, 45, 80, 25, hwnd, (HMENU)ID_BUTTON_CANCEL, NULL, NULL);
+
+			//SendMessage(eProjectName, EM_LIMITTEXT, MAX_LINE, 0);
+			//if (wcslen(projectName) > 0)
+			//	SetWindowText(eProjectName, projectName);
+			centerWindow(hwnd);
+			break;
+		case WM_COMMAND:
+//			if (LOWORD(wParam) == ID_BUTTON_OK)
+//			{
+//				wchar_t newProjectName[MAX_LINE];
+//				GetWindowText(eProjectName, newProjectName, MAX_LINE);
+//
+//				// blank project name
+//				if (wcslen(newProjectName) == 0)
+//				{
+//					writeFileW(LOG_FILE, L"Blank name used");
+//					DestroyWindow(hwnd);
+//					break;
+//				}
+//
+//#if DEV_MODE
+//				wchar_t buf[100] = {0};
+//				swprintf(buf, 100, L"New project name: %s", newProjectName);
+//				writeFileW(LOG_FILE, buf);
+//#endif
+//
+//				// new project being added
+//				if (wcslen(newProjectName) > 0 && wcslen(projectName) == 0)
+//				{
+//					// check if pre-existing name used
+//					bool existing = false;
+//					struct ProjectNode *node = projectsHead;
+//					while (node != NULL)
+//					{
+//						if (wcscmp(node->project.name, newProjectName) == 0)
+//						{
+//							writeFileW(LOG_FILE, L"Pre-existing name used");
+//							existing = true;
+//							break;
+//						}
+//
+//						node = node->next;
+//					}
+//
+//					if (!existing)
+//					{
+//						writeFileW(LOG_FILE, L"New project added");
+//						struct Project project = {0};
+//						wcscpy_s(project.name, MAX_LINE, newProjectName);
+//						wcscpy_s(project.pair.source, MAX_LINE, L"source");
+//						wcscpy_s(project.pair.destination, MAX_LINE, L"destination");
+//
+//						//TODO how to handle the folder pair when adding a new project?
+//						// store project name and change tab to Add Folders
+//						// replace the "source" & "destination" pair or don't create them at all?
+//
+//						appendProjectNode(&projectsHead, project);
+//					}
+//				}
+//
+//				// existing project being renamed
+//				if (wcslen(newProjectName) > 0 && wcslen(projectName) > 0)
+//				{
+//					// replace all occurrences of old project name with new name
+//					struct ProjectNode *node = projectsHead;
+//					while (node != NULL)
+//					{
+//						if (wcscmp(node->project.name, projectName) == 0)
+//							wcscpy_s(node->project.name, MAX_LINE, newProjectName);
+//
+//						node = node->next;
+//					}
+//				}
+//
+//				SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
+//				sortProjectNodes(&projectsHead);
+//				fillListbox(&projectsHead);
+//				DestroyWindow(hwnd);
+//			}
+
+			if (LOWORD(wParam) == ID_BUTTON_CANCEL)
+			{
+				DestroyWindow(hwnd);
+			}
+			break;
+		//case WM_TIMER:
+		//	if (wParam == ID_TIMER1)
+		//	{
+		//		SetFocus(eProjectName);
+		//		KillTimer(hwnd, ID_TIMER1);
+		//	}
+		//	break;
+		case WM_DESTROY:
+			showingFolderPair = false;
+			//clearArrayW(projectName, MAX_LINE);
+			DestroyWindow(hwnd);
+			break;
+	}
+	return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+static LRESULT CALLBACK customFolderPairProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
+		case WM_KEYUP:
+			switch (wParam)
+			{
+				case VK_ESCAPE:
+					DestroyWindow(folderPairHwnd);
+					break;
+				//case VK_RETURN:
+				//	SendMessage(bProjectNameOK, BM_CLICK, 0, 0);
+				//	break;
+				case 'A': // CTRL A
+					if (GetAsyncKeyState(VK_CONTROL))
+						SendMessage(hwnd, EM_SETSEL, 0, -1);
+					break;
+			}
+			break;
+	}
+
+	return CallWindowProc(originalFolderPairProc, hwnd, msg, wParam, lParam);
 }
 
 static void shutDown(void)
