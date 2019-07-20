@@ -24,6 +24,13 @@
 #define ID_BUTTON_DELETE 37
 #define ID_ADD_PROJECT_NAME_LABEL 40
 #define ID_ADD_PROJECT_NAME_TEXT 41
+#define ID_PAIR_SOURCE_LABEL 42
+#define ID_PAIR_SOURCE_TEXT 43
+#define ID_PAIR_LISTBOX_SOURCE 44
+#define ID_PAIR_DESTINATION_LABEL 45
+#define ID_PAIR_DESTINATION_TEXT 46
+#define ID_PAIR_LISTBOX_DESTINATION 47
+#define ID_PAIR_BUTTON_ADD 48
 #define ID_PROGRESS_BAR 50
 #define ID_TIMER1 51
 
@@ -80,9 +87,13 @@ static LRESULT CALLBACK projectNameWndProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customProjectNameProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK folderPairWndProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customFolderPairProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK customSourceListboxProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK customDestinationListboxProc(HWND, UINT, WPARAM, LPARAM);
 static WNDPROC originalListboxProc;
 static WNDPROC originalProjectNameProc;
 static WNDPROC originalFolderPairProc;
+static WNDPROC originalSourceListboxProc;
+static WNDPROC originalDestinationListboxProc;
 static HWND mainHwnd;
 static HWND tabHwnd;
 static HWND projectNameHwnd;
@@ -91,6 +102,8 @@ static HWND lbProjectsHwnd;
 static HWND lbPairsHwnd;
 static HWND lbSourceHwnd;
 static HWND lbDestHwnd;
+static HWND lbPairSourceHwnd;
+static HWND lbPairDestHwnd;
 static HWND bProjectNameOK;
 static HINSTANCE instance;
 
@@ -805,7 +818,7 @@ static void addFolderPair(void)
 		L"Add Folder Pair",
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		435, 130,
+		800, 600,
 		NULL, NULL,
 		instance, NULL);
 
@@ -820,40 +833,58 @@ static void addFolderPair(void)
 
 static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	static HWND bProjectNameCancel, lProjectName, eProjectName;
+	static HWND bFolderPairAdd, bFolderPairCancel, lSource, lDestination, eSource, eDestination;
 
 	switch (msg)
 	{
 		case WM_CREATE:
-			SetTimer(hwnd, ID_TIMER1, 100, NULL);
-
-			lProjectName = CreateWindowEx(WS_EX_LEFT, L"Static", L"Enter project name",
+			//SetTimer(hwnd, ID_TIMER1, 100, NULL);
+			lSource = CreateWindowEx(WS_EX_LEFT, L"Static", L"Source",
 				WS_VISIBLE | WS_CHILD,
-				10, 15, 150, 25, hwnd, (HMENU)ID_ADD_PROJECT_NAME_LABEL, NULL, NULL);
+				10, 10, 80, 25, hwnd, (HMENU)ID_PAIR_SOURCE_LABEL, NULL, NULL);
 
-			eProjectName = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
+			eSource = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER,
-				140, 10, 170, 25, hwnd, (HMENU)ID_ADD_PROJECT_NAME_TEXT, NULL, NULL);
-			originalProjectNameProc = (WNDPROC)SetWindowLongPtr(eProjectName, GWLP_WNDPROC, (LONG_PTR)customProjectNameProc);
+				10, 30, 370, 25, hwnd, (HMENU)ID_PAIR_SOURCE_TEXT, NULL, NULL);
+			originalFolderPairProc = (WNDPROC)SetWindowLongPtr(eSource, GWLP_WNDPROC, (LONG_PTR)customFolderPairProc);
 
-			bProjectNameOK = CreateWindowEx(WS_EX_LEFT, L"Button", L"OK",
+			lbPairSourceHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
+				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
+				10, 60, 370, 450, hwnd, (HMENU)ID_PAIR_LISTBOX_SOURCE, NULL, NULL);
+			originalSourceListboxProc = (WNDPROC)SetWindowLongPtr(lbPairSourceHwnd, GWLP_WNDPROC, (LONG_PTR)customSourceListboxProc);
+
+			lDestination = CreateWindowEx(WS_EX_LEFT, L"Static", L"Destination",
+				WS_VISIBLE | WS_CHILD,
+				400, 10, 80, 25, hwnd, (HMENU)ID_PAIR_DESTINATION_LABEL, NULL, NULL);
+
+			eDestination = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER,
+				400, 30, 370, 25, hwnd, (HMENU)ID_PAIR_DESTINATION_TEXT, NULL, NULL);
+			originalFolderPairProc = (WNDPROC)SetWindowLongPtr(eDestination, GWLP_WNDPROC, (LONG_PTR)customFolderPairProc);
+
+			lbPairDestHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
+				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
+				400, 60, 370, 450, hwnd, (HMENU)ID_PAIR_LISTBOX_DESTINATION, NULL, NULL);
+			originalDestinationListboxProc = (WNDPROC)SetWindowLongPtr(lbPairDestHwnd, GWLP_WNDPROC, (LONG_PTR)customDestinationListboxProc);
+
+			bFolderPairAdd = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add",
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
-				320, 10, 80, 25, hwnd, (HMENU)ID_BUTTON_OK, NULL, NULL);
+				290, 520, 80, 25, hwnd, (HMENU)ID_PAIR_BUTTON_ADD, NULL, NULL);
 
-			bProjectNameCancel = CreateWindowEx(WS_EX_LEFT, L"Button", L"Cancel",
+			bFolderPairCancel = CreateWindowEx(WS_EX_LEFT, L"Button", L"Cancel",
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
-				320, 45, 80, 25, hwnd, (HMENU)ID_BUTTON_CANCEL, NULL, NULL);
+				410, 520, 80, 25, hwnd, (HMENU)ID_BUTTON_CANCEL, NULL, NULL);
 
-			//SendMessage(eProjectName, EM_LIMITTEXT, MAX_LINE, 0);
+			SendMessage(eSource, EM_LIMITTEXT, MAX_LINE, 0);
 			//if (wcslen(projectName) > 0)
-			//	SetWindowText(eProjectName, projectName);
+			//	SetWindowText(eSource, projectName);
 			centerWindow(hwnd);
 			break;
 		case WM_COMMAND:
 //			if (LOWORD(wParam) == ID_BUTTON_OK)
 //			{
 //				wchar_t newProjectName[MAX_LINE];
-//				GetWindowText(eProjectName, newProjectName, MAX_LINE);
+//				GetWindowText(eSource, newProjectName, MAX_LINE);
 //
 //				// blank project name
 //				if (wcslen(newProjectName) == 0)
@@ -966,6 +997,84 @@ static LRESULT CALLBACK customFolderPairProc(HWND hwnd, UINT msg, WPARAM wParam,
 	}
 
 	return CallWindowProc(originalFolderPairProc, hwnd, msg, wParam, lParam);
+}
+
+LRESULT CALLBACK customSourceListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
+		//case WM_LBUTTONDBLCLK:
+		//{
+		//	listboxDoubleClicked = true;
+		//	writeFileW(LOG_FILE, L"Listbox double clicked");
+
+			//int xPos = GET_X_LPARAM(lParam);
+			//int yPos = GET_Y_LPARAM(lParam);
+
+			//RECT rc;
+			//HWND h = GetDlgItem(lbProjectsHwnd, ID_LISTBOX_PROJECTS);
+			//GetWindowRect(h, &rc); //get window rect of control relative to screen
+			//POINT pt = {rc.left, rc.top}; //new point object using rect x, y
+			//ScreenToClient(lbProjectsHwnd, &pt);
+
+			//wchar_t buf[100] = {0};
+			//swprintf(buf, 100, L"xPos:%d yPos:%d dlg left:%d dlg top:%d", xPos, yPos, pt.x, pt.y);
+			//writeFileW(LOG_FILE, buf);
+
+
+			//addProjectName();
+
+		//}
+		//	break;
+		case WM_KEYUP:
+			switch (wParam)
+			{
+				case VK_ESCAPE:
+					shutDown();
+					break;
+			}
+			break;
+	}
+	return CallWindowProc(originalSourceListboxProc, hwnd, msg, wParam, lParam);
+}
+
+LRESULT CALLBACK customDestinationListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
+		//case WM_LBUTTONDBLCLK:
+		//{
+		//	listboxDoubleClicked = true;
+		//	writeFileW(LOG_FILE, L"Listbox double clicked");
+
+			//int xPos = GET_X_LPARAM(lParam);
+			//int yPos = GET_Y_LPARAM(lParam);
+
+			//RECT rc;
+			//HWND h = GetDlgItem(lbProjectsHwnd, ID_LISTBOX_PROJECTS);
+			//GetWindowRect(h, &rc); //get window rect of control relative to screen
+			//POINT pt = {rc.left, rc.top}; //new point object using rect x, y
+			//ScreenToClient(lbProjectsHwnd, &pt);
+
+			//wchar_t buf[100] = {0};
+			//swprintf(buf, 100, L"xPos:%d yPos:%d dlg left:%d dlg top:%d", xPos, yPos, pt.x, pt.y);
+			//writeFileW(LOG_FILE, buf);
+
+
+			//addProjectName();
+
+		//}
+		//	break;
+		case WM_KEYUP:
+			switch (wParam)
+			{
+				case VK_ESCAPE:
+					shutDown();
+					break;
+			}
+			break;
+	}
+	return CallWindowProc(originalDestinationListboxProc, hwnd, msg, wParam, lParam);
 }
 
 static void shutDown(void)
