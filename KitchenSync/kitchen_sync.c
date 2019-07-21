@@ -11,26 +11,26 @@
 #define WINDOW_HEIGHT 1024
 #define WINDOW_HEIGHT_MINIMUM 200
 #define ID_LISTBOX_PROJECTS 20
-#define ID_LISTBOX_PAIRS 21
-#define ID_LISTBOX_SOURCE 22
-#define ID_LISTBOX_DEST 23
+#define ID_LISTBOX_PAIRS_SOURCE 21
+#define ID_LISTBOX_PAIRS_DEST 22
+#define ID_LISTBOX_SYNC 23
+#define ID_LISTBOX_ADD_SOURCE 24
+#define ID_LISTBOX_ADD_DEST 25
 #define ID_BUTTON_PREVIEW 30
 #define ID_BUTTON_SYNC 31
 #define ID_BUTTON_ADD_PROJECT 32
-#define ID_BUTTON_ADD_FOLDERS 33
+#define ID_BUTTON_ADD_FOLDER_PAIR 33
 #define ID_BUTTON_ADD_PAIR 34
-#define ID_BUTTON_OK 35
-#define ID_BUTTON_CANCEL 36
-#define ID_BUTTON_DELETE 37
-#define ID_ADD_PROJECT_NAME_LABEL 40
-#define ID_ADD_PROJECT_NAME_TEXT 41
-#define ID_PAIR_SOURCE_LABEL 42
-#define ID_PAIR_SOURCE_TEXT 43
-#define ID_PAIR_LISTBOX_SOURCE 44
-#define ID_PAIR_DESTINATION_LABEL 45
-#define ID_PAIR_DESTINATION_TEXT 46
-#define ID_PAIR_LISTBOX_DESTINATION 47
-#define ID_PAIR_BUTTON_ADD 48
+#define ID_BUTTON_PAIR_ADD 35
+#define ID_BUTTON_OK 36
+#define ID_BUTTON_CANCEL 37
+#define ID_BUTTON_DELETE 38
+#define ID_LABEL_ADD_PROJECT_NAME 40
+#define ID_LABEL_PAIR_SOURCE 41
+#define ID_LABEL_PAIR_DEST 42
+#define ID_EDIT_ADD_PROJECT_NAME 43
+#define ID_EDIT_PAIR_SOURCE 44
+#define ID_EDIT_PAIR_DEST 45
 #define ID_PROGRESS_BAR 50
 #define ID_TIMER1 51
 
@@ -136,6 +136,7 @@ static bool isProjectName(wchar_t *, int);
 static bool showingFolderPair = false;
 static bool showingProjectName = false;
 static wchar_t projectName[MAX_LINE] = {0};
+static wchar_t folderPair[MAX_LINE] = {0};
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
 {
@@ -254,7 +255,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			bAddFolders = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add Folder Pair",
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_DISABLED,
-				140, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_ADD_FOLDERS, NULL, NULL);
+				140, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_ADD_FOLDER_PAIR, NULL, NULL);
 
 			bDelete = CreateWindowEx(WS_EX_LEFT, L"Button", L"Delete",
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_DISABLED,
@@ -269,13 +270,13 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			// source listbox
 			lbSourceHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
-				10, 80, (rc.right / 2)-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_SOURCE, NULL, NULL);
+				10, 80, (rc.right / 2)-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_PAIRS_SOURCE, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbSourceHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
 			// destination listbox
 			lbDestHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
-				(rc.right / 2)+5, 80, (rc.right / 2)-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_DEST, NULL, NULL);
+				(rc.right / 2)+5, 80, (rc.right / 2)-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_PAIRS_DEST, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbDestHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
 			bAddPair = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add Pair",
@@ -287,7 +288,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			// listbox
 			lbPairsHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
-				10, 80, rc.right-20, rc.bottom-110, hwnd, (HMENU)ID_LISTBOX_PAIRS, NULL, NULL);
+				10, 80, rc.right-20, rc.bottom-110, hwnd, (HMENU)ID_LISTBOX_SYNC, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbPairsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
 			bSync = CreateWindowEx(WS_EX_LEFT, L"Button", L"Sync",
@@ -312,6 +313,9 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						case 0: // projects
 						{
 							clearArrayW(projectName, MAX_LINE);
+							clearArrayW(folderPair, MAX_LINE);
+							SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
+							SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
 							ShowWindow(lbProjectsHwnd, SW_SHOW);
 							ShowWindow(lbPairsHwnd, SW_HIDE);
 							ShowWindow(lbSourceHwnd, SW_HIDE);
@@ -410,15 +414,46 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							}
 							else
 							{
+								wcscpy_s(folderPair, MAX_LINE, selectedRowText);
+
+								// look backwards to find project name
+								LRESULT projectPosition = selectedRow;
+								bool found = false;
+								do
+								{
+									textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, --projectPosition, (LPARAM)selectedRowText);
+									if (isProjectName(selectedRowText, textLen))
+									{
+										wcscpy_s(projectName, MAX_LINE, selectedRowText);
+										found = true;
+									}
+								}
+								while (!found && projectPosition >= 0);
+
+								// change to folder pair tab and populate listboxes, then edit selected pair
 								SendMessage(tabHwnd, TCM_SETCURFOCUS, 1, 0);
-								//editFolderPair();
+								int position = 0;
+								struct ProjectNode *current = projectsHead;
+
+								while (current != NULL)
+								{
+									// add all folder pairs from current project
+									if (wcscmp(projectName, current->project.name) == 0)
+									{
+										SendMessage(lbSourceHwnd, LB_ADDSTRING, position, (LPARAM)current->project.pair.source);
+										SendMessage(lbDestHwnd, LB_ADDSTRING, position++, (LPARAM)current->project.pair.destination);
+									}
+									current = current->next;
+								}
+
+								addFolderPair();
 							}
 						}
 					}
 				}
 			}
 
-			if (LOWORD(wParam) == ID_LISTBOX_PAIRS)
+			if (LOWORD(wParam) == ID_LISTBOX_SYNC)
 			{
 				// a row was selected
 				if (HIWORD(wParam) == LBN_SELCHANGE)
@@ -448,7 +483,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				getProjectName();
 			}
 
-			if (LOWORD(wParam) == ID_BUTTON_ADD_FOLDERS)
+			if (LOWORD(wParam) == ID_BUTTON_ADD_FOLDER_PAIR)
 			{
 #if DEV_MODE
 				writeFileW(LOG_FILE, L"add folder pair");
@@ -460,49 +495,40 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					wchar_t selectedRowText[MAX_LINE] = {0};
 					int textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
-					if (textLen > 0)
+					if (textLen > 0 && isProjectName(selectedRowText, textLen))
 					{
-						if (isProjectName(selectedRowText, textLen))
-						{
-							wcscpy_s(projectName, MAX_LINE, selectedRowText);
+						wcscpy_s(projectName, MAX_LINE, selectedRowText);
 #if DEV_MODE
-							wchar_t buf[100] = {0};
-							swprintf(buf, 100, L"Selected project name: %s", projectName);
-							writeFileW(LOG_FILE, buf);
+						wchar_t buf[100] = {0};
+						swprintf(buf, 100, L"Selected project name: %s", projectName);
+						writeFileW(LOG_FILE, buf);
 #endif
-							SendMessage(tabHwnd, TCM_SETCURFOCUS, 1, 0);
+						// change to folder pair tab and populate listboxes
+						SendMessage(tabHwnd, TCM_SETCURFOCUS, 1, 0);
+						int position = 0;
+						struct ProjectNode *current = projectsHead;
+
+						while (current != NULL)
+						{
+							// add all folder pairs from current project
+							if (wcscmp(projectName, current->project.name) == 0)
+							{
+								SendMessage(lbSourceHwnd, LB_ADDSTRING, position, (LPARAM)current->project.pair.source);
+								SendMessage(lbDestHwnd, LB_ADDSTRING, position++, (LPARAM)current->project.pair.destination);
+							}
+							current = current->next;
 						}
+
+						addFolderPair();
 					}
-					//TODO show add pair window
 				}
-
-/*				wchar_t szFileName[MAX_LINE] = {0};
-
-				OPENFILENAME ofn = {0};
-				ofn.lStructSize = sizeof(ofn);
-				ofn.hwndOwner = hwnd;
-				ofn.lpstrFilter = L"Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0";
-				ofn.lpstrFile = szFileName;
-				ofn.nMaxFile = MAX_LINE;
-				ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_NOCHANGEDIR;
-				ofn.lpstrDefExt = L"txt";
-
-				if (GetOpenFileName(&ofn))
-				{
-					//MessageBox(NULL, ofn.lpstrFile, L"Name", MB_ICONEXCLAMATION | MB_OK);
-					wchar_t buf[MAX_LINE] = {0};
-					swprintf(buf, MAX_LINE, L"%s", ofn.lpstrFile);
-					writeFileW(LOG_FILE, buf);
-				}
-				else
-				{
-					writeFileW(LOG_FILE, L"Read failed");
-				}*/
 			}
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PAIR)
 			{
+#if DEV_MODE
 				writeFileW(LOG_FILE, L"add pair");
+#endif
 				addFolderPair();
 			}
 
@@ -548,23 +574,6 @@ LRESULT CALLBACK customListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 		//{
 		//	listboxDoubleClicked = true;
 		//	writeFileW(LOG_FILE, L"Listbox double clicked");
-
-			//int xPos = GET_X_LPARAM(lParam);
-			//int yPos = GET_Y_LPARAM(lParam);
-
-			//RECT rc;
-			//HWND h = GetDlgItem(lbProjectsHwnd, ID_LISTBOX_PROJECTS);
-			//GetWindowRect(h, &rc); //get window rect of control relative to screen
-			//POINT pt = {rc.left, rc.top}; //new point object using rect x, y
-			//ScreenToClient(lbProjectsHwnd, &pt);
-
-			//wchar_t buf[100] = {0};
-			//swprintf(buf, 100, L"xPos:%d yPos:%d dlg left:%d dlg top:%d", xPos, yPos, pt.x, pt.y);
-			//writeFileW(LOG_FILE, buf);
-
-
-			//addProjectName();
-
 		//}
 		//	break;
 		case WM_KEYUP:
@@ -641,11 +650,11 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 
 			lProjectName = CreateWindowEx(WS_EX_LEFT, L"Static", L"Enter project name",
 				WS_VISIBLE | WS_CHILD,
-				10, 15, 150, 25, hwnd, (HMENU)ID_ADD_PROJECT_NAME_LABEL, NULL, NULL);
+				10, 15, 150, 25, hwnd, (HMENU)ID_LABEL_ADD_PROJECT_NAME, NULL, NULL);
 
 			eProjectName = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER,
-				140, 10, 170, 25, hwnd, (HMENU)ID_ADD_PROJECT_NAME_TEXT, NULL, NULL);
+				140, 10, 170, 25, hwnd, (HMENU)ID_EDIT_ADD_PROJECT_NAME, NULL, NULL);
 			originalProjectNameProc = (WNDPROC)SetWindowLongPtr(eProjectName, GWLP_WNDPROC, (LONG_PTR)customProjectNameProc);
 
 			bProjectNameOK = CreateWindowEx(WS_EX_LEFT, L"Button", L"OK",
@@ -838,137 +847,58 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 	switch (msg)
 	{
 		case WM_CREATE:
-			//SetTimer(hwnd, ID_TIMER1, 100, NULL);
 			lSource = CreateWindowEx(WS_EX_LEFT, L"Static", L"Source",
 				WS_VISIBLE | WS_CHILD,
-				10, 10, 80, 25, hwnd, (HMENU)ID_PAIR_SOURCE_LABEL, NULL, NULL);
+				10, 10, 80, 25, hwnd, (HMENU)ID_LABEL_PAIR_SOURCE, NULL, NULL);
 
 			eSource = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER,
-				10, 30, 370, 25, hwnd, (HMENU)ID_PAIR_SOURCE_TEXT, NULL, NULL);
+				10, 30, 370, 25, hwnd, (HMENU)ID_EDIT_PAIR_SOURCE, NULL, NULL);
 			originalFolderPairProc = (WNDPROC)SetWindowLongPtr(eSource, GWLP_WNDPROC, (LONG_PTR)customFolderPairProc);
 
 			lbPairSourceHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
-				10, 60, 370, 450, hwnd, (HMENU)ID_PAIR_LISTBOX_SOURCE, NULL, NULL);
+				10, 60, 370, 450, hwnd, (HMENU)ID_LISTBOX_ADD_SOURCE, NULL, NULL);
 			originalSourceListboxProc = (WNDPROC)SetWindowLongPtr(lbPairSourceHwnd, GWLP_WNDPROC, (LONG_PTR)customSourceListboxProc);
 
 			lDestination = CreateWindowEx(WS_EX_LEFT, L"Static", L"Destination",
 				WS_VISIBLE | WS_CHILD,
-				400, 10, 80, 25, hwnd, (HMENU)ID_PAIR_DESTINATION_LABEL, NULL, NULL);
+				400, 10, 80, 25, hwnd, (HMENU)ID_LABEL_PAIR_DEST, NULL, NULL);
 
 			eDestination = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER,
-				400, 30, 370, 25, hwnd, (HMENU)ID_PAIR_DESTINATION_TEXT, NULL, NULL);
+				400, 30, 370, 25, hwnd, (HMENU)ID_EDIT_PAIR_DEST, NULL, NULL);
 			originalFolderPairProc = (WNDPROC)SetWindowLongPtr(eDestination, GWLP_WNDPROC, (LONG_PTR)customFolderPairProc);
 
 			lbPairDestHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
-				400, 60, 370, 450, hwnd, (HMENU)ID_PAIR_LISTBOX_DESTINATION, NULL, NULL);
+				400, 60, 370, 450, hwnd, (HMENU)ID_LISTBOX_ADD_DEST, NULL, NULL);
 			originalDestinationListboxProc = (WNDPROC)SetWindowLongPtr(lbPairDestHwnd, GWLP_WNDPROC, (LONG_PTR)customDestinationListboxProc);
 
 			bFolderPairAdd = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add",
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
-				290, 520, 80, 25, hwnd, (HMENU)ID_PAIR_BUTTON_ADD, NULL, NULL);
+				290, 520, 80, 25, hwnd, (HMENU)ID_BUTTON_PAIR_ADD, NULL, NULL);
 
 			bFolderPairCancel = CreateWindowEx(WS_EX_LEFT, L"Button", L"Cancel",
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
 				410, 520, 80, 25, hwnd, (HMENU)ID_BUTTON_CANCEL, NULL, NULL);
 
 			SendMessage(eSource, EM_LIMITTEXT, MAX_LINE, 0);
-			//if (wcslen(projectName) > 0)
-			//	SetWindowText(eSource, projectName);
 			centerWindow(hwnd);
 			break;
 		case WM_COMMAND:
-//			if (LOWORD(wParam) == ID_BUTTON_OK)
-//			{
-//				wchar_t newProjectName[MAX_LINE];
-//				GetWindowText(eSource, newProjectName, MAX_LINE);
-//
-//				// blank project name
-//				if (wcslen(newProjectName) == 0)
-//				{
-//					writeFileW(LOG_FILE, L"Blank name used");
-//					DestroyWindow(hwnd);
-//					break;
-//				}
-//
-//#if DEV_MODE
-//				wchar_t buf[100] = {0};
-//				swprintf(buf, 100, L"New project name: %s", newProjectName);
-//				writeFileW(LOG_FILE, buf);
-//#endif
-//
-//				// new project being added
-//				if (wcslen(newProjectName) > 0 && wcslen(projectName) == 0)
-//				{
-//					// check if pre-existing name used
-//					bool existing = false;
-//					struct ProjectNode *node = projectsHead;
-//					while (node != NULL)
-//					{
-//						if (wcscmp(node->project.name, newProjectName) == 0)
-//						{
-//							writeFileW(LOG_FILE, L"Pre-existing name used");
-//							existing = true;
-//							break;
-//						}
-//
-//						node = node->next;
-//					}
-//
-//					if (!existing)
-//					{
-//						writeFileW(LOG_FILE, L"New project added");
-//						struct Project project = {0};
-//						wcscpy_s(project.name, MAX_LINE, newProjectName);
-//						wcscpy_s(project.pair.source, MAX_LINE, L"source");
-//						wcscpy_s(project.pair.destination, MAX_LINE, L"destination");
-//
-//						//TODO how to handle the folder pair when adding a new project?
-//						// store project name and change tab to Add Folders
-//						// replace the "source" & "destination" pair or don't create them at all?
-//
-//						appendProjectNode(&projectsHead, project);
-//					}
-//				}
-//
-//				// existing project being renamed
-//				if (wcslen(newProjectName) > 0 && wcslen(projectName) > 0)
-//				{
-//					// replace all occurrences of old project name with new name
-//					struct ProjectNode *node = projectsHead;
-//					while (node != NULL)
-//					{
-//						if (wcscmp(node->project.name, projectName) == 0)
-//							wcscpy_s(node->project.name, MAX_LINE, newProjectName);
-//
-//						node = node->next;
-//					}
-//				}
-//
-//				SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
-//				sortProjectNodes(&projectsHead);
-//				fillListbox(&projectsHead);
-//				DestroyWindow(hwnd);
-//			}
+			if (LOWORD(wParam) == ID_BUTTON_PAIR_ADD)
+			{
+				DestroyWindow(hwnd);
+			}
 
 			if (LOWORD(wParam) == ID_BUTTON_CANCEL)
 			{
 				DestroyWindow(hwnd);
 			}
 			break;
-		//case WM_TIMER:
-		//	if (wParam == ID_TIMER1)
-		//	{
-		//		SetFocus(eProjectName);
-		//		KillTimer(hwnd, ID_TIMER1);
-		//	}
-		//	break;
 		case WM_DESTROY:
 			showingFolderPair = false;
-			//clearArrayW(projectName, MAX_LINE);
 			DestroyWindow(hwnd);
 			break;
 	}
@@ -1007,23 +937,6 @@ LRESULT CALLBACK customSourceListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
 		//{
 		//	listboxDoubleClicked = true;
 		//	writeFileW(LOG_FILE, L"Listbox double clicked");
-
-			//int xPos = GET_X_LPARAM(lParam);
-			//int yPos = GET_Y_LPARAM(lParam);
-
-			//RECT rc;
-			//HWND h = GetDlgItem(lbProjectsHwnd, ID_LISTBOX_PROJECTS);
-			//GetWindowRect(h, &rc); //get window rect of control relative to screen
-			//POINT pt = {rc.left, rc.top}; //new point object using rect x, y
-			//ScreenToClient(lbProjectsHwnd, &pt);
-
-			//wchar_t buf[100] = {0};
-			//swprintf(buf, 100, L"xPos:%d yPos:%d dlg left:%d dlg top:%d", xPos, yPos, pt.x, pt.y);
-			//writeFileW(LOG_FILE, buf);
-
-
-			//addProjectName();
-
 		//}
 		//	break;
 		case WM_KEYUP:
@@ -1046,23 +959,6 @@ LRESULT CALLBACK customDestinationListboxProc(HWND hwnd, UINT msg, WPARAM wParam
 		//{
 		//	listboxDoubleClicked = true;
 		//	writeFileW(LOG_FILE, L"Listbox double clicked");
-
-			//int xPos = GET_X_LPARAM(lParam);
-			//int yPos = GET_Y_LPARAM(lParam);
-
-			//RECT rc;
-			//HWND h = GetDlgItem(lbProjectsHwnd, ID_LISTBOX_PROJECTS);
-			//GetWindowRect(h, &rc); //get window rect of control relative to screen
-			//POINT pt = {rc.left, rc.top}; //new point object using rect x, y
-			//ScreenToClient(lbProjectsHwnd, &pt);
-
-			//wchar_t buf[100] = {0};
-			//swprintf(buf, 100, L"xPos:%d yPos:%d dlg left:%d dlg top:%d", xPos, yPos, pt.x, pt.y);
-			//writeFileW(LOG_FILE, buf);
-
-
-			//addProjectName();
-
 		//}
 		//	break;
 		case WM_KEYUP:
