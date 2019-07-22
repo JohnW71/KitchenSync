@@ -129,8 +129,10 @@ static void getProjectName(void);
 static void addFolderPair(void);
 static void fillListbox(struct ProjectNode **);
 static void sortProjectNodes(struct ProjectNode **);
+static void DisplayErrorBox(LPTSTR);
 static int countPairNodes(struct PairNode *);
 static int countProjectNodes(struct ProjectNode *);
+static int listDir(wchar_t *);
 static bool isProjectName(wchar_t *, int);
 
 static bool showingFolderPair = false;
@@ -382,6 +384,8 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				if (HIWORD(wParam) == LBN_SELCHANGE)
 				{
 					EnableWindow(bAddFolders, FALSE);
+					EnableWindow(bPreview, FALSE);
+					EnableWindow(bDelete, FALSE);
 
 					// get row index
 					LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
@@ -390,8 +394,14 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						wchar_t selectedRowText[MAX_LINE] = {0};
 						int textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
-						if (textLen > 0 && isProjectName(selectedRowText, textLen))
-							EnableWindow(bAddFolders, TRUE);
+						if (textLen > 0)
+						{
+							EnableWindow(bPreview, TRUE);
+							EnableWindow(bDelete, TRUE);
+
+							if (isProjectName(selectedRowText, textLen))
+								EnableWindow(bAddFolders, TRUE);
+						}
 					}
 				}
 
@@ -480,7 +490,8 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PROJECT)
 			{
-				getProjectName();
+				listDir(L"C:\\KitchenTest");
+				//getProjectName();
 			}
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_FOLDER_PAIR)
@@ -1686,4 +1697,68 @@ static void sortProjectNodes(struct ProjectNode **head_ref)
 		}
 	}
 	while (changed);
+}
+
+static int listDir(wchar_t *folder)
+{
+	DWORD dwError = 0;
+	WIN32_FIND_DATA ffd;
+
+	wchar_t szDir[MAX_LINE];
+	wcscpy_s(szDir, MAX_LINE, folder);
+	wcscat(szDir, L"\\*");
+
+	HANDLE hFind = INVALID_HANDLE_VALUE;
+	hFind = FindFirstFile(szDir, &ffd);
+
+	if (INVALID_HANDLE_VALUE == hFind)
+	{
+		DisplayErrorBox(TEXT("FindFirstFile"));
+		return dwError;
+	}
+
+	LARGE_INTEGER filesize;
+	do
+	{
+		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		{
+			wchar_t buf[MAX_LINE] = {0};
+			swprintf(buf, MAX_LINE, L"Dir: %s", ffd.cFileName);
+			writeFileW(LOG_FILE, buf);
+		}
+		else
+		{
+			filesize.LowPart = ffd.nFileSizeLow;
+			filesize.HighPart = ffd.nFileSizeHigh;
+
+			wchar_t buf[MAX_LINE] = {0};
+			swprintf(buf, MAX_LINE, L"File: %s, Size: %lld", ffd.cFileName, filesize.QuadPart);
+			writeFileW(LOG_FILE, buf);
+		}
+	}
+	while (FindNextFile(hFind, &ffd) != 0);
+
+	dwError = GetLastError();
+	if (dwError != ERROR_NO_MORE_FILES)
+		DisplayErrorBox(TEXT("FindFirstFile"));
+
+	FindClose(hFind);
+	return dwError;
+}
+
+static void DisplayErrorBox(LPTSTR lpszFunction)
+{
+	LPVOID lpMsgBuf;
+	LPVOID lpDisplayBuf;
+	DWORD dw = GetLastError();
+
+	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
+
+	lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
+	swprintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR), TEXT("%s failed with error %d: %s"), lpszFunction, dw, (LPTSTR)lpMsgBuf);
+	MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
+
+	LocalFree(lpMsgBuf);
+	LocalFree(lpDisplayBuf);
 }
