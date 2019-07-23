@@ -132,7 +132,7 @@ static void sortProjectNodes(struct ProjectNode **);
 static void DisplayErrorBox(LPTSTR);
 static int countPairNodes(struct PairNode *);
 static int countProjectNodes(struct ProjectNode *);
-static int listDir(wchar_t *);
+static int listDir(wchar_t *, HWND);
 static bool isProjectName(wchar_t *, int);
 
 static bool showingFolderPair = false;
@@ -490,8 +490,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PROJECT)
 			{
-				listDir(L"C:\\KitchenTest");
-				//getProjectName();
+				getProjectName();
 			}
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_FOLDER_PAIR)
@@ -896,6 +895,11 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 
 			SendMessage(eSource, EM_LIMITTEXT, MAX_LINE, 0);
 			centerWindow(hwnd);
+
+			SetWindowText(eSource, L"C:\\KitchenTest");
+			SetWindowText(eDestination, L"C:\\Games");
+			listDir(L"C:\\KitchenTest", lbPairSourceHwnd);
+			listDir(L"C:\\Games", lbPairDestHwnd);
 			break;
 		case WM_COMMAND:
 			if (LOWORD(wParam) == ID_BUTTON_PAIR_ADD)
@@ -1699,7 +1703,7 @@ static void sortProjectNodes(struct ProjectNode **head_ref)
 	while (changed);
 }
 
-static int listDir(wchar_t *folder)
+static int listDir(wchar_t *folder, HWND hwnd)
 {
 	DWORD dwError = 0;
 	WIN32_FIND_DATA ffd;
@@ -1717,7 +1721,8 @@ static int listDir(wchar_t *folder)
 		return dwError;
 	}
 
-	LARGE_INTEGER filesize;
+	int position = 0;
+	//LARGE_INTEGER filesize;
 	do
 	{
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
@@ -1725,16 +1730,18 @@ static int listDir(wchar_t *folder)
 			wchar_t buf[MAX_LINE] = {0};
 			swprintf(buf, MAX_LINE, L"Dir: %s", ffd.cFileName);
 			writeFileW(LOG_FILE, buf);
+			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)ffd.cFileName);
 		}
-		else
-		{
-			filesize.LowPart = ffd.nFileSizeLow;
-			filesize.HighPart = ffd.nFileSizeHigh;
+		//else
+		//{
+		//	filesize.LowPart = ffd.nFileSizeLow;
+		//	filesize.HighPart = ffd.nFileSizeHigh;
 
-			wchar_t buf[MAX_LINE] = {0};
-			swprintf(buf, MAX_LINE, L"File: %s, Size: %lld", ffd.cFileName, filesize.QuadPart);
-			writeFileW(LOG_FILE, buf);
-		}
+		//	wchar_t buf[MAX_LINE] = {0};
+		//	swprintf(buf, MAX_LINE, L"File: %s, Size: %lld", ffd.cFileName, filesize.QuadPart);
+		//	writeFileW(LOG_FILE, buf);
+		//	SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)ffd.cFileName);
+		//}
 	}
 	while (FindNextFile(hFind, &ffd) != 0);
 
