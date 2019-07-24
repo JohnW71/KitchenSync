@@ -463,6 +463,84 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 			}
 
+			if (LOWORD(wParam) == ID_LISTBOX_PAIRS_SOURCE)
+			{
+				// a row was selected
+				if (HIWORD(wParam) == LBN_SELCHANGE)
+				{
+					// get row index
+					LRESULT selectedRow = SendMessage(lbSourceHwnd, LB_GETCURSEL, 0, 0);
+					if (selectedRow != LB_ERR)
+					{
+						//TODO store selected row in case of Del key?
+						wchar_t selectedRowText[MAX_LINE] = {0};
+						int textLen = (int)SendMessage(lbSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+						if (textLen > 0)
+						{
+							//TODO
+						}
+					}
+				}
+
+				// a row was double-clicked
+				if (HIWORD(wParam) == LBN_DBLCLK)
+				{
+					// get row index
+					LRESULT selectedRow = SendMessage(lbSourceHwnd, LB_GETCURSEL, 0, 0);
+					if (selectedRow != LB_ERR)
+					{
+						//TODO edit folder pair
+						wchar_t selectedRowText[MAX_LINE] = {0};
+						int textLen = (int)SendMessage(lbSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+						if (textLen > 0)
+						{
+							//TODO
+						}
+					}
+				}
+			}
+
+			if (LOWORD(wParam) == ID_LISTBOX_PAIRS_DEST)
+			{
+				// a row was selected
+				if (HIWORD(wParam) == LBN_SELCHANGE)
+				{
+					// get row index
+					LRESULT selectedRow = SendMessage(lbDestHwnd, LB_GETCURSEL, 0, 0);
+					if (selectedRow != LB_ERR)
+					{
+						//TODO store selected row in case of Del key?
+						wchar_t selectedRowText[MAX_LINE] = {0};
+						int textLen = (int)SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+						if (textLen > 0)
+						{
+							//TODO
+						}
+					}
+				}
+
+				// a row was double-clicked
+				if (HIWORD(wParam) == LBN_DBLCLK)
+				{
+					// get row index
+					LRESULT selectedRow = SendMessage(lbDestHwnd, LB_GETCURSEL, 0, 0);
+					if (selectedRow != LB_ERR)
+					{
+						//TODO edit folder pair
+						wchar_t selectedRowText[MAX_LINE] = {0};
+						int textLen = (int)SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+						if (textLen > 0)
+						{
+							//TODO
+						}
+					}
+				}
+			}
+
 			if (LOWORD(wParam) == ID_LISTBOX_SYNC)
 			{
 				// a row was selected
@@ -472,7 +550,14 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					LRESULT selectedRow = SendMessage(lbPairsHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						// store selected row in case of Del key?
+						//TODO store selected row in case of Del key?
+						wchar_t selectedRowText[MAX_LINE] = {0};
+						int textLen = (int)SendMessage(lbPairSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+						if (textLen > 0)
+						{
+							//TODO
+						}
 					}
 				}
 
@@ -483,7 +568,14 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					LRESULT selectedRow = SendMessage(lbPairsHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						// edit file pair
+						//TODO edit file pair
+						wchar_t selectedRowText[MAX_LINE] = {0};
+						int textLen = (int)SendMessage(lbPairSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+						if (textLen > 0)
+						{
+							//TODO
+						}
 					}
 				}
 			}
@@ -862,7 +954,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 				10, 10, 80, 25, hwnd, (HMENU)ID_LABEL_PAIR_SOURCE, NULL, NULL);
 
 			eSource = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
-				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER,
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL,
 				10, 30, 370, 25, hwnd, (HMENU)ID_EDIT_PAIR_SOURCE, NULL, NULL);
 			originalFolderPairProc = (WNDPROC)SetWindowLongPtr(eSource, GWLP_WNDPROC, (LONG_PTR)customFolderPairProc);
 
@@ -876,7 +968,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 				400, 10, 80, 25, hwnd, (HMENU)ID_LABEL_PAIR_DEST, NULL, NULL);
 
 			eDestination = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
-				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER,
+				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL,
 				400, 30, 370, 25, hwnd, (HMENU)ID_EDIT_PAIR_DEST, NULL, NULL);
 			originalFolderPairProc = (WNDPROC)SetWindowLongPtr(eDestination, GWLP_WNDPROC, (LONG_PTR)customFolderPairProc);
 
@@ -894,16 +986,111 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 				410, 520, 80, 25, hwnd, (HMENU)ID_BUTTON_CANCEL, NULL, NULL);
 
 			SendMessage(eSource, EM_LIMITTEXT, MAX_LINE, 0);
+			SendMessage(eDestination, EM_LIMITTEXT, MAX_LINE, 0);
 			centerWindow(hwnd);
 
+			//TODO load folder contents based on selected pair
 			SetWindowText(eSource, L"C:\\KitchenTest");
 			SetWindowText(eDestination, L"C:\\Games");
 			listDir(L"C:\\KitchenTest", lbPairSourceHwnd);
 			listDir(L"C:\\Games", lbPairDestHwnd);
 			break;
 		case WM_COMMAND:
+			if (LOWORD(wParam) == ID_LISTBOX_ADD_SOURCE)
+			{
+				// a row was selected
+				if (HIWORD(wParam) == LBN_SELCHANGE)
+				{
+					// get row index
+					LRESULT selectedRow = SendMessage(lbPairSourceHwnd, LB_GETCURSEL, 0, 0);
+					if (selectedRow != LB_ERR)
+					{
+						//TODO store selected row in case of Add
+						wchar_t selectedRowText[MAX_LINE] = {0};
+						int textLen = (int)SendMessage(lbPairSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+						if (textLen > 0)
+						{
+							//TODO
+						}
+					}
+				}
+
+				// a row was double-clicked
+				if (HIWORD(wParam) == LBN_DBLCLK)
+				{
+					// get row index
+					LRESULT selectedRow = SendMessage(lbPairSourceHwnd, LB_GETCURSEL, 0, 0);
+					if (selectedRow != LB_ERR)
+					{
+						//TODO change to selected folder and load contents
+						wchar_t selectedRowText[MAX_LINE] = {0};
+						int textLen = (int)SendMessage(lbPairSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+						if (textLen > 0)
+						{
+							//TODO handle .. edit box is not updated
+							wchar_t folder[MAX_LINE] = {0};
+							GetWindowText(eSource, folder, MAX_LINE);
+							wcscat(folder, L"\\");
+							wcscat(folder, selectedRowText);
+							SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
+							listDir(folder, lbPairSourceHwnd);
+							SetWindowText(eSource, folder);
+						}
+					}
+				}
+			}
+
+			if (LOWORD(wParam) == ID_LISTBOX_ADD_DEST)
+			{
+				// a row was selected
+				if (HIWORD(wParam) == LBN_SELCHANGE)
+				{
+					// get row index
+					LRESULT selectedRow = SendMessage(lbPairDestHwnd, LB_GETCURSEL, 0, 0);
+					if (selectedRow != LB_ERR)
+					{
+						//TODO store selected row in case of Add
+						wchar_t selectedRowText[MAX_LINE] = {0};
+						int textLen = (int)SendMessage(lbPairDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+						if (textLen > 0)
+						{
+							//TODO
+						}
+					}
+				}
+
+				// a row was double-clicked
+				if (HIWORD(wParam) == LBN_DBLCLK)
+				{
+					// get row index
+					LRESULT selectedRow = SendMessage(lbPairDestHwnd, LB_GETCURSEL, 0, 0);
+					if (selectedRow != LB_ERR)
+					{
+						//TODO change to selected folder and load contents
+						wchar_t selectedRowText[MAX_LINE] = {0};
+						int textLen = (int)SendMessage(lbPairDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+						if (textLen > 0)
+						{
+							//TODO handle ..
+							wchar_t folder[MAX_LINE] = {0};
+							GetWindowText(eDestination, folder, MAX_LINE);
+							wcscat(folder, L"\\");
+							wcscat(folder, selectedRowText);
+							SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
+							listDir(folder, lbPairDestHwnd);
+							SetWindowText(eDestination, folder);
+						}
+					}
+				}
+			}
+
 			if (LOWORD(wParam) == ID_BUTTON_PAIR_ADD)
 			{
+				//TODO add new pair
 				DestroyWindow(hwnd);
 			}
 
@@ -930,9 +1117,9 @@ static LRESULT CALLBACK customFolderPairProc(HWND hwnd, UINT msg, WPARAM wParam,
 				case VK_ESCAPE:
 					DestroyWindow(folderPairHwnd);
 					break;
-				//case VK_RETURN:
-				//	SendMessage(bProjectNameOK, BM_CLICK, 0, 0);
-				//	break;
+				case VK_RETURN:
+					//TODO change to directory
+					break;
 				case 'A': // CTRL A
 					if (GetAsyncKeyState(VK_CONTROL))
 						SendMessage(hwnd, EM_SETSEL, 0, -1);
@@ -950,7 +1137,6 @@ LRESULT CALLBACK customSourceListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
 	{
 		//case WM_LBUTTONDBLCLK:
 		//{
-		//	listboxDoubleClicked = true;
 		//	writeFileW(LOG_FILE, L"Listbox double clicked");
 		//}
 		//	break;
@@ -958,7 +1144,7 @@ LRESULT CALLBACK customSourceListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
 			switch (wParam)
 			{
 				case VK_ESCAPE:
-					shutDown();
+					DestroyWindow(folderPairHwnd);
 					break;
 			}
 			break;
@@ -966,13 +1152,13 @@ LRESULT CALLBACK customSourceListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
 	return CallWindowProc(originalSourceListboxProc, hwnd, msg, wParam, lParam);
 }
 
+//TODO this can be handled by source proc?
 LRESULT CALLBACK customDestinationListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
 		//case WM_LBUTTONDBLCLK:
 		//{
-		//	listboxDoubleClicked = true;
 		//	writeFileW(LOG_FILE, L"Listbox double clicked");
 		//}
 		//	break;
@@ -980,7 +1166,7 @@ LRESULT CALLBACK customDestinationListboxProc(HWND hwnd, UINT msg, WPARAM wParam
 			switch (wParam)
 			{
 				case VK_ESCAPE:
-					shutDown();
+					DestroyWindow(folderPairHwnd);
 					break;
 			}
 			break;
@@ -1727,6 +1913,9 @@ static int listDir(wchar_t *folder, HWND hwnd)
 	{
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
+			if (wcscmp(ffd.cFileName, L".") == 0)
+				continue;
+
 			wchar_t buf[MAX_LINE] = {0};
 			swprintf(buf, MAX_LINE, L"Dir: %s", ffd.cFileName);
 			writeFileW(LOG_FILE, buf);
