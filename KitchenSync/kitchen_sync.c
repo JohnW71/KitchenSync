@@ -132,13 +132,15 @@ static void sortProjectNodes(struct ProjectNode **);
 static void DisplayErrorBox(LPTSTR);
 static int countPairNodes(struct PairNode *);
 static int countProjectNodes(struct ProjectNode *);
-static int listDir(wchar_t *, HWND);
+static int listDir(HWND, wchar_t *);
 static bool isProjectName(wchar_t *, int);
 
 static bool showingFolderPair = false;
 static bool showingProjectName = false;
 static wchar_t projectName[MAX_LINE] = {0};
 static wchar_t folderPair[MAX_LINE] = {0};
+static wchar_t sourceFolder[MAX_LINE] = {0};
+static wchar_t destFolder[MAX_LINE] = {0};
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
 {
@@ -990,10 +992,13 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			centerWindow(hwnd);
 
 			//TODO load folder contents based on selected pair
-			SetWindowText(eSource, L"C:\\KitchenTest");
-			SetWindowText(eDestination, L"C:\\Games");
-			listDir(L"C:\\KitchenTest", lbPairSourceHwnd);
-			listDir(L"C:\\Games", lbPairDestHwnd);
+			wcscpy_s(sourceFolder, MAX_LINE, L"C:\\KitchenTest");
+			wcscpy_s(destFolder, MAX_LINE, L"C:\\Games");
+
+			SetWindowText(eSource, sourceFolder);
+			SetWindowText(eDestination, destFolder);
+			listDir(lbPairSourceHwnd, sourceFolder);
+			listDir(lbPairDestHwnd, destFolder);
 			break;
 		case WM_COMMAND:
 			if (LOWORD(wParam) == ID_LISTBOX_ADD_SOURCE)
@@ -1029,14 +1034,34 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 
 						if (textLen > 0)
 						{
-							//TODO handle .. edit box is not updated
-							wchar_t folder[MAX_LINE] = {0};
-							GetWindowText(eSource, folder, MAX_LINE);
-							wcscat(folder, L"\\");
-							wcscat(folder, selectedRowText);
+							wchar_t currentFolder[MAX_LINE] = {0};
+							wcscpy_s(currentFolder, MAX_LINE, sourceFolder);
+
+							if (wcscmp(selectedRowText, L"..") == 0)
+							{
+								size_t len = wcslen(sourceFolder);
+								while (sourceFolder[len] != '\\' && len > 0)
+									--len;
+
+								sourceFolder[len] = '\0';
+							}
+							else
+							{
+								GetWindowText(eSource, sourceFolder, MAX_LINE);
+								wcscat(sourceFolder, L"\\");
+								wcscat(sourceFolder, selectedRowText);
+							}
+
 							SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
-							listDir(folder, lbPairSourceHwnd);
-							SetWindowText(eSource, folder);
+							if (listDir(lbPairSourceHwnd, sourceFolder))
+								SetWindowText(eSource, sourceFolder);
+							else
+							{
+								//TODO handle errors properly
+								// if error, redisplay folder contents
+								SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
+								listDir(lbPairSourceHwnd, currentFolder);
+							}
 						}
 					}
 				}
@@ -1075,14 +1100,33 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 
 						if (textLen > 0)
 						{
-							//TODO handle ..
-							wchar_t folder[MAX_LINE] = {0};
-							GetWindowText(eDestination, folder, MAX_LINE);
-							wcscat(folder, L"\\");
-							wcscat(folder, selectedRowText);
+							wchar_t currentFolder[MAX_LINE] = {0};
+							wcscpy_s(currentFolder, MAX_LINE, destFolder);
+
+							if (wcscmp(selectedRowText, L"..") == 0)
+							{
+								size_t len = wcslen(destFolder);
+								while (destFolder[len] != '\\' && len > 0)
+									--len;
+
+								destFolder[len] = '\0';
+							}
+							else
+							{
+								GetWindowText(eDestination, destFolder, MAX_LINE);
+								wcscat(destFolder, L"\\");
+								wcscat(destFolder, selectedRowText);
+							}
+
 							SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
-							listDir(folder, lbPairDestHwnd);
-							SetWindowText(eDestination, folder);
+							if (listDir(lbPairDestHwnd, destFolder))
+								SetWindowText(eDestination, destFolder);
+							else
+							{
+								// if error, redisplay folder contents
+								SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
+								listDir(lbPairDestHwnd, currentFolder);
+							}
 						}
 					}
 				}
@@ -1889,7 +1933,7 @@ static void sortProjectNodes(struct ProjectNode **head_ref)
 	while (changed);
 }
 
-static int listDir(wchar_t *folder, HWND hwnd)
+static int listDir(HWND hwnd, wchar_t *folder)
 {
 	DWORD dwError = 0;
 	WIN32_FIND_DATA ffd;
@@ -1901,7 +1945,7 @@ static int listDir(wchar_t *folder, HWND hwnd)
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	hFind = FindFirstFile(szDir, &ffd);
 
-	if (INVALID_HANDLE_VALUE == hFind)
+	if (hFind == INVALID_HANDLE_VALUE)
 	{
 		DisplayErrorBox(TEXT("FindFirstFile"));
 		return dwError;
