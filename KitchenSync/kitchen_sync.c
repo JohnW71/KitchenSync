@@ -130,6 +130,7 @@ static void addFolderPair(void);
 static void fillListbox(struct ProjectNode **);
 static void sortProjectNodes(struct ProjectNode **);
 static void DisplayErrorBox(LPTSTR);
+static void findProjectName(HWND, LRESULT, wchar_t *);
 static int countPairNodes(struct PairNode *);
 static int countProjectNodes(struct ProjectNode *);
 static int listDir(HWND, wchar_t *);
@@ -344,6 +345,24 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							ShowWindow(bPreview, SW_HIDE);
 							ShowWindow(bSync, SW_HIDE);
 							ShowWindow(bDelete, SW_HIDE);
+
+							// if a project name is detected load the pairs
+							if (wcslen(projectName) > 0)
+							{
+								int position = 0;
+								struct ProjectNode *current = projectsHead;
+
+								while (current != NULL)
+								{
+									// add all folder pairs from current project
+									if (wcscmp(projectName, current->project.name) == 0)
+									{
+										SendMessage(lbSourceHwnd, LB_ADDSTRING, position, (LPARAM)current->project.pair.source);
+										SendMessage(lbDestHwnd, LB_ADDSTRING, position++, (LPARAM)current->project.pair.destination);
+									}
+									current = current->next;
+								}
+							}
 							break;
 						}
 						case 2: // sync
@@ -402,7 +421,15 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							EnableWindow(bDelete, TRUE);
 
 							if (isProjectName(selectedRowText, textLen))
+							{
+								wcscpy_s(projectName, MAX_LINE, selectedRowText);
 								EnableWindow(bAddFolders, TRUE);
+							}
+							else
+							{
+								wcscpy_s(folderPair, MAX_LINE, selectedRowText);
+								findProjectName(lbProjectsHwnd, selectedRow, selectedRowText);
+							}
 						}
 					}
 				}
@@ -427,37 +454,8 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							else
 							{
 								wcscpy_s(folderPair, MAX_LINE, selectedRowText);
-
-								// look backwards to find project name
-								LRESULT projectPosition = selectedRow;
-								bool found = false;
-								do
-								{
-									textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, --projectPosition, (LPARAM)selectedRowText);
-									if (isProjectName(selectedRowText, textLen))
-									{
-										wcscpy_s(projectName, MAX_LINE, selectedRowText);
-										found = true;
-									}
-								}
-								while (!found && projectPosition >= 0);
-
-								// change to folder pair tab and populate listboxes, then edit selected pair
+								findProjectName(lbProjectsHwnd, selectedRow, selectedRowText);
 								SendMessage(tabHwnd, TCM_SETCURFOCUS, 1, 0);
-								int position = 0;
-								struct ProjectNode *current = projectsHead;
-
-								while (current != NULL)
-								{
-									// add all folder pairs from current project
-									if (wcscmp(projectName, current->project.name) == 0)
-									{
-										SendMessage(lbSourceHwnd, LB_ADDSTRING, position, (LPARAM)current->project.pair.source);
-										SendMessage(lbDestHwnd, LB_ADDSTRING, position++, (LPARAM)current->project.pair.destination);
-									}
-									current = current->next;
-								}
-
 								addFolderPair();
 							}
 						}
@@ -1995,10 +1993,31 @@ static void DisplayErrorBox(LPTSTR lpszFunction)
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 		NULL, dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
 
-	lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
-	swprintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR), TEXT("%s failed with error %d: %s"), lpszFunction, dw, (LPTSTR)lpMsgBuf);
-	MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
+	lpDisplayBuf = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (lstrlen((LPCTSTR)lpMsgBuf) + (size_t)lstrlen((LPCTSTR)lpszFunction) + (size_t)40) * sizeof(TCHAR));
+	if (lpDisplayBuf)
+	{
+		swprintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR), TEXT("%s failed with error %lu: %s"), lpszFunction, dw, (LPTSTR)lpMsgBuf);
+		MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
+	}
 
-	LocalFree(lpMsgBuf);
-	LocalFree(lpDisplayBuf);
+	HeapFree(GetProcessHeap(), 0, lpMsgBuf);
+	HeapFree(GetProcessHeap(), 0, lpDisplayBuf);
+}
+
+// look backwards to find project name from selected pair
+static void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *selectedRowText)
+{
+	LRESULT projectPosition = selectedRow;
+	bool found = false;
+
+	do
+	{
+		int textLen = (int)SendMessage(hwnd, LB_GETTEXT, --projectPosition, (LPARAM)selectedRowText);
+		if (isProjectName(selectedRowText, textLen))
+		{
+			wcscpy_s(projectName, MAX_LINE, selectedRowText);
+			found = true;
+		}
+	}
+	while (!found && projectPosition >= 0);
 }
