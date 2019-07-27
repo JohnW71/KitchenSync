@@ -131,6 +131,7 @@ static void fillListbox(struct ProjectNode **);
 static void sortProjectNodes(struct ProjectNode **);
 static void DisplayErrorBox(LPTSTR);
 static void findProjectName(HWND, LRESULT, wchar_t *);
+static void reloadFolderPairs(void);
 static int countPairNodes(struct PairNode *);
 static int countProjectNodes(struct ProjectNode *);
 static int listDir(HWND, wchar_t *);
@@ -317,8 +318,11 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					{
 						case 0: // projects
 						{
-							clearArrayW(projectName, MAX_LINE);
+							//clearArrayW(projectName, MAX_LINE);
 							clearArrayW(folderPair, MAX_LINE);
+							clearArrayW(sourceFolder, MAX_LINE);
+							clearArrayW(destFolder, MAX_LINE);
+
 							SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
 							ShowWindow(lbProjectsHwnd, SW_SHOW);
@@ -344,25 +348,12 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							ShowWindow(bAddPair, SW_SHOW);
 							ShowWindow(bPreview, SW_HIDE);
 							ShowWindow(bSync, SW_HIDE);
-							ShowWindow(bDelete, SW_HIDE);
+							ShowWindow(bDelete, SW_SHOW);
 
 							// if a project name is detected load the pairs
 							if (wcslen(projectName) > 0)
-							{
-								int position = 0;
-								struct ProjectNode *current = projectsHead;
+								reloadFolderPairs();
 
-								while (current != NULL)
-								{
-									// add all folder pairs from current project
-									if (wcscmp(projectName, current->project.name) == 0)
-									{
-										SendMessage(lbSourceHwnd, LB_ADDSTRING, position, (LPARAM)current->project.pair.source);
-										SendMessage(lbDestHwnd, LB_ADDSTRING, position++, (LPARAM)current->project.pair.destination);
-									}
-									current = current->next;
-								}
-							}
 							break;
 						}
 						case 2: // sync
@@ -607,20 +598,6 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 #endif
 						// change to folder pair tab and populate listboxes
 						SendMessage(tabHwnd, TCM_SETCURFOCUS, 1, 0);
-						int position = 0;
-						struct ProjectNode *current = projectsHead;
-
-						while (current != NULL)
-						{
-							// add all folder pairs from current project
-							if (wcscmp(projectName, current->project.name) == 0)
-							{
-								SendMessage(lbSourceHwnd, LB_ADDSTRING, position, (LPARAM)current->project.pair.source);
-								SendMessage(lbDestHwnd, LB_ADDSTRING, position++, (LPARAM)current->project.pair.destination);
-							}
-							current = current->next;
-						}
-
 						addFolderPair();
 					}
 				}
@@ -632,6 +609,22 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				writeFileW(LOG_FILE, L"add pair");
 #endif
 				addFolderPair();
+			}
+
+			if (LOWORD(wParam) == ID_BUTTON_DELETE)
+			{
+				//TODO
+#if DEV_MODE
+				writeFileW(LOG_FILE, L"delete button");
+#endif
+			}
+
+			if (LOWORD(wParam) == ID_BUTTON_PREVIEW)
+			{
+				//TODO
+#if DEV_MODE
+				writeFileW(LOG_FILE, L"preview button");
+#endif
 			}
 
 			break;
@@ -656,6 +649,12 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_KEYUP:
 			switch (wParam)
 			{
+				case VK_DELETE:
+					//TODO
+#if DEV_MODE
+					writeFileW(LOG_FILE, L"Del key");
+#endif
+					break;
 				case VK_ESCAPE:
 					shutDown();
 					break;
@@ -802,6 +801,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 					{
 						if (wcscmp(node->project.name, newProjectName) == 0)
 						{
+							MessageBox(NULL, L"Project name already exists", L"Error", MB_ICONEXCLAMATION | MB_OK);
 							writeFileW(LOG_FILE, L"Pre-existing name used");
 							existing = true;
 							break;
@@ -815,14 +815,13 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 						writeFileW(LOG_FILE, L"New project added");
 						struct Project project = {0};
 						wcscpy_s(project.name, MAX_LINE, newProjectName);
-						wcscpy_s(project.pair.source, MAX_LINE, L"source");
-						wcscpy_s(project.pair.destination, MAX_LINE, L"destination");
-
-						//TODO how to handle the folder pair when adding a new project?
-						// store project name and change tab to Add Folders
-						// replace the "source" & "destination" pair or don't create them at all?
+						//wcscpy_s(project.pair.source, MAX_LINE, L"source");
+						//wcscpy_s(project.pair.destination, MAX_LINE, L"destination");
 
 						appendProjectNode(&projectsHead, project);
+						wcscpy_s(projectName, MAX_LINE, newProjectName);
+						SendMessage(tabHwnd, TCM_SETCURFOCUS, 1, 0);
+						addFolderPair();
 					}
 				}
 
@@ -989,35 +988,50 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			SendMessage(eDestination, EM_LIMITTEXT, MAX_LINE, 0);
 			centerWindow(hwnd);
 
-			//TODO load folder contents based on selected pair
-			wcscpy_s(sourceFolder, MAX_LINE, L"C:\\KitchenTest");
-			wcscpy_s(destFolder, MAX_LINE, L"C:\\Games");
+			// load current folder pair into listboxes
+			size_t length = wcslen(folderPair);
+			if (length > 0)
+			{
+				int pos = 0;
 
-			SetWindowText(eSource, sourceFolder);
-			SetWindowText(eDestination, destFolder);
-			listDir(lbPairSourceHwnd, sourceFolder);
-			listDir(lbPairDestHwnd, destFolder);
+				for (; pos < length; ++pos)
+					if (folderPair[pos] == '>')
+						break;
+
+				int sourceEnd = pos-2;
+				int destStart = pos+2;
+
+				wcsncpy_s(sourceFolder, MAX_LINE, folderPair, sourceEnd);
+				wcsncpy_s(destFolder, MAX_LINE, folderPair+destStart, length);
+
+				SetWindowText(eSource, sourceFolder);
+				SetWindowText(eDestination, destFolder);
+				listDir(lbPairSourceHwnd, sourceFolder);
+				listDir(lbPairDestHwnd, destFolder);
+			}
+
 			break;
 		case WM_COMMAND:
 			if (LOWORD(wParam) == ID_LISTBOX_ADD_SOURCE)
 			{
 				// a row was selected
-				if (HIWORD(wParam) == LBN_SELCHANGE)
-				{
-					// get row index
-					LRESULT selectedRow = SendMessage(lbPairSourceHwnd, LB_GETCURSEL, 0, 0);
-					if (selectedRow != LB_ERR)
-					{
-						//TODO store selected row in case of Add
-						wchar_t selectedRowText[MAX_LINE] = {0};
-						int textLen = (int)SendMessage(lbPairSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+				// do nothing when a row is only selected?
+				//if (HIWORD(wParam) == LBN_SELCHANGE)
+				//{
+				//	// get row index
+				//	LRESULT selectedRow = SendMessage(lbPairSourceHwnd, LB_GETCURSEL, 0, 0);
+				//	if (selectedRow != LB_ERR)
+				//	{
+				//		//TODO store selected row in case of Add
+				//		wchar_t selectedRowText[MAX_LINE] = {0};
+				//		int textLen = (int)SendMessage(lbPairSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
-						if (textLen > 0)
-						{
-							//TODO
-						}
-					}
-				}
+				//		if (textLen > 0)
+				//		{
+				//			//TODO
+				//		}
+				//	}
+				//}
 
 				// a row was double-clicked
 				if (HIWORD(wParam) == LBN_DBLCLK)
@@ -1035,6 +1049,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							wchar_t currentFolder[MAX_LINE] = {0};
 							wcscpy_s(currentFolder, MAX_LINE, sourceFolder);
 
+							// handle .. or get new folder name
 							if (wcscmp(selectedRowText, L"..") == 0)
 							{
 								size_t len = wcslen(sourceFolder);
@@ -1068,22 +1083,23 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			if (LOWORD(wParam) == ID_LISTBOX_ADD_DEST)
 			{
 				// a row was selected
-				if (HIWORD(wParam) == LBN_SELCHANGE)
-				{
-					// get row index
-					LRESULT selectedRow = SendMessage(lbPairDestHwnd, LB_GETCURSEL, 0, 0);
-					if (selectedRow != LB_ERR)
-					{
-						//TODO store selected row in case of Add
-						wchar_t selectedRowText[MAX_LINE] = {0};
-						int textLen = (int)SendMessage(lbPairDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+				// do nothing when a row is only selected?
+				//if (HIWORD(wParam) == LBN_SELCHANGE)
+				//{
+				//	// get row index
+				//	LRESULT selectedRow = SendMessage(lbPairDestHwnd, LB_GETCURSEL, 0, 0);
+				//	if (selectedRow != LB_ERR)
+				//	{
+				//		//TODO store selected row in case of Add
+				//		wchar_t selectedRowText[MAX_LINE] = {0};
+				//		int textLen = (int)SendMessage(lbPairDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
-						if (textLen > 0)
-						{
-							//TODO
-						}
-					}
-				}
+				//		if (textLen > 0)
+				//		{
+				//			//TODO
+				//		}
+				//	}
+				//}
 
 				// a row was double-clicked
 				if (HIWORD(wParam) == LBN_DBLCLK)
@@ -1101,6 +1117,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							wchar_t currentFolder[MAX_LINE] = {0};
 							wcscpy_s(currentFolder, MAX_LINE, destFolder);
 
+							// handle .. or get new folder name
 							if (wcscmp(selectedRowText, L"..") == 0)
 							{
 								size_t len = wcslen(destFolder);
@@ -1121,6 +1138,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 								SetWindowText(eDestination, destFolder);
 							else
 							{
+								//TODO handle errors properly
 								// if error, redisplay folder contents
 								SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
 								listDir(lbPairDestHwnd, currentFolder);
@@ -1132,8 +1150,24 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 
 			if (LOWORD(wParam) == ID_BUTTON_PAIR_ADD)
 			{
-				//TODO add new pair
+				GetWindowText(eSource, sourceFolder, MAX_LINE);
+				GetWindowText(eDestination, destFolder, MAX_LINE);
+
+				if (wcslen(sourceFolder) == 0 || wcslen(destFolder) == 0)
+					break;
+
+				struct Project project = {0};
+				wcscpy_s(project.name, MAX_LINE, projectName);
+				wcscpy_s(project.pair.source, MAX_LINE, sourceFolder);
+				wcscpy_s(project.pair.destination, MAX_LINE, destFolder);
+
+				appendProjectNode(&projectsHead, project);
 				DestroyWindow(hwnd);
+
+				// reload pairs listboxes
+				SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
+				SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
+				reloadFolderPairs();
 			}
 
 			if (LOWORD(wParam) == ID_BUTTON_CANCEL)
@@ -1595,8 +1629,12 @@ static void saveProjects(char *filename, struct ProjectNode **head_ref)
 			return;
 		}
 
-		swprintf(buf, MAX_LINE * 4, L"%s,%s,%s", current->project.name, current->project.pair.source, current->project.pair.destination);
-		writeFileW(PROJECTS, buf);
+		// don't save project with no pairs
+		if (wcslen(current->project.pair.source) > 0 && wcslen(current->project.pair.destination) > 0)
+		{
+			swprintf(buf, MAX_LINE * 4, L"%s,%s,%s", current->project.name, current->project.pair.source, current->project.pair.destination);
+			writeFileW(PROJECTS, buf);
+		}
 
 		swprintf(buf, MAX_LINE * 4, L"Name: %s, source: %s, dest: %s", current->project.name, current->project.pair.source, current->project.pair.destination);
 		writeFileW(LOG_FILE, buf);
@@ -2020,4 +2058,21 @@ static void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *selectedRow
 		}
 	}
 	while (!found && projectPosition >= 0);
+}
+
+static void reloadFolderPairs(void)
+{
+	int position = 0;
+	struct ProjectNode *current = projectsHead;
+
+	while (current != NULL)
+	{
+		// add all folder pairs from current project
+		if (wcscmp(projectName, current->project.name) == 0)
+		{
+			SendMessage(lbSourceHwnd, LB_ADDSTRING, position, (LPARAM)current->project.pair.source);
+			SendMessage(lbDestHwnd, LB_ADDSTRING, position++, (LPARAM)current->project.pair.destination);
+		}
+		current = current->next;
+	}
 }
