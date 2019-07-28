@@ -33,6 +33,10 @@
 #define ID_EDIT_PAIR_DEST 45
 #define ID_PROGRESS_BAR 50
 #define ID_TIMER1 51
+#define TAB_PROJECTS 0
+#define TAB_PAIRS 1
+#define TAB_SYNC 2
+#define TAB_SETTINGS 3
 
 #define arrayCount(array) (sizeof(array) / sizeof((array)[0]))
 
@@ -132,6 +136,8 @@ static void sortProjectNodes(struct ProjectNode **);
 static void DisplayErrorBox(LPTSTR);
 static void findProjectName(HWND, LRESULT, wchar_t *);
 static void reloadFolderPairs(void);
+static void deleteProject(struct ProjectNode **, wchar_t *);
+static void deleteFolderPair(struct ProjectNode **, wchar_t *);
 static int countPairNodes(struct PairNode *);
 static int countProjectNodes(struct ProjectNode *);
 static int listDir(HWND, wchar_t *);
@@ -446,7 +452,8 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 							{
 								wcscpy_s(folderPair, MAX_LINE, selectedRowText);
 								findProjectName(lbProjectsHwnd, selectedRow, selectedRowText);
-								SendMessage(tabHwnd, TCM_SETCURFOCUS, 1, 0);
+								SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_PAIRS, 0);
+								//TODO this should edit the selected pair
 								addFolderPair();
 							}
 						}
@@ -469,7 +476,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 						if (textLen > 0)
 						{
-							//TODO
+
 						}
 					}
 				}
@@ -487,7 +494,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 						if (textLen > 0)
 						{
-							//TODO
+
 						}
 					}
 				}
@@ -508,7 +515,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 						if (textLen > 0)
 						{
-							//TODO
+
 						}
 					}
 				}
@@ -526,7 +533,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 						if (textLen > 0)
 						{
-							//TODO
+
 						}
 					}
 				}
@@ -547,7 +554,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 						if (textLen > 0)
 						{
-							//TODO
+
 						}
 					}
 				}
@@ -565,7 +572,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 						if (textLen > 0)
 						{
-							//TODO
+
 						}
 					}
 				}
@@ -597,7 +604,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						writeFileW(LOG_FILE, buf);
 #endif
 						// change to folder pair tab and populate listboxes
-						SendMessage(tabHwnd, TCM_SETCURFOCUS, 1, 0);
+						SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_PAIRS, 0);
 						addFolderPair();
 					}
 				}
@@ -613,10 +620,36 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			if (LOWORD(wParam) == ID_BUTTON_DELETE)
 			{
-				//TODO
 #if DEV_MODE
-				writeFileW(LOG_FILE, L"delete button");
+				writeFileW(LOG_FILE, L"Delete project/pair");
 #endif
+				// get row index
+				LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
+				if (selectedRow != LB_ERR)
+				{
+					wchar_t selectedRowText[MAX_LINE] = {0};
+					int textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+					if (textLen > 0)
+					{
+						if (isProjectName(selectedRowText, textLen))
+						{
+							// delete whole project
+							deleteProject(&projectsHead, selectedRowText);
+						}
+						else
+						{
+							// delete folder pair
+							wchar_t folderPair[MAX_LINE];
+							wcscpy_s(folderPair, MAX_LINE, selectedRowText);
+							findProjectName(lbProjectsHwnd, selectedRow, selectedRowText);
+							deleteFolderPair(&projectsHead, folderPair);
+						}
+
+						SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
+						fillListbox(&projectsHead);
+					}
+				}
 			}
 
 			if (LOWORD(wParam) == ID_BUTTON_PREVIEW)
@@ -812,16 +845,15 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 
 					if (!existing)
 					{
+#if DEV_MODE
 						writeFileW(LOG_FILE, L"New project added");
+#endif
 						struct Project project = {0};
 						wcscpy_s(project.name, MAX_LINE, newProjectName);
-						//wcscpy_s(project.pair.source, MAX_LINE, L"source");
-						//wcscpy_s(project.pair.destination, MAX_LINE, L"destination");
-
+						wcscpy_s(project.pair.source, MAX_LINE, L"C:");
+						wcscpy_s(project.pair.destination, MAX_LINE, L"C:");
 						appendProjectNode(&projectsHead, project);
-						wcscpy_s(projectName, MAX_LINE, newProjectName);
-						SendMessage(tabHwnd, TCM_SETCURFOCUS, 1, 0);
-						addFolderPair();
+						clearArrayW(projectName, MAX_LINE);
 					}
 				}
 
@@ -842,6 +874,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 				SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
 				sortProjectNodes(&projectsHead);
 				fillListbox(&projectsHead);
+				clearArrayW(projectName, MAX_LINE);
 				DestroyWindow(hwnd);
 			}
 
@@ -859,7 +892,6 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 			break;
 		case WM_DESTROY:
 			showingProjectName = false;
-			clearArrayW(projectName, MAX_LINE);
 			DestroyWindow(hwnd);
 			break;
 	}
@@ -1040,7 +1072,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 					LRESULT selectedRow = SendMessage(lbPairSourceHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						//TODO change to selected folder and load contents
+						// change to selected folder and load contents
 						wchar_t selectedRowText[MAX_LINE] = {0};
 						int textLen = (int)SendMessage(lbPairSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
@@ -1108,7 +1140,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 					LRESULT selectedRow = SendMessage(lbPairDestHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						//TODO change to selected folder and load contents
+						// change to selected folder and load contents
 						wchar_t selectedRowText[MAX_LINE] = {0};
 						int textLen = (int)SendMessage(lbPairDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
@@ -1566,6 +1598,10 @@ static void loadProjects(char *filename, struct ProjectNode **head_ref)
 
 static void fillListbox(struct ProjectNode **head_ref)
 {
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"fillListbox()");
+#endif
+
 	// populate listbox
 	wchar_t *currentProjectName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 	if (!currentProjectName)
@@ -1760,6 +1796,79 @@ static void appendProjectNode(struct ProjectNode **head_ref, struct Project proj
 	last->next = newProjectNode;
 }
 
+// delete entire project by name
+static void deleteProject(struct ProjectNode **head_ref, wchar_t *projectName)
+{
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"deleteProject()");
+#endif
+
+	sortProjectNodes(&projectsHead);
+	struct ProjectNode *current = *head_ref;
+	int i = 0;
+
+	do
+	{
+		if (wcscmp(current->project.name, projectName) == 0)
+		{
+			deleteProjectNode(head_ref, i);
+			if (*head_ref != NULL)
+				current = *head_ref;
+			i = 0;
+		}
+		else
+		{
+			current = current->next;
+			++i;
+		}
+	}
+	while (*head_ref != NULL && current != NULL);
+}
+
+// delete folder pair by name
+static void deleteFolderPair(struct ProjectNode **head_ref, wchar_t *folderPair)
+{
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"deleteFolderPair()");
+#endif
+
+	sortProjectNodes(&projectsHead);
+	size_t length = wcslen(folderPair);
+
+	if (length > 0)
+	{
+		int pos = 0;
+		for (; pos < length; ++pos)
+			if (folderPair[pos] == '>')
+				break;
+
+		int sourceEnd = pos - 2;
+		int destStart = pos + 2;
+		wchar_t src[MAX_LINE] = {0};
+		wchar_t dst[MAX_LINE] = {0};
+
+		wcsncpy_s(src, MAX_LINE, folderPair, sourceEnd);
+		wcsncpy_s(dst, MAX_LINE, folderPair + destStart, length);
+
+		struct ProjectNode *current = *head_ref;
+		int i = 0;
+
+		while (*head_ref != NULL && current != NULL)
+		{
+			if (wcscmp(current->project.name, projectName) == 0 && 
+				wcscmp(current->project.pair.source, src) == 0 && 
+				wcscmp(current->project.pair.destination, dst) == 0)
+			{
+				deleteProjectNode(head_ref, i);
+				return;
+			}
+
+			current = current->next;
+			++i;
+		}
+	}
+}
+
 #if 0
 // Given a reference (pointer to pointer) to the head of a list
 // and a position, deletes the node at the given position
@@ -1797,6 +1906,7 @@ static void deletePairNode(struct PairNode **head_ref, int position)
 	// link to next node
 	temp->next = next;
 }
+#endif
 
 // Given a reference (pointer to pointer) to the head of a list
 // and a position, deletes the node at the given position
@@ -1835,6 +1945,7 @@ static void deleteProjectNode(struct ProjectNode **head_ref, int position)
 	temp->next = next;
 }
 
+#if 0
 // delete the entire linked list
 static void deletePairList(struct PairNode **head_ref)
 {
@@ -1868,11 +1979,14 @@ static void deleteProjectList(struct ProjectNode **head_ref)
 
 	*head_ref = NULL;
 }
-#endif
 
 // count nodes in list
 static int countPairNodes(struct PairNode *head)
 {
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"countPairNodes()");
+#endif
+
 	int count = 0;
 	struct PairNode *current = head;
 
@@ -1883,10 +1997,15 @@ static int countPairNodes(struct PairNode *head)
 	}
 	return count;
 }
+#endif
 
 // count nodes in list
 static int countProjectNodes(struct ProjectNode *head)
 {
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"countProjectNodes()");
+#endif
+
 	int count = 0;
 	struct ProjectNode *current = head;
 
@@ -1901,6 +2020,10 @@ static int countProjectNodes(struct ProjectNode *head)
 // sort list
 static void sortProjectNodes(struct ProjectNode **head_ref)
 {
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"sortProjectNodes()");
+#endif
+
 	if (*head_ref == NULL)
 	{
 		writeFileW(LOG_FILE, L"Can't sort empty list");
@@ -1971,6 +2094,10 @@ static void sortProjectNodes(struct ProjectNode **head_ref)
 
 static int listDir(HWND hwnd, wchar_t *folder)
 {
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"listDir()");
+#endif
+
 	DWORD dwError = 0;
 	WIN32_FIND_DATA ffd;
 
@@ -2024,6 +2151,10 @@ static int listDir(HWND hwnd, wchar_t *folder)
 
 static void DisplayErrorBox(LPTSTR lpszFunction)
 {
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"DisplayErrorBox()");
+#endif
+
 	LPVOID lpMsgBuf;
 	LPVOID lpDisplayBuf;
 	DWORD dw = GetLastError();
@@ -2045,6 +2176,10 @@ static void DisplayErrorBox(LPTSTR lpszFunction)
 // look backwards to find project name from selected pair
 static void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *selectedRowText)
 {
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"findProjectName()");
+#endif
+
 	LRESULT projectPosition = selectedRow;
 	bool found = false;
 
@@ -2062,6 +2197,10 @@ static void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *selectedRow
 
 static void reloadFolderPairs(void)
 {
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"reloadFolderPairs()");
+#endif
+
 	int position = 0;
 	struct ProjectNode *current = projectsHead;
 
