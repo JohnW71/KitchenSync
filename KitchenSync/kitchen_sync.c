@@ -90,12 +90,14 @@ static LRESULT CALLBACK customListboxProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK projectNameWndProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customProjectNameProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK folderPairWndProc(HWND, UINT, WPARAM, LPARAM);
-static LRESULT CALLBACK customFolderPairProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK customSourceEditboxProc(HWND, UINT, WPARAM, LPARAM);
+static LRESULT CALLBACK customDestinationEditboxProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customSourceListboxProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customDestinationListboxProc(HWND, UINT, WPARAM, LPARAM);
 static WNDPROC originalListboxProc;
 static WNDPROC originalProjectNameProc;
-static WNDPROC originalFolderPairProc;
+static WNDPROC originalSourceEditboxProc;
+static WNDPROC originalDestinationEditboxProc;
 static WNDPROC originalSourceListboxProc;
 static WNDPROC originalDestinationListboxProc;
 static HWND mainHwnd;
@@ -109,6 +111,7 @@ static HWND lbDestHwnd;
 static HWND lbPairSourceHwnd;
 static HWND lbPairDestHwnd;
 static HWND bProjectNameOK;
+static HWND bDelete;
 static HINSTANCE instance;
 
 static void shutDown(void);
@@ -214,10 +217,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	return (int)msg.wParam;
 }
 
-LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static INITCOMMONCONTROLSEX icex = {0};
-	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, bDelete;
+	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair;
 	static bool listboxClicked = false;
 
 	switch (msg)
@@ -257,7 +260,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			// listbox
 			lbProjectsHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
-				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
+				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER,
 				10, 80, rc.right-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_PROJECTS, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbProjectsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
@@ -281,13 +284,13 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			// source listbox
 			lbSourceHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
-				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
+				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER,
 				10, 80, (rc.right / 2)-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_PAIRS_SOURCE, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbSourceHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
 			// destination listbox
 			lbDestHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
-				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
+				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER,
 				(rc.right / 2)+5, 80, (rc.right / 2)-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_PAIRS_DEST, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbDestHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
@@ -324,13 +327,20 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					{
 						case 0: // projects
 						{
-							//clearArrayW(projectName, MAX_LINE);
+							clearArrayW(projectName, MAX_LINE);
 							clearArrayW(folderPair, MAX_LINE);
 							clearArrayW(sourceFolder, MAX_LINE);
 							clearArrayW(destFolder, MAX_LINE);
 
 							SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
+							SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
+							fillListbox(&projectsHead);
+
+							EnableWindow(bAddFolders, FALSE);
+							EnableWindow(bPreview, FALSE);
+							EnableWindow(bDelete, FALSE);
+
 							ShowWindow(lbProjectsHwnd, SW_SHOW);
 							ShowWindow(lbPairsHwnd, SW_HIDE);
 							ShowWindow(lbSourceHwnd, SW_HIDE);
@@ -345,6 +355,8 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						}
 						case 1: // add folders
 						{
+							EnableWindow(bDelete, FALSE);
+
 							ShowWindow(lbProjectsHwnd, SW_HIDE);
 							ShowWindow(lbPairsHwnd, SW_HIDE);
 							ShowWindow(lbSourceHwnd, SW_SHOW);
@@ -364,6 +376,8 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						}
 						case 2: // sync
 						{
+							EnableWindow(bDelete, FALSE);
+
 							ShowWindow(lbProjectsHwnd, SW_HIDE);
 							ShowWindow(lbPairsHwnd, SW_SHOW);
 							ShowWindow(lbSourceHwnd, SW_HIDE);
@@ -466,17 +480,19 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				// a row was selected
 				if (HIWORD(wParam) == LBN_SELCHANGE)
 				{
+					EnableWindow(bDelete, FALSE);
+	
 					// get row index
 					LRESULT selectedRow = SendMessage(lbSourceHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						//TODO store selected row in case of Del key?
+						SendMessage(lbDestHwnd, LB_SETCURSEL, selectedRow, 0);
 						wchar_t selectedRowText[MAX_LINE] = {0};
 						int textLen = (int)SendMessage(lbSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
 						{
-
+							EnableWindow(bDelete, TRUE);
 						}
 					}
 				}
@@ -505,17 +521,20 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				// a row was selected
 				if (HIWORD(wParam) == LBN_SELCHANGE)
 				{
+					EnableWindow(bDelete, FALSE);
+
 					// get row index
 					LRESULT selectedRow = SendMessage(lbDestHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						//TODO store selected row in case of Del key?
+						SendMessage(lbSourceHwnd, LB_SETCURSEL, selectedRow, 0);
+						SendMessage(lbSourceHwnd, LB_SETCARETINDEX, selectedRow, 0);
 						wchar_t selectedRowText[MAX_LINE] = {0};
 						int textLen = (int)SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
 						{
-
+							EnableWindow(bDelete, TRUE);
 						}
 					}
 				}
@@ -580,6 +599,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PROJECT)
 			{
+				clearArrayW(projectName, MAX_LINE);
 				getProjectName();
 			}
 
@@ -604,6 +624,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 						writeFileW(LOG_FILE, buf);
 #endif
 						// change to folder pair tab and populate listboxes
+						wcscpy_s(folderPair, MAX_LINE, L"C: -> C:");
 						SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_PAIRS, 0);
 						addFolderPair();
 					}
@@ -620,34 +641,74 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			if (LOWORD(wParam) == ID_BUTTON_DELETE)
 			{
+				LRESULT tab = SendMessage(tabHwnd, TCM_GETCURFOCUS, 0, 0);
 #if DEV_MODE
-				writeFileW(LOG_FILE, L"Delete project/pair");
+				wchar_t buf[100] = {0};
+				swprintf(buf, 100, L"Tab: %lld", tab);
+				writeFileW(LOG_FILE, buf);
 #endif
-				// get row index
-				LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
-				if (selectedRow != LB_ERR)
+
+				if (tab == TAB_PROJECTS)
 				{
-					wchar_t selectedRowText[MAX_LINE] = {0};
-					int textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+#if DEV_MODE
+					writeFileW(LOG_FILE, L"Delete button, projects");
+#endif
 
-					if (textLen > 0)
+					EnableWindow(bDelete, FALSE);
+					EnableWindow(bPreview, FALSE);
+
+					// get row index
+					LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
+					if (selectedRow != LB_ERR)
 					{
-						if (isProjectName(selectedRowText, textLen))
-						{
-							// delete whole project
-							deleteProject(&projectsHead, selectedRowText);
-						}
-						else
-						{
-							// delete folder pair
-							wchar_t folderPair[MAX_LINE];
-							wcscpy_s(folderPair, MAX_LINE, selectedRowText);
-							findProjectName(lbProjectsHwnd, selectedRow, selectedRowText);
-							deleteFolderPair(&projectsHead, folderPair);
-						}
+						wchar_t selectedRowText[MAX_LINE] = {0};
+						int textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
-						SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
-						fillListbox(&projectsHead);
+						if (textLen > 0)
+						{
+							if (isProjectName(selectedRowText, textLen))
+							{
+								// delete whole project
+								deleteProject(&projectsHead, selectedRowText);
+							}
+							else
+							{
+								// delete folder pair
+								wchar_t folderPair[MAX_LINE];
+								wcscpy_s(folderPair, MAX_LINE, selectedRowText);
+								findProjectName(lbProjectsHwnd, selectedRow, selectedRowText);
+								deleteFolderPair(&projectsHead, folderPair);
+							}
+
+							SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
+							fillListbox(&projectsHead);
+						}
+					}
+				}
+
+				if (tab == TAB_PAIRS)
+				{
+#if DEV_MODE
+					writeFileW(LOG_FILE, L"Delete button, pairs");
+#endif
+
+					EnableWindow(bDelete, FALSE);
+
+					// get row index
+					LRESULT selectedRow = SendMessage(lbSourceHwnd, LB_GETCURSEL, 0, 0);
+					if (selectedRow != LB_ERR)
+					{
+						wchar_t selectedRowText[MAX_LINE] = {0};
+						int textLen = (int)SendMessage(lbSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+						if (textLen > 0)
+						{
+							// delete folder pair and reload listboxes
+							deleteFolderPair(&projectsHead, folderPair);
+							SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
+							SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
+							reloadFolderPairs();
+						}
 					}
 				}
 			}
@@ -682,12 +743,6 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		case WM_KEYUP:
 			switch (wParam)
 			{
-				case VK_DELETE:
-					//TODO
-#if DEV_MODE
-					writeFileW(LOG_FILE, L"Del key");
-#endif
-					break;
 				case VK_ESCAPE:
 					shutDown();
 					break;
@@ -700,7 +755,7 @@ LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-LRESULT CALLBACK customListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK customListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
@@ -713,6 +768,13 @@ LRESULT CALLBACK customListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 		case WM_KEYUP:
 			switch (wParam)
 			{
+				case VK_DELETE:
+#if DEV_MODE
+					writeFileW(LOG_FILE, L"Del key");
+#endif
+
+					SendMessage(bDelete, BM_CLICK, 0, 0);
+					break;
 				case VK_ESCAPE:
 					shutDown();
 					break;
@@ -987,7 +1049,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			eSource = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL,
 				10, 30, 370, 25, hwnd, (HMENU)ID_EDIT_PAIR_SOURCE, NULL, NULL);
-			originalFolderPairProc = (WNDPROC)SetWindowLongPtr(eSource, GWLP_WNDPROC, (LONG_PTR)customFolderPairProc);
+			originalSourceEditboxProc = (WNDPROC)SetWindowLongPtr(eSource, GWLP_WNDPROC, (LONG_PTR)customSourceEditboxProc);
 
 			lbPairSourceHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
@@ -1001,7 +1063,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			eDestination = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL,
 				400, 30, 370, 25, hwnd, (HMENU)ID_EDIT_PAIR_DEST, NULL, NULL);
-			originalFolderPairProc = (WNDPROC)SetWindowLongPtr(eDestination, GWLP_WNDPROC, (LONG_PTR)customFolderPairProc);
+			originalDestinationEditboxProc = (WNDPROC)SetWindowLongPtr(eDestination, GWLP_WNDPROC, (LONG_PTR)customDestinationEditboxProc);
 
 			lbPairDestHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
@@ -1215,7 +1277,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-static LRESULT CALLBACK customFolderPairProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK customSourceEditboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
@@ -1226,7 +1288,11 @@ static LRESULT CALLBACK customFolderPairProc(HWND hwnd, UINT msg, WPARAM wParam,
 					DestroyWindow(folderPairHwnd);
 					break;
 				case VK_RETURN:
-					//TODO change to directory
+					// load folder contents
+					GetWindowText(hwnd, sourceFolder, MAX_LINE);
+					SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
+					if (listDir(lbPairSourceHwnd, sourceFolder))
+						SetWindowText(hwnd, sourceFolder);
 					break;
 				case 'A': // CTRL A
 					if (GetAsyncKeyState(VK_CONTROL))
@@ -1235,11 +1301,37 @@ static LRESULT CALLBACK customFolderPairProc(HWND hwnd, UINT msg, WPARAM wParam,
 			}
 			break;
 	}
-
-	return CallWindowProc(originalFolderPairProc, hwnd, msg, wParam, lParam);
+	return CallWindowProc(originalSourceEditboxProc, hwnd, msg, wParam, lParam);
 }
 
-LRESULT CALLBACK customSourceListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK customDestinationEditboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch (msg)
+	{
+		case WM_KEYUP:
+			switch (wParam)
+			{
+				case VK_ESCAPE:
+					DestroyWindow(folderPairHwnd);
+					break;
+				case VK_RETURN:
+					// load folder contents
+					GetWindowText(hwnd, destFolder, MAX_LINE);
+					SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
+					if (listDir(lbPairDestHwnd, destFolder))
+						SetWindowText(hwnd, destFolder);
+					break;
+				case 'A': // CTRL A
+					if (GetAsyncKeyState(VK_CONTROL))
+						SendMessage(hwnd, EM_SETSEL, 0, -1);
+					break;
+			}
+			break;
+	}
+	return CallWindowProc(originalDestinationEditboxProc, hwnd, msg, wParam, lParam);
+}
+
+static LRESULT CALLBACK customSourceListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
@@ -1261,7 +1353,7 @@ LRESULT CALLBACK customSourceListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
 }
 
 //TODO this can be handled by source proc?
-LRESULT CALLBACK customDestinationListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK customDestinationListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
