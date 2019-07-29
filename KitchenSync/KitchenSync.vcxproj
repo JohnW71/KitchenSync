@@ -119,7 +119,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="files_folders.c" />
     <ClCompile Include="kitchen_sync.c" />
+    <ClCompile Include="linked_lists.c" />
+    <ClCompile Include="misc.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="kitchen_sync.h" />

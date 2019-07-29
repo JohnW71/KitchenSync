@@ -18,6 +18,15 @@
     <ClCompile Include="kitchen_sync.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="linked_lists.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="files_folders.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="misc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="kitchen_sync.h">
