@@ -30,11 +30,11 @@
 
 void shutDown(HWND, struct ProjectNode **);
 void centerWindow(HWND);
-void clearArray(char *, int);
+//void clearArray(char *, int);
 void clearArrayW(wchar_t *, int);
-void clearNewlines(char *, int);
-void clearNewlinesW(wchar_t *, int);
-void writeFile(char *, char *);
+//void clearNewlines(char *, int);
+//void clearNewlinesW(wchar_t *, int);
+//void writeFile(char *, char *);
 void writeSettings(char *, HWND);
 void readSettings(char *, HWND);
 void loadProjects(char *, struct ProjectNode **, HWND);

@@ -35,14 +35,14 @@ static LRESULT CALLBACK customProjectNameProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK folderPairWndProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customSourceEditboxProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customDestinationEditboxProc(HWND, UINT, WPARAM, LPARAM);
-static LRESULT CALLBACK customSourceListboxProc(HWND, UINT, WPARAM, LPARAM);
-static LRESULT CALLBACK customDestinationListboxProc(HWND, UINT, WPARAM, LPARAM);
+//static LRESULT CALLBACK customSourceListboxProc(HWND, UINT, WPARAM, LPARAM);
+//static LRESULT CALLBACK customDestinationListboxProc(HWND, UINT, WPARAM, LPARAM);
 static WNDPROC originalListboxProc;
 static WNDPROC originalProjectNameProc;
 static WNDPROC originalSourceEditboxProc;
 static WNDPROC originalDestinationEditboxProc;
-static WNDPROC originalSourceListboxProc;
-static WNDPROC originalDestinationListboxProc;
+//static WNDPROC originalSourceListboxProc;
+//static WNDPROC originalDestinationListboxProc;
 static HWND mainHwnd;
 static HWND tabHwnd;
 static HWND projectNameHwnd;
@@ -429,7 +429,12 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 						if (textLen > 0)
 						{
-							//TODO edit folder pair
+							// edit folder pair
+							SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)destFolder);
+							wcscpy_s(folderPair, MAX_LINE, selectedRowText);
+							wcscat(folderPair, L" -> ");
+							wcscat(folderPair, destFolder);
+							addFolderPair();
 						}
 					}
 				}
@@ -465,13 +470,17 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					LRESULT selectedRow = SendMessage(lbDestHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						//TODO edit folder pair
 						wchar_t selectedRowText[MAX_LINE] = {0};
 						int textLen = (int)SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
 						{
-
+							// edit folder pair
+							SendMessage(lbSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)sourceFolder);
+							wcscpy_s(folderPair, MAX_LINE, sourceFolder);
+							wcscat(folderPair, L" -> ");
+							wcscat(folderPair, selectedRowText);
+							addFolderPair();
 						}
 					}
 				}
@@ -486,7 +495,6 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					LRESULT selectedRow = SendMessage(lbPairsHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						//TODO store selected row in case of Del key?
 						wchar_t selectedRowText[MAX_LINE] = {0};
 						int textLen = (int)SendMessage(lbPairSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
@@ -599,7 +607,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 							SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
 							fillListbox(&projectsHead, lbProjectsHwnd);
-							//TODO set focus somewhere so ESC works
+							SetFocus(lbProjectsHwnd);
 						}
 					}
 				}
@@ -971,7 +979,8 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			lbPairSourceHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
 				10, 60, 370, 450, hwnd, (HMENU)ID_LISTBOX_ADD_SOURCE, NULL, NULL);
-			originalSourceListboxProc = (WNDPROC)SetWindowLongPtr(lbPairSourceHwnd, GWLP_WNDPROC, (LONG_PTR)customSourceListboxProc);
+//			originalSourceListboxProc = (WNDPROC)SetWindowLongPtr(lbPairSourceHwnd, GWLP_WNDPROC, (LONG_PTR)customSourceListboxProc);
+			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbPairSourceHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
 			lDestination = CreateWindowEx(WS_EX_LEFT, L"Static", L"Destination",
 				WS_VISIBLE | WS_CHILD,
@@ -985,7 +994,8 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			lbPairDestHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
 				400, 60, 370, 450, hwnd, (HMENU)ID_LISTBOX_ADD_DEST, NULL, NULL);
-			originalDestinationListboxProc = (WNDPROC)SetWindowLongPtr(lbPairDestHwnd, GWLP_WNDPROC, (LONG_PTR)customDestinationListboxProc);
+//			originalDestinationListboxProc = (WNDPROC)SetWindowLongPtr(lbPairDestHwnd, GWLP_WNDPROC, (LONG_PTR)customDestinationListboxProc);
+			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbPairDestHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
 			bFolderPairAdd = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add",
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
@@ -1044,13 +1054,12 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 				//	LRESULT selectedRow = SendMessage(lbPairSourceHwnd, LB_GETCURSEL, 0, 0);
 				//	if (selectedRow != LB_ERR)
 				//	{
-				//		//TODO store selected row in case of Add
 				//		wchar_t selectedRowText[MAX_LINE] = {0};
 				//		int textLen = (int)SendMessage(lbPairSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 				//		if (textLen > 0)
 				//		{
-				//			//TODO
+				//
 				//		}
 				//	}
 				//}
@@ -1112,13 +1121,12 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 				//	LRESULT selectedRow = SendMessage(lbPairDestHwnd, LB_GETCURSEL, 0, 0);
 				//	if (selectedRow != LB_ERR)
 				//	{
-				//		//TODO store selected row in case of Add
 				//		wchar_t selectedRowText[MAX_LINE] = {0};
 				//		int textLen = (int)SendMessage(lbPairDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 				//		if (textLen > 0)
 				//		{
-				//			//TODO
+				//
 				//		}
 				//	}
 				//}
@@ -1270,45 +1278,44 @@ static LRESULT CALLBACK customDestinationEditboxProc(HWND hwnd, UINT msg, WPARAM
 	return CallWindowProc(originalDestinationEditboxProc, hwnd, msg, wParam, lParam);
 }
 
-static LRESULT CALLBACK customSourceListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch (msg)
-	{
-		//case WM_LBUTTONDBLCLK:
-		//{
-		//	writeFileW(LOG_FILE, L"Listbox double clicked");
-		//}
-		//	break;
-		case WM_KEYUP:
-			switch (wParam)
-			{
-				case VK_ESCAPE:
-					DestroyWindow(folderPairHwnd);
-					break;
-			}
-			break;
-	}
-	return CallWindowProc(originalSourceListboxProc, hwnd, msg, wParam, lParam);
-}
-
-//TODO this can be handled by source proc?
-static LRESULT CALLBACK customDestinationListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch (msg)
-	{
-		//case WM_LBUTTONDBLCLK:
-		//{
-		//	writeFileW(LOG_FILE, L"Listbox double clicked");
-		//}
-		//	break;
-		case WM_KEYUP:
-			switch (wParam)
-			{
-				case VK_ESCAPE:
-					DestroyWindow(folderPairHwnd);
-					break;
-			}
-			break;
-	}
-	return CallWindowProc(originalDestinationListboxProc, hwnd, msg, wParam, lParam);
-}
+//static LRESULT CALLBACK customSourceListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+//{
+//	switch (msg)
+//	{
+//		//case WM_LBUTTONDBLCLK:
+//		//{
+//		//	writeFileW(LOG_FILE, L"Listbox double clicked");
+//		//}
+//		//	break;
+//		case WM_KEYUP:
+//			switch (wParam)
+//			{
+//				case VK_ESCAPE:
+//					DestroyWindow(folderPairHwnd);
+//					break;
+//			}
+//			break;
+//	}
+//	return CallWindowProc(originalSourceListboxProc, hwnd, msg, wParam, lParam);
+//}
+//
+//static LRESULT CALLBACK customDestinationListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+//{
+//	switch (msg)
+//	{
+//		//case WM_LBUTTONDBLCLK:
+//		//{
+//		//	writeFileW(LOG_FILE, L"Listbox double clicked");
+//		//}
+//		//	break;
+//		case WM_KEYUP:
+//			switch (wParam)
+//			{
+//				case VK_ESCAPE:
+//					DestroyWindow(folderPairHwnd);
+//					break;
+//			}
+//			break;
+//	}
+//	return CallWindowProc(originalDestinationListboxProc, hwnd, msg, wParam, lParam);
+//}

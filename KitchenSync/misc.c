@@ -21,11 +21,11 @@ void centerWindow(HWND hwnd)
 		(screenHeight - windowHeight) / 2, 0, 0, SWP_NOSIZE);
 }
 
-void clearArray(char *array, int length)
-{
-	for (int i = 0; i < length; ++i)
-		array[i] = '\0';
-}
+//void clearArray(char *array, int length)
+//{
+//	for (int i = 0; i < length; ++i)
+//		array[i] = '\0';
+//}
 
 void clearArrayW(wchar_t *array, int length)
 {
@@ -33,38 +33,38 @@ void clearArrayW(wchar_t *array, int length)
 		array[i] = '\0';
 }
 
-void clearNewlines(char *array, int length)
-{
-	for (int i = 0; i < length; ++i)
-		if (array[i] == '\n')
-			array[i] = '\0';
-}
+//void clearNewlines(char *array, int length)
+//{
+//	for (int i = 0; i < length; ++i)
+//		if (array[i] == '\n')
+//			array[i] = '\0';
+//}
 
-void clearNewlinesW(wchar_t *array, int length)
-{
-	for (int i = 0; i < length; ++i)
-		if (array[i] == '\n')
-			array[i] = '\0';
-}
+//void clearNewlinesW(wchar_t *array, int length)
+//{
+//	for (int i = 0; i < length; ++i)
+//		if (array[i] == '\n')
+//			array[i] = '\0';
+//}
 
-void writeFile(char *filename, char *text)
-{
-	//while (state.writing)
-	//	Sleep(100);
+//void writeFile(char *filename, char *text)
+//{
+//	//while (state.writing)
+//	//	Sleep(100);
 
-	//state.writing = true;
+//	//state.writing = true;
 
-	FILE *f = fopen(filename, "a");
-	if (f == NULL)
-	{
-		MessageBox(NULL, L"Can't open file", L"Error", MB_ICONEXCLAMATION | MB_OK);
-		return;
-	}
+//	FILE *f = fopen(filename, "a");
+//	if (f == NULL)
+//	{
+//		MessageBox(NULL, L"Can't open file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+//		return;
+//	}
 
-	fprintf(f, "%s\n", text);
-	fclose(f);
-	//state.writing = false;
-}
+//	fprintf(f, "%s\n", text);
+//	fclose(f);
+//	//state.writing = false;
+//}
 
 void writeFileW(char *filename, wchar_t *text)
 {
