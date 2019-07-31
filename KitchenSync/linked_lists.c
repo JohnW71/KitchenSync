@@ -447,3 +447,36 @@ void sortProjectNodes(struct ProjectNode **head_ref)
 	}
 	while (changed);
 }
+
+void previewProject(struct ProjectNode **head_ref, wchar_t *projectName, HWND hwnd)
+{
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"previewProject()");
+#endif
+
+	struct ProjectNode *current = *head_ref;
+
+	do
+	{
+		if (wcscmp(current->project.name, projectName) == 0)
+		{
+			struct Project project;
+			wcscpy_s(project.name, MAX_LINE, projectName);
+			wcscpy_s(project.pair.source, MAX_LINE, current->project.pair.source);
+			wcscpy_s(project.pair.destination, MAX_LINE, current->project.pair.destination);
+
+			previewFolderPair(project, hwnd);
+		}
+		current = current->next;
+	}
+	while (*head_ref != NULL && current != NULL);
+}
+
+void previewFolderPair(struct Project project, HWND hwnd)
+{
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"previewFolderPair()");
+#endif
+
+	listDir(hwnd, project.pair.source, true);
+}

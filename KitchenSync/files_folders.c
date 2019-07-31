@@ -2,7 +2,7 @@
 
 static void displayErrorBox(LPTSTR);
 
-int listDir(HWND hwnd, wchar_t *folder)
+int listDir(HWND hwnd, wchar_t *folder, bool filesNotFolders)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"listDir()");
@@ -25,29 +25,36 @@ int listDir(HWND hwnd, wchar_t *folder)
 	}
 
 	int position = 0;
-	//LARGE_INTEGER filesize;
+	LARGE_INTEGER filesize;
 	do
 	{
-		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		if (filesNotFolders)
 		{
-			if (wcscmp(ffd.cFileName, L".") == 0)
+			if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 				continue;
 
+			filesize.LowPart = ffd.nFileSizeLow;
+			filesize.HighPart = ffd.nFileSizeHigh;
+#if DEV_MODE
 			wchar_t buf[MAX_LINE] = {0};
-			swprintf(buf, MAX_LINE, L"Dir: %s", ffd.cFileName);
+			swprintf(buf, MAX_LINE, L"File: %s, Size: %lld", ffd.cFileName, filesize.QuadPart);
 			writeFileW(LOG_FILE, buf);
+#endif
 			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)ffd.cFileName);
 		}
-		//else
-		//{
-		//	filesize.LowPart = ffd.nFileSizeLow;
-		//	filesize.HighPart = ffd.nFileSizeHigh;
+		else
+			if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			{
+				if (wcscmp(ffd.cFileName, L".") == 0)
+					continue;
 
-		//	wchar_t buf[MAX_LINE] = {0};
-		//	swprintf(buf, MAX_LINE, L"File: %s, Size: %lld", ffd.cFileName, filesize.QuadPart);
-		//	writeFileW(LOG_FILE, buf);
-		//	SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)ffd.cFileName);
-		//}
+#if DEV_MODE
+				wchar_t buf[MAX_LINE] = {0};
+				swprintf(buf, MAX_LINE, L"Dir: %s", ffd.cFileName);
+				writeFileW(LOG_FILE, buf);
+#endif
+				SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)ffd.cFileName);
+			}
 	}
 	while (FindNextFile(hFind, &ffd) != 0);
 

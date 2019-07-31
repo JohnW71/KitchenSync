@@ -49,10 +49,12 @@ void sortProjectNodes(struct ProjectNode **);
 void fillListbox(struct ProjectNode **, HWND);
 void findProjectName(HWND, LRESULT, wchar_t *, wchar_t *);
 void reloadFolderPairs(struct ProjectNode *, wchar_t *, HWND, HWND);
+void previewProject(struct ProjectNode **, wchar_t *, HWND);
+void previewFolderPair(struct Project, HWND);
 bool isProjectName(wchar_t *, int);
 int countPairNodes(struct PairNode *);
 int countProjectNodes(struct ProjectNode *);
-int listDir(HWND, wchar_t *);
+int listDir(HWND, wchar_t *, bool);
 
 struct Pair
 {
