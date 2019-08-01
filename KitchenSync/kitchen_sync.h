@@ -54,7 +54,8 @@ void previewFolderPair(struct Project, HWND);
 bool isProjectName(wchar_t *, int);
 int countPairNodes(struct PairNode *);
 int countProjectNodes(struct ProjectNode *);
-int listDir(HWND, wchar_t *, bool);
+int listFolders(HWND, wchar_t *);
+int listFolderContent(HWND, wchar_t *);
 
 struct Pair
 {

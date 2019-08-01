@@ -478,5 +478,5 @@ void previewFolderPair(struct Project project, HWND hwnd)
 	writeFileW(LOG_FILE, L"previewFolderPair()");
 #endif
 
-	listDir(hwnd, project.pair.source, true);
+	listFolderContent(hwnd, project.pair.source);
 }

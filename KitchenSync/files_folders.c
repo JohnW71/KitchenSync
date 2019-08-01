@@ -2,7 +2,7 @@
 
 static void displayErrorBox(LPTSTR);
 
-int listDir(HWND hwnd, wchar_t *folder, bool filesNotFolders)
+int listFolders(HWND hwnd, wchar_t *folder)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"listDir()");
@@ -25,36 +25,89 @@ int listDir(HWND hwnd, wchar_t *folder, bool filesNotFolders)
 	}
 
 	int position = 0;
-	LARGE_INTEGER filesize;
 	do
 	{
-		if (filesNotFolders)
+		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
-			if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			if (wcscmp(ffd.cFileName, L".") == 0)
 				continue;
 
-			filesize.LowPart = ffd.nFileSizeLow;
-			filesize.HighPart = ffd.nFileSizeHigh;
 #if DEV_MODE
 			wchar_t buf[MAX_LINE] = {0};
-			swprintf(buf, MAX_LINE, L"File: %s, Size: %lld", ffd.cFileName, filesize.QuadPart);
+			swprintf(buf, MAX_LINE, L"Dir: %s", ffd.cFileName);
 			writeFileW(LOG_FILE, buf);
 #endif
 			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)ffd.cFileName);
 		}
-		else
-			if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			{
-				if (wcscmp(ffd.cFileName, L".") == 0)
-					continue;
+	}
+	while (FindNextFile(hFind, &ffd) != 0);
+
+	dwError = GetLastError();
+	if (dwError != ERROR_NO_MORE_FILES)
+		displayErrorBox(TEXT("FindFirstFile"));
+
+	FindClose(hFind);
+	return dwError;
+}
+
+int listFolderContent(HWND hwnd, wchar_t *folder)
+{
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"listDir()");
+#endif
+
+	DWORD dwError = 0;
+	WIN32_FIND_DATA ffd;
+
+	wchar_t szDir[MAX_LINE];
+	wcscpy_s(szDir, MAX_LINE, folder);
+	wcscat(szDir, L"\\*");
+
+	HANDLE hFind = INVALID_HANDLE_VALUE;
+	hFind = FindFirstFile(szDir, &ffd);
+
+	if (hFind == INVALID_HANDLE_VALUE)
+	{
+		displayErrorBox(TEXT("FindFirstFile"));
+		return dwError;
+	}
+
+	LARGE_INTEGER filesize;
+	do
+	{
+		if (wcscmp(ffd.cFileName, L".") == 0 || wcscmp(ffd.cFileName, L"..") == 0)
+			continue;
+
+		filesize.LowPart = ffd.nFileSizeLow;
+		filesize.HighPart = ffd.nFileSizeHigh;
+
+		wchar_t currentItem[MAX_LINE] = {0};
+		wcscpy_s(currentItem, MAX_LINE, folder);
+		wcscat(currentItem, L"\\");
+		wcscat(currentItem, ffd.cFileName);
+
+		// recursive folder reading
+		static int position = 0;
+		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		{
+			wchar_t subFolder[MAX_LINE] = {0};
+			wcscpy_s(subFolder, MAX_LINE, currentItem);
+			wcscat(subFolder, L"\\");
+			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)subFolder);
+			listFolderContent(hwnd, currentItem);
+		}
 
 #if DEV_MODE
-				wchar_t buf[MAX_LINE] = {0};
-				swprintf(buf, MAX_LINE, L"Dir: %s", ffd.cFileName);
-				writeFileW(LOG_FILE, buf);
+		wchar_t buf[MAX_LINE] = {0};
+		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			swprintf(buf, MAX_LINE, L"Dir: %s", currentItem);
+		else
+			swprintf(buf, MAX_LINE, L"File: %s, Size: %lld", currentItem, filesize.QuadPart);
+		writeFileW(LOG_FILE, buf);
 #endif
-				SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)ffd.cFileName);
-			}
+
+		if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)currentItem);
 	}
 	while (FindNextFile(hFind, &ffd) != 0);
 

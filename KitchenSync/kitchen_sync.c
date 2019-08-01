@@ -1066,8 +1066,8 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 
 				SetWindowText(eSource, sourceFolder);
 				SetWindowText(eDestination, destFolder);
-				listDir(lbPairSourceHwnd, sourceFolder, false);
-				listDir(lbPairDestHwnd, destFolder, false);
+				listFolders(lbPairSourceHwnd, sourceFolder);
+				listFolders(lbPairDestHwnd, destFolder);
 			}
 
 			if (wcscmp(folderPair, L"C: -> C:") != 0)
@@ -1134,14 +1134,14 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							}
 
 							SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
-							if (listDir(lbPairSourceHwnd, sourceFolder, false))
+							if (listFolders(lbPairSourceHwnd, sourceFolder))
 								SetWindowText(eSource, sourceFolder);
 							else
 							{
 								//TODO handle errors properly
 								// if error, redisplay folder contents
 								SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
-								listDir(lbPairSourceHwnd, currentFolder, false);
+								listFolders(lbPairSourceHwnd, currentFolder);
 							}
 						}
 					}
@@ -1201,14 +1201,14 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							}
 
 							SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
-							if (listDir(lbPairDestHwnd, destFolder, false))
+							if (listFolders(lbPairDestHwnd, destFolder))
 								SetWindowText(eDestination, destFolder);
 							else
 							{
 								//TODO handle errors properly
 								// if error, redisplay folder contents
 								SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
-								listDir(lbPairDestHwnd, currentFolder, false);
+								listFolders(lbPairDestHwnd, currentFolder);
 							}
 						}
 					}
@@ -1275,7 +1275,7 @@ static LRESULT CALLBACK customSourceEditboxProc(HWND hwnd, UINT msg, WPARAM wPar
 					// load folder contents
 					GetWindowText(hwnd, sourceFolder, MAX_LINE);
 					SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
-					if (listDir(lbPairSourceHwnd, sourceFolder, false))
+					if (listFolders(lbPairSourceHwnd, sourceFolder))
 						SetWindowText(hwnd, sourceFolder);
 					break;
 				case 'A': // CTRL A
@@ -1302,7 +1302,7 @@ static LRESULT CALLBACK customDestinationEditboxProc(HWND hwnd, UINT msg, WPARAM
 					// load folder contents
 					GetWindowText(hwnd, destFolder, MAX_LINE);
 					SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
-					if (listDir(lbPairDestHwnd, destFolder, false))
+					if (listFolders(lbPairDestHwnd, destFolder))
 						SetWindowText(hwnd, destFolder);
 					break;
 				case 'A': // CTRL A
