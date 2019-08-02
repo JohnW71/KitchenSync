@@ -448,7 +448,7 @@ void sortProjectNodes(struct ProjectNode **head_ref)
 	while (changed);
 }
 
-void previewProject(struct ProjectNode **head_ref, wchar_t *projectName, HWND hwnd)
+void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *projectName)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"previewProject()");
@@ -465,18 +465,18 @@ void previewProject(struct ProjectNode **head_ref, wchar_t *projectName, HWND hw
 			wcscpy_s(project.pair.source, MAX_LINE, current->project.pair.source);
 			wcscpy_s(project.pair.destination, MAX_LINE, current->project.pair.destination);
 
-			previewFolderPair(project, hwnd);
+			previewFolderPair(hwnd, pairs, project);
 		}
 		current = current->next;
 	}
 	while (*head_ref != NULL && current != NULL);
 }
 
-void previewFolderPair(struct Project project, HWND hwnd)
+void previewFolderPair(HWND hwnd, struct PairNode **pairs, struct Project project)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"previewFolderPair()");
 #endif
 
-	listFolderContent(hwnd, project.pair.source);
+	listFolderContent(hwnd, pairs, project.pair.source);
 }

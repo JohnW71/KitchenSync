@@ -50,7 +50,7 @@ int listFolders(HWND hwnd, wchar_t *folder)
 	return dwError;
 }
 
-int listFolderContent(HWND hwnd, wchar_t *folder)
+int listFolderContent(HWND hwnd, struct PairNode **pairs, wchar_t *folder)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"listDir()");
@@ -93,8 +93,8 @@ int listFolderContent(HWND hwnd, wchar_t *folder)
 			wchar_t subFolder[MAX_LINE] = {0};
 			wcscpy_s(subFolder, MAX_LINE, currentItem);
 			wcscat(subFolder, L"\\");
-			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)subFolder);
-			listFolderContent(hwnd, currentItem);
+			//SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)subFolder);
+			listFolderContent(hwnd, pairs, currentItem);
 		}
 
 #if DEV_MODE
@@ -107,7 +107,17 @@ int listFolderContent(HWND hwnd, wchar_t *folder)
 #endif
 
 		if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)currentItem);
+		{
+			//TODO instead of adding to listbox, do comparison against destination
+			//SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)currentItem);
+
+			//TODO then add to files list
+			struct Pair newPair;
+			wcscpy_s(newPair.source, MAX_LINE, ffd.cFileName);
+			wcscpy_s(newPair.destination, MAX_LINE, L""); //TODO destination is missing
+			appendPairNode(pairs, newPair);
+		}
+
 	}
 	while (FindNextFile(hFind, &ffd) != 0);
 

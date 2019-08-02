@@ -256,7 +256,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
-							fillListbox(&projectsHead, lbProjectsHwnd);
+							fillListbox(lbProjectsHwnd, &projectsHead);
 
 							EnableWindow(bAddFolders, false);
 							EnableWindow(bPreview, false);
@@ -606,7 +606,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							}
 
 							SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
-							fillListbox(&projectsHead, lbProjectsHwnd);
+							fillListbox(lbProjectsHwnd, &projectsHead);
 							SetFocus(lbProjectsHwnd);
 						}
 					}
@@ -659,7 +659,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						{
 							// preview whole project
 							SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
-							previewProject(&projectsHead, selectedRowText, lbSyncHwnd);
+							previewProject(lbSyncHwnd, &projectsHead, &filesHead, selectedRowText);
 						}
 						else
 						{
@@ -677,8 +677,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							findProjectName(lbProjectsHwnd, selectedRow, selectedRowText, project.name);
 
 							SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
-							previewFolderPair(project, lbSyncHwnd);
+							previewFolderPair(lbSyncHwnd, &filesHead, project);
 						}
+						fillSyncListbox(lbSyncHwnd, &filesHead);
 					}
 				}
 			}
@@ -894,7 +895,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 
 				SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
 				sortProjectNodes(&projectsHead);
-				fillListbox(&projectsHead, lbProjectsHwnd);
+				fillListbox(lbProjectsHwnd, &projectsHead);
 				clearArrayW(projectName, MAX_LINE);
 				showingProjectName = false;
 				DestroyWindow(hwnd);

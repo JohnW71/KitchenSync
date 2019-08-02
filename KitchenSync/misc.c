@@ -296,10 +296,10 @@ void loadProjects(char *filename, struct ProjectNode **head_ref, HWND hwnd)
 
 	fclose(f);
 	sortProjectNodes(head_ref);
-	fillListbox(head_ref, hwnd);
+	fillListbox(hwnd, head_ref);
 }
 
-void fillListbox(struct ProjectNode **head_ref, HWND hwnd)
+void fillListbox(HWND hwnd, struct ProjectNode **head_ref)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"fillListbox()");
@@ -338,6 +338,38 @@ void fillListbox(struct ProjectNode **head_ref, HWND hwnd)
 		swprintf(buffer, MAX_LINE * 4, L"%s -> %s", current->project.pair.source, current->project.pair.destination);
 		SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)buffer);
 		wcscpy_s(currentProjectName, MAX_LINE, current->project.name);
+		current = current->next;
+	}
+}
+
+void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
+{
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"fillSyncListbox()");
+#endif
+
+	// populate listbox
+	wchar_t *currentPairName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
+	if (!currentPairName)
+	{
+		writeFileW(LOG_FILE, L"Failed to allocate memory for currentPairName from preview list");
+		return;
+	}
+
+	int position = 0;
+	struct PairNode *current = *head_ref;
+
+	while (current != NULL)
+	{
+		wchar_t *buffer = (wchar_t *)calloc(MAX_LINE * 4, sizeof(wchar_t));
+		if (!buffer)
+		{
+			writeFileW(LOG_FILE, L"Failed to allocate memory for file pair buffer from preview list");
+			return;
+		}
+
+		swprintf(buffer, MAX_LINE * 4, L"%s -> %s", current->pair.source, current->pair.destination);
+		SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)buffer);
 		current = current->next;
 	}
 }
@@ -400,6 +432,7 @@ bool isProjectName(wchar_t *text, int len)
 }
 
 // look backwards to find project name from selected pair
+//TODO does this need to mess with *selectedRowText? better if this is removed?
 void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *selectedRowText, wchar_t *projectName)
 {
 #if DEV_MODE

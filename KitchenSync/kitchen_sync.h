@@ -46,16 +46,17 @@ void deleteProject(struct ProjectNode **, wchar_t *);
 void deleteFolderPair(struct ProjectNode **, wchar_t *, wchar_t *);
 void replaceFolderPair(struct ProjectNode **, wchar_t *, wchar_t *, wchar_t *, wchar_t *);
 void sortProjectNodes(struct ProjectNode **);
-void fillListbox(struct ProjectNode **, HWND);
+void fillListbox(HWND, struct ProjectNode **);
+void fillSyncListbox(HWND, struct PairNode **);
 void findProjectName(HWND, LRESULT, wchar_t *, wchar_t *);
 void reloadFolderPairs(struct ProjectNode *, wchar_t *, HWND, HWND);
-void previewProject(struct ProjectNode **, wchar_t *, HWND);
-void previewFolderPair(struct Project, HWND);
+void previewProject(HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
+void previewFolderPair(HWND, struct PairNode **, struct Project);
 bool isProjectName(wchar_t *, int);
 int countPairNodes(struct PairNode *);
 int countProjectNodes(struct ProjectNode *);
 int listFolders(HWND, wchar_t *);
-int listFolderContent(HWND, wchar_t *);
+int listFolderContent(HWND, struct PairNode **, wchar_t *);
 
 struct Pair
 {
