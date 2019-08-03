@@ -95,28 +95,31 @@ int listFolderContent(HWND hwnd, struct PairNode **pairs, wchar_t *folder)
 			wcscat(subFolder, L"\\");
 			//SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)subFolder);
 			listFolderContent(hwnd, pairs, currentItem);
+//#if DEV_MODE
+//			wchar_t buf[MAX_LINE] = {0};
+//			swprintf(buf, MAX_LINE, L"Dir: %s", currentItem);
+//			writeFileW(LOG_FILE, buf);
+//#endif
 		}
-
-#if DEV_MODE
-		wchar_t buf[MAX_LINE] = {0};
-		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			swprintf(buf, MAX_LINE, L"Dir: %s", currentItem);
 		else
-			swprintf(buf, MAX_LINE, L"File: %s, Size: %lld", currentItem, filesize.QuadPart);
-		writeFileW(LOG_FILE, buf);
-#endif
-
-		if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 		{
-			//TODO instead of adding to listbox, do comparison against destination
-			//SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)currentItem);
+			// compare file against destination
 
-			//TODO then add to files list
+			// determine action required
+
+			// add to files list
 			struct Pair newPair;
 			wcscpy_s(newPair.source, MAX_LINE, ffd.cFileName);
 			wcscpy_s(newPair.destination, MAX_LINE, L""); //TODO destination is missing
 			appendPairNode(pairs, newPair);
+
+//#if DEV_MODE
+//			wchar_t buf[MAX_LINE] = {0};
+//			swprintf(buf, MAX_LINE, L"File: %s, Size: %lld", currentItem, filesize.QuadPart);
+//			writeFileW(LOG_FILE, buf);
+//#endif
 		}
+
 
 	}
 	while (FindNextFile(hFind, &ffd) != 0);

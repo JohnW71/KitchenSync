@@ -2,7 +2,6 @@
 
 static void deletePairNode(struct PairNode **, int);
 static void deleteProjectNode(struct ProjectNode **, int);
-static void deletePairList(struct PairNode **);
 static void deleteProjectList(struct ProjectNode **);
 
 // append a new node at the end
@@ -179,6 +178,48 @@ void deleteFolderPair(struct ProjectNode **head_ref, wchar_t *folderPair, wchar_
 	}
 }
 
+// delete folder pair by name
+void deleteFilePair(struct PairNode **head_ref, wchar_t *filePair)
+{
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"deleteFilePair()");
+#endif
+
+	//sortProjectNodes(head_ref);
+	size_t length = wcslen(filePair);
+
+	if (length > 0)
+	{
+		int pos = 0;
+		while (pos < length && filePair[pos] != '>')
+			++pos;
+
+		int sourceEnd = pos - 2;
+		int destStart = pos + 2;
+		wchar_t src[MAX_LINE] = {0};
+		wchar_t dst[MAX_LINE] = {0};
+
+		wcsncpy_s(src, MAX_LINE, filePair, sourceEnd);
+		wcsncpy_s(dst, MAX_LINE, filePair + destStart, length);
+
+		struct PairNode *current = *head_ref;
+		int i = 0;
+
+		while (*head_ref != NULL && current != NULL)
+		{
+			if (wcscmp(current->pair.source, src) == 0 &&
+				wcscmp(current->pair.destination, dst) == 0)
+			{
+				deletePairNode(head_ref, i);
+				return;
+			}
+
+			current = current->next;
+			++i;
+		}
+	}
+}
+
 // replace existing folder pair
 void replaceFolderPair(struct ProjectNode **head_ref, wchar_t *projectName, wchar_t *oldFolderPair, wchar_t *newSrc, wchar_t *newDst)
 {
@@ -225,7 +266,6 @@ void replaceFolderPair(struct ProjectNode **head_ref, wchar_t *projectName, wcha
 	}
 }
 
-#if 0
 // Given a reference (pointer to pointer) to the head of a list
 // and a position, deletes the node at the given position
 static void deletePairNode(struct PairNode **head_ref, int position)
@@ -262,7 +302,6 @@ static void deletePairNode(struct PairNode **head_ref, int position)
 	// link to next node
 	temp->next = next;
 }
-#endif
 
 // Given a reference (pointer to pointer) to the head of a list
 // and a position, deletes the node at the given position
@@ -301,9 +340,8 @@ static void deleteProjectNode(struct ProjectNode **head_ref, int position)
 	temp->next = next;
 }
 
-#if 0
 // delete the entire linked list
-static void deletePairList(struct PairNode **head_ref)
+void deletePairList(struct PairNode **head_ref)
 {
 	// de-reference head_ref to get the real head
 	struct PairNode *current = *head_ref;
@@ -319,6 +357,7 @@ static void deletePairList(struct PairNode **head_ref)
 	*head_ref = NULL;
 }
 
+#if 0
 // delete the entire linked list
 static void deleteProjectList(struct ProjectNode **head_ref)
 {

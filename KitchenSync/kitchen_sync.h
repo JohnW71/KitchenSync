@@ -52,6 +52,8 @@ void findProjectName(HWND, LRESULT, wchar_t *, wchar_t *);
 void reloadFolderPairs(struct ProjectNode *, wchar_t *, HWND, HWND);
 void previewProject(HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
 void previewFolderPair(HWND, struct PairNode **, struct Project);
+void deleteFilePair(struct PairNode **, wchar_t *);
+void deletePairList(struct PairNode **);
 bool isProjectName(wchar_t *, int);
 int countPairNodes(struct PairNode *);
 int countProjectNodes(struct ProjectNode *);

@@ -299,13 +299,13 @@ void loadProjects(char *filename, struct ProjectNode **head_ref, HWND hwnd)
 	fillListbox(hwnd, head_ref);
 }
 
+// load all project nodes into Projects listbox
 void fillListbox(HWND hwnd, struct ProjectNode **head_ref)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"fillListbox()");
 #endif
 
-	// populate listbox
 	wchar_t *currentProjectName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 	if (!currentProjectName)
 	{
@@ -342,13 +342,13 @@ void fillListbox(HWND hwnd, struct ProjectNode **head_ref)
 	}
 }
 
+// load all file pair nodes into Sync listbox
 void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"fillSyncListbox()");
 #endif
 
-	// populate listbox
 	wchar_t *currentPairName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 	if (!currentPairName)
 	{
@@ -432,7 +432,7 @@ bool isProjectName(wchar_t *text, int len)
 }
 
 // look backwards to find project name from selected pair
-//TODO does this need to mess with *selectedRowText? better if this is removed?
+//TODO does this need to mess with *selectedRowText? can this be removed?
 void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *selectedRowText, wchar_t *projectName)
 {
 #if DEV_MODE

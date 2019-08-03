@@ -35,14 +35,10 @@ static LRESULT CALLBACK customProjectNameProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK folderPairWndProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customSourceEditboxProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customDestinationEditboxProc(HWND, UINT, WPARAM, LPARAM);
-//static LRESULT CALLBACK customSourceListboxProc(HWND, UINT, WPARAM, LPARAM);
-//static LRESULT CALLBACK customDestinationListboxProc(HWND, UINT, WPARAM, LPARAM);
 static WNDPROC originalListboxProc;
 static WNDPROC originalProjectNameProc;
 static WNDPROC originalSourceEditboxProc;
 static WNDPROC originalDestinationEditboxProc;
-//static WNDPROC originalSourceListboxProc;
-//static WNDPROC originalDestinationListboxProc;
 static HWND mainHwnd;
 static HWND tabHwnd;
 static HWND projectNameHwnd;
@@ -223,7 +219,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			// listbox
 			lbSyncHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
-				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
+				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER,// | LBS_EXTENDEDSEL,
 				10, 80, rc.right-20, rc.bottom-110, hwnd, (HMENU)ID_LISTBOX_SYNC, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbSyncHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
@@ -256,6 +252,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
+							SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+
+							deletePairList(&filesHead);
 							fillListbox(lbProjectsHwnd, &projectsHead);
 
 							EnableWindow(bAddFolders, false);
@@ -496,31 +495,31 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					if (selectedRow != LB_ERR)
 					{
 						wchar_t selectedRowText[MAX_LINE] = {0};
-						int textLen = (int)SendMessage(lbPairSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+						int textLen = (int)SendMessage(lbSyncHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
 						{
-
+							EnableWindow(bDelete, true);
 						}
 					}
 				}
 
 				// a row was double-clicked
-				if (HIWORD(wParam) == LBN_DBLCLK)
-				{
-					// get row index
-					LRESULT selectedRow = SendMessage(lbSyncHwnd, LB_GETCURSEL, 0, 0);
-					if (selectedRow != LB_ERR)
-					{
-						wchar_t selectedRowText[MAX_LINE] = {0};
-						int textLen = (int)SendMessage(lbPairSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+				//if (HIWORD(wParam) == LBN_DBLCLK)
+				//{
+				//	// get row index
+				//	LRESULT selectedRow = SendMessage(lbSyncHwnd, LB_GETCURSEL, 0, 0);
+				//	if (selectedRow != LB_ERR)
+				//	{
+				//		wchar_t selectedRowText[MAX_LINE] = {0};
+				//		int textLen = (int)SendMessage(lbSyncHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
-						if (textLen > 0)
-						{
-							//TODO edit file pair
-						}
-					}
-				}
+				//		if (textLen > 0)
+				//		{
+
+				//		}
+				//	}
+				//}
 			}
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PROJECT)
@@ -636,11 +635,36 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						}
 					}
 				}
+
+				if (tab == TAB_SYNC)
+				{
+#if DEV_MODE
+					writeFileW(LOG_FILE, L"Delete button, sync");
+#endif
+					EnableWindow(bDelete, false);
+
+					// get row index
+					LRESULT selectedRow = SendMessage(lbSyncHwnd, LB_GETCURSEL, 0, 0);
+					if (selectedRow != LB_ERR)
+					{
+						wchar_t selectedRowText[MAX_LINE] = {0};
+						int textLen = (int)SendMessage(lbSyncHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
+
+						if (textLen > 0)
+						{
+							// delete folder pair from list and listbox
+							deleteFilePair(&filesHead, selectedRowText);
+							SendMessage(lbSyncHwnd, LB_DELETESTRING, selectedRow, 0);
+
+							if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) == 0)
+								EnableWindow(bSync, false);
+						}
+					}
+				}
 			}
 
 			if (LOWORD(wParam) == ID_BUTTON_PREVIEW)
 			{
-				//TODO
 #if DEV_MODE
 				writeFileW(LOG_FILE, L"preview button");
 #endif
@@ -679,7 +703,11 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
 							previewFolderPair(lbSyncHwnd, &filesHead, project);
 						}
+
 						fillSyncListbox(lbSyncHwnd, &filesHead);
+
+						if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) > 0)
+							EnableWindow(bSync, true);
 					}
 				}
 			}
