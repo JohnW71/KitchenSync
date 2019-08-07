@@ -14,7 +14,7 @@
 
 #define LOG_FILE "kitchen_sync.log"
 #define INI_FILE "kitchen_sync.ini"
-#define PROJECTS "kitchen_sync.prj"
+#define PRJ_FILE "kitchen_sync.prj"
 #define MAX_LINE 512
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 1024
@@ -30,14 +30,9 @@
 
 void shutDown(HWND, struct ProjectNode **);
 void centerWindow(HWND);
-//void clearArray(char *, int);
-void clearArrayW(wchar_t *, int);
-//void clearNewlines(char *, int);
-//void clearNewlinesW(wchar_t *, int);
-//void writeFile(char *, char *);
-void writeSettings(char *, HWND);
-void readSettings(char *, HWND);
-void loadProjects(char *, struct ProjectNode **, HWND);
+void writeSettings(HWND, char *);
+void readSettings(HWND, char *);
+void loadProjects(HWND, char *, struct ProjectNode **);
 void saveProjects(char *, struct ProjectNode **);
 void writeFileW(char *, wchar_t *);
 void appendPairNode(struct PairNode **, struct Pair);
@@ -48,12 +43,13 @@ void replaceFolderPair(struct ProjectNode **, wchar_t *, wchar_t *, wchar_t *, w
 void sortProjectNodes(struct ProjectNode **);
 void fillListbox(HWND, struct ProjectNode **);
 void fillSyncListbox(HWND, struct PairNode **);
-void findProjectName(HWND, LRESULT, wchar_t *, wchar_t *);
-void reloadFolderPairs(struct ProjectNode *, wchar_t *, HWND, HWND);
+void findProjectName(HWND, LRESULT, wchar_t *);
+void reloadFolderPairs(HWND, HWND, struct ProjectNode *, wchar_t *);
 void previewProject(HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
 void previewFolderPair(HWND, struct PairNode **, struct Project);
 void deleteFilePair(struct PairNode **, wchar_t *);
 void deletePairList(struct PairNode **);
+void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
 bool isProjectName(wchar_t *, int);
 int countPairNodes(struct PairNode *);
 int countProjectNodes(struct ProjectNode *);

@@ -40,11 +40,9 @@ static WNDPROC originalProjectNameProc;
 static WNDPROC originalSourceEditboxProc;
 static WNDPROC originalDestinationEditboxProc;
 static HWND mainHwnd;
-static HWND tabHwnd;
 static HWND projectNameHwnd;
 static HWND folderPairHwnd;
 static HWND lbProjectsHwnd;
-static HWND lbSyncHwnd;
 static HWND lbSourceHwnd;
 static HWND lbDestHwnd;
 static HWND lbPairSourceHwnd;
@@ -59,7 +57,7 @@ static void addFolderPair(void);
 static bool showingFolderPair = false;
 static bool showingProjectName = false;
 static wchar_t projectName[MAX_LINE] = {0};
-static wchar_t folderPair[MAX_LINE] = {0};
+static wchar_t folderPair[MAX_LINE * 3] = {0};
 static wchar_t sourceFolder[MAX_LINE] = {0};
 static wchar_t destFolder[MAX_LINE] = {0};
 
@@ -112,8 +110,8 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	}
 
 	ShowWindow(mainHwnd, nCmdShow);
-	readSettings(INI_FILE, mainHwnd);
-	loadProjects(PROJECTS, &projectsHead, lbProjectsHwnd);
+	readSettings(mainHwnd, INI_FILE);
+	loadProjects(lbProjectsHwnd, PRJ_FILE, &projectsHead);
 
 	MSG msg = {0};
 
@@ -129,7 +127,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static INITCOMMONCONTROLSEX icex = {0};
-	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair;
+	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, tabHwnd, lbSyncHwnd;
 	static bool listboxClicked = false;
 
 	enum Tabs
@@ -158,6 +156,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			if (tabHwnd == NULL)
 			{
 				writeFileW(LOG_FILE, L"Failed to create tab control");
+				MessageBox(NULL, L"Failed to create tab control", L"Error", MB_ICONEXCLAMATION | MB_OK);
 				break;
 			}
 
@@ -244,10 +243,10 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						case 0: // projects
 						{
-							clearArrayW(projectName, MAX_LINE);
-							clearArrayW(folderPair, MAX_LINE);
-							clearArrayW(sourceFolder, MAX_LINE);
-							clearArrayW(destFolder, MAX_LINE);
+							memset(projectName, '\0', MAX_LINE);
+							memset(folderPair, '\0', MAX_LINE);
+							memset(sourceFolder, '\0', MAX_LINE);
+							memset(destFolder, '\0', MAX_LINE);
 
 							SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
@@ -290,7 +289,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 							// if a project name is detected load the pairs
 							if (wcslen(projectName) > 0)
-								reloadFolderPairs(projectsHead, projectName, lbSourceHwnd, lbDestHwnd);
+								reloadFolderPairs(lbSourceHwnd, lbDestHwnd, projectsHead, projectName);
 
 							break;
 						}
@@ -359,7 +358,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							else
 							{
 								wcscpy_s(folderPair, MAX_LINE, selectedRowText);
-								findProjectName(lbProjectsHwnd, selectedRow, selectedRowText, projectName);
+								findProjectName(lbProjectsHwnd, selectedRow, projectName);
 							}
 						}
 					}
@@ -385,7 +384,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							else
 							{
 								wcscpy_s(folderPair, MAX_LINE, selectedRowText);
-								findProjectName(lbProjectsHwnd, selectedRow, selectedRowText, projectName);
+								findProjectName(lbProjectsHwnd, selectedRow, projectName);
 								SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_PAIRS, 0);
 								addFolderPair();
 							}
@@ -524,7 +523,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PROJECT)
 			{
-				clearArrayW(projectName, MAX_LINE);
+				memset(projectName, '\0', MAX_LINE);
 				getProjectName();
 			}
 
@@ -600,7 +599,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							{
 								// delete folder pair
 								wcscpy_s(folderPair, MAX_LINE, selectedRowText);
-								findProjectName(lbProjectsHwnd, selectedRow, selectedRowText, projectName);
+								findProjectName(lbProjectsHwnd, selectedRow, projectName);
 								deleteFolderPair(&projectsHead, folderPair, projectName);
 							}
 
@@ -631,7 +630,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							deleteFolderPair(&projectsHead, folderPair, projectName);
 							SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
-							reloadFolderPairs(projectsHead, projectName, lbSourceHwnd, lbDestHwnd);
+							reloadFolderPairs(lbSourceHwnd, lbDestHwnd, projectsHead, projectName);
 						}
 					}
 				}
@@ -688,17 +687,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						else
 						{
 							// preview folder pair
-							int pos = 0;
-							while (pos < textLen && selectedRowText[pos] != '>')
-								++pos;
-
-							int sourceEnd = pos - 2;
-							int destStart = pos + 2;
-
 							struct Project project;
-							wcsncpy_s(project.pair.source, MAX_LINE, selectedRowText, sourceEnd);
-							wcsncpy_s(project.pair.destination, MAX_LINE, selectedRowText + destStart, textLen);
-							findProjectName(lbProjectsHwnd, selectedRow, selectedRowText, project.name);
+							splitPair(selectedRowText, project.pair.source, project.pair.destination, textLen);
+							findProjectName(lbProjectsHwnd, selectedRow, project.name);
 
 							SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
 							previewFolderPair(lbSyncHwnd, &filesHead, project);
@@ -904,7 +895,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 						wcscpy_s(project.pair.destination, MAX_LINE, L"C:");
 
 						appendProjectNode(&projectsHead, project);
-						clearArrayW(projectName, MAX_LINE);
+						memset(projectName, '\0', MAX_LINE);
 					}
 				}
 
@@ -924,7 +915,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 				SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
 				sortProjectNodes(&projectsHead);
 				fillListbox(lbProjectsHwnd, &projectsHead);
-				clearArrayW(projectName, MAX_LINE);
+				memset(projectName, '\0', MAX_LINE);
 				showingProjectName = false;
 				DestroyWindow(hwnd);
 			}
@@ -1076,23 +1067,16 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			centerWindow(hwnd);
 
 			// store folderPair in case pair is being edited
-			clearArrayW(previousFolderPair, MAX_LINE);
+			memset(previousFolderPair, '\0', MAX_LINE);
 			wcscpy_s(previousFolderPair, MAX_LINE, folderPair);
 
 			// load current folder pair into listboxes
 			size_t length = wcslen(folderPair);
+			assert(length > 0);
+
 			if (length > 0)
 			{
-				int pos = 0;
-				while (pos < length && folderPair[pos] != '>')
-					++pos;
-
-				int sourceEnd = pos - 2;
-				int destStart = pos + 2;
-
-				wcsncpy_s(sourceFolder, MAX_LINE, folderPair, sourceEnd);
-				wcsncpy_s(destFolder, MAX_LINE, folderPair + destStart, length);
-
+				splitPair(folderPair, sourceFolder, destFolder, length);
 				SetWindowText(eSource, sourceFolder);
 				SetWindowText(eDestination, destFolder);
 				listFolders(lbPairSourceHwnd, sourceFolder);
@@ -1149,6 +1133,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							// handle .. or get new folder name
 							if (wcscmp(selectedRowText, L"..") == 0)
 							{
+								// cut off last folder from path
 								size_t len = wcslen(sourceFolder);
 								while (sourceFolder[len] != '\\' && len > 0)
 									--len;
@@ -1158,8 +1143,14 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							else
 							{
 								GetWindowText(eSource, sourceFolder, MAX_LINE);
-								wcscat(sourceFolder, L"\\");
-								wcscat(sourceFolder, selectedRowText);
+
+								if (wcslen(sourceFolder) + wcslen(selectedRowText) + 1 > MAX_LINE)
+									MessageBox(NULL, L"Path is at the limit, can't add new folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
+								else
+								{
+									wcscat(sourceFolder, L"\\");
+									wcscat(sourceFolder, selectedRowText);
+								}
 							}
 
 							SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
@@ -1216,6 +1207,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							// handle .. or get new folder name
 							if (wcscmp(selectedRowText, L"..") == 0)
 							{
+								// cut off last folder from path
 								size_t len = wcslen(destFolder);
 								while (destFolder[len] != '\\' && len > 0)
 									--len;
@@ -1225,8 +1217,14 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							else
 							{
 								GetWindowText(eDestination, destFolder, MAX_LINE);
-								wcscat(destFolder, L"\\");
-								wcscat(destFolder, selectedRowText);
+
+								if (wcslen(destFolder) + wcslen(selectedRowText) + 1 > MAX_LINE)
+									MessageBox(NULL, L"Path is at the limit, can't add new folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
+								else
+								{
+									wcscat(destFolder, L"\\");
+									wcscat(destFolder, selectedRowText);
+								}
 							}
 
 							SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
@@ -1271,7 +1269,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 				SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
 				SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
 				sortProjectNodes(&projectsHead);
-				reloadFolderPairs(projectsHead, projectName, lbSourceHwnd, lbDestHwnd);
+				reloadFolderPairs(lbSourceHwnd, lbDestHwnd, projectsHead, projectName);
 				showingFolderPair = false;
 				DestroyWindow(hwnd);
 			}

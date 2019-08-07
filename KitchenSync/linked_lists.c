@@ -16,6 +16,7 @@ void appendPairNode(struct PairNode **head_ref, struct Pair pair)
 	if (!newPairNode)
 	{
 		writeFileW(LOG_FILE, L"Failed to allocate memory for new pair");
+		MessageBox(NULL, L"Failed to allocate memory for new pair", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 
@@ -30,7 +31,7 @@ void appendPairNode(struct PairNode **head_ref, struct Pair pair)
 	if (wcscpy_s(newPairNode->pair.destination, MAX_LINE, pair.destination))
 	{
 		writeFileW(LOG_FILE, L"Failed copying new destination");
-		writeFileW(LOG_FILE, pair.source);
+		writeFileW(LOG_FILE, pair.destination);
 		free(newPairNode);
 		return;
 	}
@@ -63,6 +64,7 @@ void appendProjectNode(struct ProjectNode **head_ref, struct Project project)
 	if (!newProjectNode)
 	{
 		writeFileW(LOG_FILE, L"Failed to allocate memory for new project");
+		MessageBox(NULL, L"Failed to allocate memory for new project", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 
@@ -144,20 +146,13 @@ void deleteFolderPair(struct ProjectNode **head_ref, wchar_t *folderPair, wchar_
 
 	sortProjectNodes(head_ref);
 	size_t length = wcslen(folderPair);
+	assert(length > 0);
 
 	if (length > 0)
 	{
-		int pos = 0;
-		while (pos < length && folderPair[pos] != '>')
-			++pos;
-
-		int sourceEnd = pos - 2;
-		int destStart = pos + 2;
 		wchar_t src[MAX_LINE] = {0};
 		wchar_t dst[MAX_LINE] = {0};
-
-		wcsncpy_s(src, MAX_LINE, folderPair, sourceEnd);
-		wcsncpy_s(dst, MAX_LINE, folderPair + destStart, length);
+		splitPair(folderPair, src, dst, length);
 
 		struct ProjectNode *current = *head_ref;
 		int i = 0;
@@ -187,20 +182,13 @@ void deleteFilePair(struct PairNode **head_ref, wchar_t *filePair)
 
 	//sortProjectNodes(head_ref);
 	size_t length = wcslen(filePair);
+	assert(length > 0);
 
 	if (length > 0)
 	{
-		int pos = 0;
-		while (pos < length && filePair[pos] != '>')
-			++pos;
-
-		int sourceEnd = pos - 2;
-		int destStart = pos + 2;
 		wchar_t src[MAX_LINE] = {0};
 		wchar_t dst[MAX_LINE] = {0};
-
-		wcsncpy_s(src, MAX_LINE, filePair, sourceEnd);
-		wcsncpy_s(dst, MAX_LINE, filePair + destStart, length);
+		splitPair(filePair, src, dst, length);
 
 		struct PairNode *current = *head_ref;
 		int i = 0;
@@ -221,31 +209,22 @@ void deleteFilePair(struct PairNode **head_ref, wchar_t *filePair)
 }
 
 // replace existing folder pair
-void replaceFolderPair(struct ProjectNode **head_ref, wchar_t *projectName, wchar_t *oldFolderPair, wchar_t *newSrc, wchar_t *newDst)
+void replaceFolderPair(struct ProjectNode **head_ref, wchar_t *projectName, wchar_t *folderPair, wchar_t *newSrc, wchar_t *newDst)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"replaceFolderPair()");
 #endif
 
 	sortProjectNodes(head_ref);
-	size_t oldLength = wcslen(oldFolderPair);
+	size_t length = wcslen(folderPair);
+	assert(length > 0);
 
-	assert(oldLength > 0);
-
-	if (oldLength > 0)
+	if (length > 0)
 	{
 		// extract old folder pair
-		int pos = 0;
-		while (pos < oldLength && oldFolderPair[pos] != '>')
-			++pos;
-
-		int oldSourceEnd = pos - 2;
-		int oldDestStart = pos + 2;
-		wchar_t oldSrc[MAX_LINE] = {0};
-		wchar_t oldDst[MAX_LINE] = {0};
-
-		wcsncpy_s(oldSrc, MAX_LINE, oldFolderPair, oldSourceEnd);
-		wcsncpy_s(oldDst, MAX_LINE, oldFolderPair + oldDestStart, oldLength);
+		wchar_t src[MAX_LINE] = {0};
+		wchar_t dst[MAX_LINE] = {0};
+		splitPair(folderPair, src, dst, length);
 
 		// find & replace folder pair
 		struct ProjectNode *current = *head_ref;
@@ -253,8 +232,8 @@ void replaceFolderPair(struct ProjectNode **head_ref, wchar_t *projectName, wcha
 		while (*head_ref != NULL && current != NULL)
 		{
 			if (wcscmp(current->project.name, projectName) == 0 &&
-				wcscmp(current->project.pair.source, oldSrc) == 0 &&
-				wcscmp(current->project.pair.destination, oldDst) == 0)
+				wcscmp(current->project.pair.source, src) == 0 &&
+				wcscmp(current->project.pair.destination, dst) == 0)
 			{
 				wcscpy_s(current->project.pair.source, MAX_LINE, newSrc);
 				wcscpy_s(current->project.pair.destination, MAX_LINE, newDst);
@@ -494,7 +473,6 @@ void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **
 #endif
 
 	struct ProjectNode *current = *head_ref;
-
 	do
 	{
 		if (wcscmp(current->project.name, projectName) == 0)

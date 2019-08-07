@@ -5,7 +5,7 @@ static void displayErrorBox(LPTSTR);
 int listFolders(HWND hwnd, wchar_t *folder)
 {
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"listDir()");
+	writeFileW(LOG_FILE, L"listFolders()");
 #endif
 
 	DWORD dwError = 0;
@@ -13,6 +13,12 @@ int listFolders(HWND hwnd, wchar_t *folder)
 
 	wchar_t szDir[MAX_LINE];
 	wcscpy_s(szDir, MAX_LINE, folder);
+	if (wcslen(szDir) >= MAX_LINE)
+	{
+		writeFileW(LOG_FILE, L"Folder path is full, can't add \\");
+		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return 0;
+	}
 	wcscat(szDir, L"\\*");
 
 	HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -53,7 +59,7 @@ int listFolders(HWND hwnd, wchar_t *folder)
 int listFolderContent(HWND hwnd, struct PairNode **pairs, wchar_t *folder)
 {
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"listDir()");
+	writeFileW(LOG_FILE, L"listFolderContent()");
 #endif
 
 	DWORD dwError = 0;
@@ -61,6 +67,12 @@ int listFolderContent(HWND hwnd, struct PairNode **pairs, wchar_t *folder)
 
 	wchar_t szDir[MAX_LINE];
 	wcscpy_s(szDir, MAX_LINE, folder);
+	if (wcslen(szDir) >= MAX_LINE)
+	{
+		writeFileW(LOG_FILE, L"Folder path is full, can't add \\");
+		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return 0;
+	}
 	wcscat(szDir, L"\\*");
 
 	HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -83,6 +95,12 @@ int listFolderContent(HWND hwnd, struct PairNode **pairs, wchar_t *folder)
 
 		wchar_t currentItem[MAX_LINE] = {0};
 		wcscpy_s(currentItem, MAX_LINE, folder);
+		if (wcslen(currentItem) + wcslen(ffd.cFileName) + 1 > MAX_LINE)
+		{
+			writeFileW(LOG_FILE, L"Folder path is full, can't add filename");
+			MessageBox(NULL, L"Folder path is full, can't add filename", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			return 0;
+		}
 		wcscat(currentItem, L"\\");
 		wcscat(currentItem, ffd.cFileName);
 
@@ -92,6 +110,12 @@ int listFolderContent(HWND hwnd, struct PairNode **pairs, wchar_t *folder)
 		{
 			wchar_t subFolder[MAX_LINE] = {0};
 			wcscpy_s(subFolder, MAX_LINE, currentItem);
+			if (wcslen(subFolder) >= MAX_LINE)
+			{
+				writeFileW(LOG_FILE, L"Sub-folder path is full, can't add \\");
+				MessageBox(NULL, L"Sub-folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+				return 0;
+			}
 			wcscat(subFolder, L"\\");
 			//SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)subFolder);
 			listFolderContent(hwnd, pairs, currentItem);
@@ -112,15 +136,12 @@ int listFolderContent(HWND hwnd, struct PairNode **pairs, wchar_t *folder)
 			wcscpy_s(newPair.source, MAX_LINE, ffd.cFileName);
 			wcscpy_s(newPair.destination, MAX_LINE, L""); //TODO destination is missing
 			appendPairNode(pairs, newPair);
-
 //#if DEV_MODE
 //			wchar_t buf[MAX_LINE] = {0};
 //			swprintf(buf, MAX_LINE, L"File: %s, Size: %lld", currentItem, filesize.QuadPart);
 //			writeFileW(LOG_FILE, buf);
 //#endif
 		}
-
-
 	}
 	while (FindNextFile(hFind, &ffd) != 0);
 

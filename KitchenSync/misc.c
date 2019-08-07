@@ -2,8 +2,8 @@
 
 void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 {
-	writeSettings(INI_FILE, hwnd);
-	saveProjects(PROJECTS, head_ref);
+	writeSettings(hwnd, INI_FILE);
+	saveProjects(PRJ_FILE, head_ref);
 	PostQuitMessage(0);
 }
 
@@ -20,51 +20,6 @@ void centerWindow(HWND hwnd)
 	SetWindowPos(hwnd, HWND_TOP, (screenWidth - windowWidth) / 2,
 		(screenHeight - windowHeight) / 2, 0, 0, SWP_NOSIZE);
 }
-
-//void clearArray(char *array, int length)
-//{
-//	for (int i = 0; i < length; ++i)
-//		array[i] = '\0';
-//}
-
-void clearArrayW(wchar_t *array, int length)
-{
-	for (int i = 0; i < length; ++i)
-		array[i] = '\0';
-}
-
-//void clearNewlines(char *array, int length)
-//{
-//	for (int i = 0; i < length; ++i)
-//		if (array[i] == '\n')
-//			array[i] = '\0';
-//}
-
-//void clearNewlinesW(wchar_t *array, int length)
-//{
-//	for (int i = 0; i < length; ++i)
-//		if (array[i] == '\n')
-//			array[i] = '\0';
-//}
-
-//void writeFile(char *filename, char *text)
-//{
-//	//while (state.writing)
-//	//	Sleep(100);
-
-//	//state.writing = true;
-
-//	FILE *f = fopen(filename, "a");
-//	if (f == NULL)
-//	{
-//		MessageBox(NULL, L"Can't open file", L"Error", MB_ICONEXCLAMATION | MB_OK);
-//		return;
-//	}
-
-//	fprintf(f, "%s\n", text);
-//	fclose(f);
-//	//state.writing = false;
-//}
 
 void writeFileW(char *filename, wchar_t *text)
 {
@@ -85,7 +40,7 @@ void writeFileW(char *filename, wchar_t *text)
 	//state.writing = false;
 }
 
-void writeSettings(char *filename, HWND hwnd)
+void writeSettings(HWND hwnd, char *filename)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"writeSettings()");
@@ -95,6 +50,7 @@ void writeSettings(char *filename, HWND hwnd)
 	if (f == NULL)
 	{
 		writeFileW(LOG_FILE, L"Error saving settings!");
+		MessageBox(NULL, L"Error saving settings", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 
@@ -110,7 +66,7 @@ void writeSettings(char *filename, HWND hwnd)
 	fclose(f);
 }
 
-void readSettings(char *filename, HWND hwnd)
+void readSettings(HWND hwnd, char *filename)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"readSettings()");
@@ -132,6 +88,7 @@ void readSettings(char *filename, HWND hwnd)
 	if (!line)
 	{
 		writeFileW(LOG_FILE, L"Failed to allocate memory for line from settings file");
+		MessageBox(NULL, L"Failed to allocate memory for line from settings file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		fclose(f);
 		return;
 	}
@@ -145,6 +102,7 @@ void readSettings(char *filename, HWND hwnd)
 		if (!setting)
 		{
 			writeFileW(LOG_FILE, L"Failed to allocate memory for setting from settings file");
+			MessageBox(NULL, L"Failed to allocate memory for setting from settings file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
 		}
@@ -153,6 +111,7 @@ void readSettings(char *filename, HWND hwnd)
 		if (!value)
 		{
 			writeFileW(LOG_FILE, L"Failed to allocate memory for value from settings file");
+			MessageBox(NULL, L"Failed to allocate memory for value from settings file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
 		}
@@ -197,7 +156,7 @@ void readSettings(char *filename, HWND hwnd)
 	SetWindowPos(hwnd, HWND_TOP, windowCol, windowRow, WINDOW_WIDTH, windowHeight, SWP_SHOWWINDOW);
 }
 
-void loadProjects(char *filename, struct ProjectNode **head_ref, HWND hwnd)
+void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"loadProjects()");
@@ -214,6 +173,7 @@ void loadProjects(char *filename, struct ProjectNode **head_ref, HWND hwnd)
 	if (!line)
 	{
 		writeFileW(LOG_FILE, L"Failed to allocate memory for line from projects file");
+		MessageBox(NULL, L"Failed to allocate memory for line from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		fclose(f);
 		return;
 	}
@@ -227,6 +187,7 @@ void loadProjects(char *filename, struct ProjectNode **head_ref, HWND hwnd)
 		if (!name)
 		{
 			writeFileW(LOG_FILE, L"Failed to allocate memory for name from projects file");
+			MessageBox(NULL, L"Failed to allocate memory for name from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
 		}
@@ -235,6 +196,7 @@ void loadProjects(char *filename, struct ProjectNode **head_ref, HWND hwnd)
 		if (!source)
 		{
 			writeFileW(LOG_FILE, L"Failed to allocate memory for source from projects file");
+			MessageBox(NULL, L"Failed to allocate memory for source from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
 		}
@@ -243,6 +205,7 @@ void loadProjects(char *filename, struct ProjectNode **head_ref, HWND hwnd)
 		if (!destination)
 		{
 			writeFileW(LOG_FILE, L"Failed to allocate memory for destination from projects file");
+			MessageBox(NULL, L"Failed to allocate memory for destination from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
 		}
@@ -273,6 +236,7 @@ void loadProjects(char *filename, struct ProjectNode **head_ref, HWND hwnd)
 		if (!buf)
 		{
 			writeFileW(LOG_FILE, L"Failed to allocate memory for logging buf");
+			MessageBox(NULL, L"Failed to allocate memory for logging buf", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
 		}
@@ -310,6 +274,7 @@ void fillListbox(HWND hwnd, struct ProjectNode **head_ref)
 	if (!currentProjectName)
 	{
 		writeFileW(LOG_FILE, L"Failed to allocate memory for currentProjectName from projects file");
+		MessageBox(NULL, L"Failed to allocate memory for currentProjectName from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 
@@ -332,6 +297,7 @@ void fillListbox(HWND hwnd, struct ProjectNode **head_ref)
 		if (!buffer)
 		{
 			writeFileW(LOG_FILE, L"Failed to allocate memory for folder pair buffer from projects file");
+			MessageBox(NULL, L"Failed to allocate memory for folder pair buffer from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
 
@@ -353,6 +319,7 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 	if (!currentPairName)
 	{
 		writeFileW(LOG_FILE, L"Failed to allocate memory for currentPairName from preview list");
+		MessageBox(NULL, L"Failed to allocate memory for currentPairName from preview list", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 
@@ -365,6 +332,7 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 		if (!buffer)
 		{
 			writeFileW(LOG_FILE, L"Failed to allocate memory for file pair buffer from preview list");
+			MessageBox(NULL, L"Failed to allocate memory for file pair buffer from preview list", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
 
@@ -396,6 +364,7 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 		if (!buf)
 		{
 			writeFileW(LOG_FILE, L"Failed to allocate memory for buf for projects file");
+			MessageBox(NULL, L"Failed to allocate memory for buf for projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
 
@@ -403,7 +372,7 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 		if (wcslen(current->project.pair.source) > 0 && wcslen(current->project.pair.destination) > 0)
 		{
 			swprintf(buf, MAX_LINE * 4, L"%s,%s,%s", current->project.name, current->project.pair.source, current->project.pair.destination);
-			writeFileW(PROJECTS, buf);
+			writeFileW(PRJ_FILE, buf);
 		}
 
 		swprintf(buf, MAX_LINE * 4, L"Name: %s, source: %s, dest: %s", current->project.name, current->project.pair.source, current->project.pair.destination);
@@ -433,29 +402,34 @@ bool isProjectName(wchar_t *text, int len)
 
 // look backwards to find project name from selected pair
 //TODO does this need to mess with *selectedRowText? can this be removed?
-void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *selectedRowText, wchar_t *projectName)
+//TODO test this update
+//void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *selectedRowText, wchar_t *projectName)
+void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *projectName)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"findProjectName()");
 #endif
 
-	LRESULT projectPosition = selectedRow;
+	//LRESULT projectPosition = selectedRow;
+	wchar_t selectedRowText[MAX_LINE] = {0};
 	bool found = false;
 
 	do
 	{
-		int textLen = (int)SendMessage(hwnd, LB_GETTEXT, --projectPosition, (LPARAM)selectedRowText);
+		//int textLen = (int)SendMessage(hwnd, LB_GETTEXT, --projectPosition, (LPARAM)selectedRowText);
+		int textLen = (int)SendMessage(hwnd, LB_GETTEXT, --selectedRow, (LPARAM)selectedRowText);
 		if (isProjectName(selectedRowText, textLen))
 		{
 			wcscpy_s(projectName, MAX_LINE, selectedRowText);
 			found = true;
 		}
 	}
-	while (!found && projectPosition >= 0);
+	//while (!found && projectPosition >= 0);
+	while (!found && selectedRow >= 0);
 }
 
 // reload source & destination folder pair listboxes
-void reloadFolderPairs(struct ProjectNode *projectsHead, wchar_t *projectName, HWND src, HWND dst)
+void reloadFolderPairs(HWND src, HWND dst, struct ProjectNode *projectsHead, wchar_t *projectName)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"reloadFolderPairs()");
@@ -474,4 +448,17 @@ void reloadFolderPairs(struct ProjectNode *projectsHead, wchar_t *projectName, H
 		}
 		current = current->next;
 	}
+}
+
+void splitPair(wchar_t *pair, wchar_t *source, wchar_t *dest, size_t length)
+{
+	int pos = 0;
+	while (pos < length && pair[pos] != '>')
+		++pos;
+
+	int sourceEnd = pos - 2;
+	int destStart = pos + 2;
+
+	wcsncpy_s(source, MAX_LINE, pair, sourceEnd);
+	wcsncpy_s(dest, MAX_LINE, pair + destStart, length);
 }
