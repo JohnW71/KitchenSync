@@ -35,7 +35,7 @@ void readSettings(HWND, char *);
 void loadProjects(HWND, char *, struct ProjectNode **);
 void saveProjects(char *, struct ProjectNode **);
 void writeFileW(char *, wchar_t *);
-void appendPairNode(struct PairNode **, struct Pair);
+void appendPairNode(struct PairNode **, struct Pair, LONGLONG);
 void appendProjectNode(struct ProjectNode **, struct Project);
 void deleteProject(struct ProjectNode **, wchar_t *);
 void deleteFolderPair(struct ProjectNode **, wchar_t *, wchar_t *);
@@ -60,6 +60,7 @@ struct Pair
 {
 	wchar_t source[MAX_LINE];
 	wchar_t destination[MAX_LINE];
+	LONGLONG filesize; // __int64
 };
 
 struct PairNode

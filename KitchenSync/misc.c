@@ -323,12 +323,13 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 		return;
 	}
 
+	LONGLONG totalSize = 0;
 	int position = 0;
 	struct PairNode *current = *head_ref;
 
 	while (current != NULL)
 	{
-		wchar_t *buffer = (wchar_t *)calloc(MAX_LINE * 4, sizeof(wchar_t));
+		wchar_t *buffer = (wchar_t *)calloc(MAX_LINE * 3, sizeof(wchar_t));
 		if (!buffer)
 		{
 			writeFileW(LOG_FILE, L"Failed to allocate memory for file pair buffer from preview list");
@@ -336,10 +337,17 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 			return;
 		}
 
-		swprintf(buffer, MAX_LINE * 4, L"%s -> %s", current->pair.source, current->pair.destination);
+		LONGLONG size = current->pair.filesize; //    / 1024 / 1024; // TODO format sizes better
+		totalSize += size;
+		swprintf(buffer, MAX_LINE * 3, L"%s -> %s\t%lld", current->pair.source, current->pair.destination, size);
 		SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)buffer);
 		current = current->next;
 	}
+
+	wchar_t buf[MAX_LINE] = {0};
+	swprintf(buf, MAX_LINE, L"Total size required: %lld", totalSize);
+	SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)L"");
+	SendMessage(hwnd, LB_ADDSTRING, position, (LPARAM)buf);
 }
 
 void saveProjects(char *filename, struct ProjectNode **head_ref)

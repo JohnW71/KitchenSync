@@ -2,6 +2,38 @@
 
 static void displayErrorBox(LPTSTR);
 
+void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *projectName)
+{
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"previewProject()");
+#endif
+
+	struct ProjectNode *current = *head_ref;
+	do
+	{
+		if (wcscmp(current->project.name, projectName) == 0)
+		{
+			struct Project project;
+			wcscpy_s(project.name, MAX_LINE, projectName);
+			wcscpy_s(project.pair.source, MAX_LINE, current->project.pair.source);
+			wcscpy_s(project.pair.destination, MAX_LINE, current->project.pair.destination);
+
+			previewFolderPair(hwnd, pairs, project);
+		}
+		current = current->next;
+	}
+	while (*head_ref != NULL && current != NULL);
+}
+
+void previewFolderPair(HWND hwnd, struct PairNode **pairs, struct Project project)
+{
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"previewFolderPair()");
+#endif
+
+	listFolderContent(hwnd, pairs, project.pair.source);
+}
+
 int listFolders(HWND hwnd, wchar_t *folder)
 {
 #if DEV_MODE
@@ -135,7 +167,7 @@ int listFolderContent(HWND hwnd, struct PairNode **pairs, wchar_t *folder)
 			struct Pair newPair;
 			wcscpy_s(newPair.source, MAX_LINE, ffd.cFileName);
 			wcscpy_s(newPair.destination, MAX_LINE, L""); //TODO destination is missing
-			appendPairNode(pairs, newPair);
+			appendPairNode(pairs, newPair, filesize.QuadPart);
 //#if DEV_MODE
 //			wchar_t buf[MAX_LINE] = {0};
 //			swprintf(buf, MAX_LINE, L"File: %s, Size: %lld", currentItem, filesize.QuadPart);

@@ -5,7 +5,7 @@ static void deleteProjectNode(struct ProjectNode **, int);
 static void deleteProjectList(struct ProjectNode **);
 
 // append a new node at the end
-void appendPairNode(struct PairNode **head_ref, struct Pair pair)
+void appendPairNode(struct PairNode **head_ref, struct Pair pair, LONGLONG filesize)
 {
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"appendPairNode()");
@@ -36,6 +36,7 @@ void appendPairNode(struct PairNode **head_ref, struct Pair pair)
 		return;
 	}
 
+	newPairNode->pair.filesize = filesize;
 	newPairNode->next = NULL;
 
 	// if list is empty set newPairNode as head
@@ -464,36 +465,4 @@ void sortProjectNodes(struct ProjectNode **head_ref)
 		}
 	}
 	while (changed);
-}
-
-void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *projectName)
-{
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"previewProject()");
-#endif
-
-	struct ProjectNode *current = *head_ref;
-	do
-	{
-		if (wcscmp(current->project.name, projectName) == 0)
-		{
-			struct Project project;
-			wcscpy_s(project.name, MAX_LINE, projectName);
-			wcscpy_s(project.pair.source, MAX_LINE, current->project.pair.source);
-			wcscpy_s(project.pair.destination, MAX_LINE, current->project.pair.destination);
-
-			previewFolderPair(hwnd, pairs, project);
-		}
-		current = current->next;
-	}
-	while (*head_ref != NULL && current != NULL);
-}
-
-void previewFolderPair(HWND hwnd, struct PairNode **pairs, struct Project project)
-{
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"previewFolderPair()");
-#endif
-
-	listFolderContent(hwnd, pairs, project.pair.source);
 }
