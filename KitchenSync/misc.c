@@ -1,5 +1,7 @@
 #include "kitchen_sync.h"
 
+static void sizeFormatted(LONGLONG, wchar_t *);
+
 void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 {
 	writeSettings(hwnd, INI_FILE);
@@ -339,15 +341,53 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 
 		LONGLONG size = current->pair.filesize; //    / 1024 / 1024; // TODO format sizes better
 		totalSize += size;
-		swprintf(buffer, MAX_LINE * 3, L"%s -> %s\t%lld", current->pair.source, current->pair.destination, size);
+		wchar_t formatted[MAX_LINE] = {0};
+		sizeFormatted(size, formatted);
+		swprintf(buffer, MAX_LINE * 3, L"%s -> %s  (%s)", current->pair.source, current->pair.destination, formatted);
 		SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)buffer);
 		current = current->next;
 	}
 
 	wchar_t buf[MAX_LINE] = {0};
-	swprintf(buf, MAX_LINE, L"Total size required: %lld", totalSize);
+	wchar_t formatted[MAX_LINE] = {0};
+	sizeFormatted(totalSize, formatted);
+	swprintf(buf, MAX_LINE, L"Total size to copy: %s", formatted);
 	SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)L"");
 	SendMessage(hwnd, LB_ADDSTRING, position, (LPARAM)buf);
+}
+
+static void sizeFormatted(LONGLONG size, wchar_t *buf)
+{
+	#define LIMIT 256
+
+	// convert size to string
+	wchar_t text[LIMIT] = {0};
+	swprintf(text, LIMIT, L"%lld", size);
+	size_t length = wcslen(text);
+	wchar_t *t = text + (length - 1);
+
+	wchar_t reversed[LIMIT] = {0};
+	wchar_t *r = reversed;
+
+	// reverse it and add commas
+	int count = 0;
+	while (length--)
+	{
+		*r++ = *t--;
+
+		if (++count == 3 && length > 0)
+		{
+			*r++ = ',';
+			count = 0;
+		}
+	}
+
+	// reverse again into buf
+	length = wcslen(reversed);
+	r = reversed + (length - 1);
+
+	while (length--)
+		*buf++ = *r--;
 }
 
 void saveProjects(char *filename, struct ProjectNode **head_ref)
