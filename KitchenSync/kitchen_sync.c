@@ -687,12 +687,14 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						else
 						{
 							// preview folder pair
-							struct Project project;
+							struct Project project = {0};
 							splitPair(selectedRowText, project.pair.source, project.pair.destination, textLen);
 							findProjectName(lbProjectsHwnd, selectedRow, project.name);
 
 							SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
-							previewFolderPair(lbSyncHwnd, &filesHead, project);
+							//previewFolderPair(lbSyncHwnd, &filesHead, project);
+							//listTreeContent(hwnd, pairs, project.pair.source);
+							previewFolderPairTest(lbSyncHwnd, &filesHead, project);
 						}
 
 						fillSyncListbox(lbSyncHwnd, &filesHead);
@@ -1079,8 +1081,8 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 				splitPair(folderPair, sourceFolder, destFolder, length);
 				SetWindowText(eSource, sourceFolder);
 				SetWindowText(eDestination, destFolder);
-				listFolders(lbPairSourceHwnd, sourceFolder);
-				listFolders(lbPairDestHwnd, destFolder);
+				listFolderContent(lbPairSourceHwnd, sourceFolder);
+				listFolderContent(lbPairDestHwnd, destFolder);
 			}
 
 			if (wcscmp(folderPair, L"C: -> C:") != 0)
@@ -1154,14 +1156,14 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							}
 
 							SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
-							if (listFolders(lbPairSourceHwnd, sourceFolder))
+							if (listFolderContent(lbPairSourceHwnd, sourceFolder))
 								SetWindowText(eSource, sourceFolder);
 							else
 							{
 								//TODO handle errors properly
 								// if error, redisplay folder contents
 								SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
-								listFolders(lbPairSourceHwnd, currentFolder);
+								listFolderContent(lbPairSourceHwnd, currentFolder);
 							}
 						}
 					}
@@ -1228,14 +1230,14 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							}
 
 							SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
-							if (listFolders(lbPairDestHwnd, destFolder))
+							if (listFolderContent(lbPairDestHwnd, destFolder))
 								SetWindowText(eDestination, destFolder);
 							else
 							{
 								//TODO handle errors properly
 								// if error, redisplay folder contents
 								SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
-								listFolders(lbPairDestHwnd, currentFolder);
+								listFolderContent(lbPairDestHwnd, currentFolder);
 							}
 						}
 					}
@@ -1302,7 +1304,7 @@ static LRESULT CALLBACK customSourceEditboxProc(HWND hwnd, UINT msg, WPARAM wPar
 					// load folder contents
 					GetWindowText(hwnd, sourceFolder, MAX_LINE);
 					SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
-					if (listFolders(lbPairSourceHwnd, sourceFolder))
+					if (listFolderContent(lbPairSourceHwnd, sourceFolder))
 						SetWindowText(hwnd, sourceFolder);
 					break;
 				case 'A': // CTRL A
@@ -1329,7 +1331,7 @@ static LRESULT CALLBACK customDestinationEditboxProc(HWND hwnd, UINT msg, WPARAM
 					// load folder contents
 					GetWindowText(hwnd, destFolder, MAX_LINE);
 					SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
-					if (listFolders(lbPairDestHwnd, destFolder))
+					if (listFolderContent(lbPairDestHwnd, destFolder))
 						SetWindowText(hwnd, destFolder);
 					break;
 				case 'A': // CTRL A
