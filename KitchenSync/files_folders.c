@@ -2,6 +2,8 @@
 
 static bool fileExists(wchar_t *);
 static bool folderExists(wchar_t *);
+static bool fileDateIsDifferent(FILETIME, FILETIME, FILETIME, wchar_t *);
+static LONGLONG getFileSize(wchar_t *);
 static void displayErrorBox(LPTSTR);
 static int previewFolderPairSourceTest(HWND, struct PairNode **, struct Project);
 static int previewFolderPairTargetTest(HWND, struct PairNode **, struct Project);
@@ -71,7 +73,7 @@ int listFolderContent(HWND hwnd, wchar_t *folder)
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		displayErrorBox(TEXT("FindFirstFile"));
+		displayErrorBox(TEXT("listFolderContent"));
 		return dwError;
 	}
 
@@ -95,7 +97,7 @@ int listFolderContent(HWND hwnd, wchar_t *folder)
 
 	dwError = GetLastError();
 	if (dwError != ERROR_NO_MORE_FILES)
-		displayErrorBox(TEXT("FindFirstFile"));
+		displayErrorBox(TEXT("listFolderContent"));
 
 	FindClose(hFind);
 	return dwError;
@@ -126,7 +128,7 @@ int listTreeContent(HWND hwnd, struct PairNode **pairs, wchar_t *source, wchar_t
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		displayErrorBox(TEXT("FindFirstFile"));
+		displayErrorBox(TEXT("listTreeContent"));
 		return dwError;
 	}
 
@@ -189,7 +191,7 @@ int listTreeContent(HWND hwnd, struct PairNode **pairs, wchar_t *source, wchar_t
 
 	dwError = GetLastError();
 	if (dwError != ERROR_NO_MORE_FILES)
-		displayErrorBox(TEXT("FindFirstFile"));
+		displayErrorBox(TEXT("listTreeContent"));
 
 	FindClose(hFind);
 	return dwError;
@@ -238,12 +240,6 @@ static bool folderExists(wchar_t *path)
 //	DWORD    nFileSizeHigh;
 //	DWORD    nFileSizeLow;
 //} WIN32_FILE_ATTRIBUTE_DATA, *LPWIN32_FILE_ATTRIBUTE_DATA;
-//
-//typedef struct _FILETIME {
-//	DWORD dwLowDateTime;
-//	DWORD dwHighDateTime;
-//} FILETIME, *PFILETIME, *LPFILETIME;
-//
 
 static LONGLONG getFileSize(wchar_t *path)
 {
@@ -260,6 +256,70 @@ static LONGLONG getFileSize(wchar_t *path)
 	size.HighPart = info.nFileSizeHigh;
 	size.LowPart = info.nFileSizeLow;
 	return size.QuadPart;
+}
+
+//static void getFileDate(wchar_t *path, SYSTEMTIME *systemTime)
+//{
+//	WIN32_FILE_ATTRIBUTE_DATA info = { 0 };
+//
+//	if (!GetFileAttributesEx(path, GetFileExInfoStandard, &info))
+//	{
+//		writeFileW(LOG_FILE, L"Error reading file attributes!");
+//		MessageBox(NULL, L"Error reading file attributes", L"Error", MB_ICONEXCLAMATION | MB_OK);
+//		return;
+//	}
+//
+//	if (!FileTimeToSystemTime(&info.ftLastWriteTime, systemTime))
+//	{
+//		writeFileW(LOG_FILE, L"Error converting file time to system time!");
+//		MessageBox(NULL, L"Error converting file time to system time", L"Error", MB_ICONEXCLAMATION | MB_OK);
+//		return;
+//	}
+//
+//	return;
+//}
+
+static bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWrite, wchar_t * dstPath)
+{
+	SYSTEMTIME srcInfo = { 0 };
+	SYSTEMTIME dstInfo = { 0 };
+
+	SYSTEMTIME srcLocal = { 0 };
+	SYSTEMTIME dstLocal = { 0 };
+
+	//getFileDate(srcPath, &srcInfo);
+	//getFileDate(dstPath, &dstInfo);
+
+	//HANDLE src = CreateFile(srcPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+	HANDLE dst = CreateFile(dstPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+
+	FILETIME dstCreate = { 0 };
+	FILETIME dstAccess = { 0 };
+	FILETIME dstWrite = { 0 };
+
+	if (!GetFileTime(dst, &dstCreate, &dstAccess, &dstWrite))
+	{
+		wchar_t buf[MAX_LINE] = {0};
+		swprintf(buf, MAX_LINE, L"Failed to get file time for destination %s", dstPath);
+		writeFileW(LOG_FILE, buf);
+		return false;
+	}
+
+	FileTimeToSystemTime(&srcWrite, &srcInfo);
+	SystemTimeToTzSpecificLocalTime(NULL, &srcInfo, &srcLocal);
+
+	FileTimeToSystemTime(&dstWrite, &dstInfo);
+	SystemTimeToTzSpecificLocalTime(NULL, &dstInfo, &dstLocal);
+
+	//TODO add more specific date check?
+	if (srcInfo.wYear != dstInfo.wYear) return true;
+	if (srcInfo.wMonth != dstInfo.wMonth) return true;
+	if (srcInfo.wDay != dstInfo.wDay) return true;
+	if (srcInfo.wHour != dstInfo.wHour) return true;
+	if (srcInfo.wMinute != dstInfo.wMinute) return true;
+	if (srcInfo.wSecond != dstInfo.wSecond) return true;
+
+	return false;
 }
 
 /*
@@ -305,6 +365,7 @@ static void deleteFolder(wchar_t *path)
 }
 */
 
+//FIX files are passed without path so are duplicated in the list
 static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struct Project project)
 {
 #if DEV_MODE
@@ -424,10 +485,9 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 	swprintf(buf, MAX_LINE, L"target file size %lld", targetSize);
 	writeFileW(LOG_FILE, buf);
 #endif
+
 				//TODO filesize comparison
-				//TODO date/time comparison
-				//NOTE need to work out the file attribute methods for this
-				// if different, add file to list
+				// if different size, add file to list
 				if (targetSize != filesize.QuadPart)
 				{
 #if DEV_MODE
@@ -455,6 +515,34 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 //	swprintf(buf, MAX_LINE, L"Source file:\n%sDestination file:\n%s", srcFile, destFile);
 //	writeFileW(LOG_FILE, buf);
 //#endif
+				}
+				else
+				{
+					//TODO date/time comparison
+					// if last write time is different between source and destination, add file to list
+					//if (fileDateIsDifferent(project.pair.source, destination))
+					if (fileDateIsDifferent(ffd.ftCreationTime, ffd.ftLastAccessTime, ffd.ftLastWriteTime, destination))
+					{
+#if DEV_MODE
+	//wchar_t buf[MAX_LINE] = {0};
+	swprintf(buf, MAX_LINE, L"source & target files have different date/time, add to list");
+	writeFileW(LOG_FILE, buf);
+#endif
+						wchar_t srcFile[MAX_LINE] = { 0 };
+						wcscpy_s(srcFile, MAX_LINE, project.pair.source);
+						wcscat(srcFile, L"\\");
+						wcscat(srcFile, ffd.cFileName);
+
+						wchar_t destFile[MAX_LINE] = { 0 };
+						wcscpy_s(destFile, MAX_LINE, project.pair.destination);
+						wcscat(destFile, L"\\");
+						wcscat(destFile, ffd.cFileName);
+
+						struct Pair newPair = { 0 };
+						wcscpy_s(newPair.source, MAX_LINE, srcFile);
+						wcscpy_s(newPair.destination, MAX_LINE, destFile);
+						appendPairNode(pairs, newPair, filesize.QuadPart);
+					}
 				}
 			}
 			else
@@ -492,7 +580,7 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 
 	dwError = GetLastError();
 	if (dwError != ERROR_NO_MORE_FILES)
-		displayErrorBox(TEXT("FindFirstFile"));
+		displayErrorBox(TEXT("previewFolderPairSourceTest"));
 
 	FindClose(hFind);
 	return dwError;
