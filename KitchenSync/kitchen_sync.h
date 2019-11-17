@@ -12,9 +12,9 @@
 #include <CommCtrl.h>
 #include <wchar.h>
 
-#define LOG_FILE "kitchen_sync.log"
-#define INI_FILE "kitchen_sync.ini"
-#define PRJ_FILE "kitchen_sync.prj"
+#define LOG_FILE "KitchenSync.log"
+#define INI_FILE "KitchenSync.ini"
+#define PRJ_FILE "KitchenSync.prj"
 #define MAX_LINE 512
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 1024
@@ -47,7 +47,7 @@ void findProjectName(HWND, LRESULT, wchar_t *);
 void reloadFolderPairs(HWND, HWND, struct ProjectNode *, wchar_t *);
 void previewProject(HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
 //void previewFolderPair(HWND, struct PairNode **, struct Project);
-void previewFolderPairTest(HWND, struct PairNode **, struct Project);
+void previewFolderPairTest(HWND, struct PairNode **, struct Project *);
 void deleteFilePair(struct PairNode **, wchar_t *);
 void deletePairList(struct PairNode **);
 void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);

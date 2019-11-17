@@ -694,7 +694,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
 							//previewFolderPair(lbSyncHwnd, &filesHead, project);
 							//listTreeContent(hwnd, pairs, project.pair.source);
-							previewFolderPairTest(lbSyncHwnd, &filesHead, project);
+							previewFolderPairTest(lbSyncHwnd, &filesHead, &project);
 						}
 
 						fillSyncListbox(lbSyncHwnd, &filesHead);

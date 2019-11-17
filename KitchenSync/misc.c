@@ -339,7 +339,7 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 			return;
 		}
 
-		LONGLONG size = current->pair.filesize; //    / 1024 / 1024; // TODO format sizes better
+		LONGLONG size = current->pair.filesize;
 		totalSize += size;
 		wchar_t formatted[MAX_LINE] = {0};
 		sizeFormatted(size, formatted);
