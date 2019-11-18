@@ -54,7 +54,7 @@ void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
 bool isProjectName(wchar_t *, int);
 int countPairNodes(struct PairNode *);
 int countProjectNodes(struct ProjectNode *);
-int listFolderContent(HWND, wchar_t *);
+int listSubFolders(HWND, wchar_t *);
 int listTreeContent(HWND, struct PairNode **, wchar_t *, wchar_t *);
 
 struct Pair
