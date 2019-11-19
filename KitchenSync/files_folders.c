@@ -5,8 +5,82 @@ static bool folderExists(wchar_t *);
 static bool fileDateIsDifferent(FILETIME, FILETIME, FILETIME, wchar_t *);
 static LONGLONG getFileSize(wchar_t *);
 static void displayErrorBox(LPTSTR);
+static void catPath(wchar_t *, wchar_t *, wchar_t *);
 static int previewFolderPairSourceTest(HWND, struct PairNode **, struct Project *);
 static int previewFolderPairTargetTest(HWND, struct PairNode **, struct Project *);
+
+static void displayErrorBox(LPTSTR lpszFunction)
+{
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"DisplayErrorBox()");
+#endif
+	LPVOID lpMsgBuf;
+	LPVOID lpDisplayBuf;
+	DWORD dw = GetLastError();
+
+	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
+
+	lpDisplayBuf = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (lstrlen((LPCTSTR)lpMsgBuf) + (size_t)lstrlen((LPCTSTR)lpszFunction) + (size_t)40) * sizeof(TCHAR));
+	if (lpDisplayBuf)
+	{
+		swprintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR), TEXT("%s failed with error %lu: %s"), lpszFunction, dw, (LPTSTR)lpMsgBuf);
+		MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
+		HeapFree(GetProcessHeap(), 0, lpMsgBuf);
+		HeapFree(GetProcessHeap(), 0, lpDisplayBuf);
+	}
+}
+
+// list the folder names within the supplied folder level only to the specified listbox
+int listSubFolders(HWND hwnd, wchar_t *folder)
+{
+#if DEV_MODE
+	writeFileW(LOG_FILE, L"listSubFolders()");
+#endif
+	wchar_t szDir[MAX_LINE];
+	if (wcslen(folder) >= MAX_LINE)
+	{
+		writeFileW(LOG_FILE, L"Folder path is full, can't add \\");
+		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return 0;
+	}
+	catPath(szDir, folder, L"*");
+
+	DWORD dwError = 0;
+	WIN32_FIND_DATA ffd;
+	HANDLE hFind = INVALID_HANDLE_VALUE;
+	hFind = FindFirstFile(szDir, &ffd);
+
+	if (hFind == INVALID_HANDLE_VALUE)
+	{
+		displayErrorBox(TEXT("listSubFolders"));
+		return dwError;
+	}
+
+	int position = 0;
+	do
+	{
+		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		{
+			if (wcscmp(ffd.cFileName, L".") == 0)
+				continue;
+
+#if DEV_MODE
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"LSF() Dir: %s", ffd.cFileName);
+	writeFileW(LOG_FILE, buf);
+#endif
+			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)ffd.cFileName);
+		}
+	} while (FindNextFile(hFind, &ffd) != 0);
+
+	dwError = GetLastError();
+	if (dwError != ERROR_NO_MORE_FILES)
+		displayErrorBox(TEXT("listSubFolders"));
+
+	FindClose(hFind);
+	return dwError;
+}
 
 // find each matching folder pair under this project and send it for Preview
 void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *projectName)
@@ -14,7 +88,6 @@ void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **
 #if DEV_MODE
 	writeFileW(LOG_FILE, L"previewProject()");
 #endif
-
 	struct ProjectNode *current = *head_ref;
 	do
 	{
@@ -50,60 +123,6 @@ void previewFolderPairTest(HWND hwnd, struct PairNode **pairs, struct Project *p
 	previewFolderPairTargetTest(hwnd, pairs, project);
 }
 
-// list the folder names within the supplied folder level only to the specified listbox
-int listSubFolders(HWND hwnd, wchar_t *folder)
-{
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"listSubFolders()");
-#endif
-	wchar_t szDir[MAX_LINE];
-	wcscpy_s(szDir, MAX_LINE, folder);
-
-	if (wcslen(szDir) >= MAX_LINE)
-	{
-		writeFileW(LOG_FILE, L"Folder path is full, can't add \\");
-		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
-		return 0;
-	}
-	wcscat(szDir, L"\\*");
-
-	DWORD dwError = 0;
-	WIN32_FIND_DATA ffd;
-	HANDLE hFind = INVALID_HANDLE_VALUE;
-	hFind = FindFirstFile(szDir, &ffd);
-
-	if (hFind == INVALID_HANDLE_VALUE)
-	{
-		displayErrorBox(TEXT("listSubFolders"));
-		return dwError;
-	}
-
-	int position = 0;
-	do
-	{
-		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-		{
-			if (wcscmp(ffd.cFileName, L".") == 0)
-				continue;
-
-#if DEV_MODE
-	wchar_t buf[MAX_LINE] = {0};
-	swprintf(buf, MAX_LINE, L"Dir: %s", ffd.cFileName);
-	writeFileW(LOG_FILE, buf);
-#endif
-			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)ffd.cFileName);
-		}
-	}
-	while (FindNextFile(hFind, &ffd) != 0);
-
-	dwError = GetLastError();
-	if (dwError != ERROR_NO_MORE_FILES)
-		displayErrorBox(TEXT("listSubFolders"));
-
-	FindClose(hFind);
-	return dwError;
-}
-
 // this adds all the files/folders in and below the supplied folder to the pairs list
 //NOTE hwnd parameter is not currently used
 int listTreeContent(HWND hwnd, struct PairNode **pairs, wchar_t *source, wchar_t *destination)
@@ -112,15 +131,13 @@ int listTreeContent(HWND hwnd, struct PairNode **pairs, wchar_t *source, wchar_t
 	writeFileW(LOG_FILE, L"listTreeContent()");
 #endif
 	wchar_t szDir[MAX_LINE];
-	wcscpy_s(szDir, MAX_LINE, source);
-
-	if (wcslen(szDir) >= MAX_LINE)
+	if (wcslen(source) >= MAX_LINE)
 	{
 		writeFileW(LOG_FILE, L"Folder path is full, can't add \\");
 		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return 0;
 	}
-	wcscat(szDir, L"\\*");
+	catPath(szDir, source, L"*");
 
 	DWORD dwError = 0;
 	WIN32_FIND_DATA ffd;
@@ -140,16 +157,13 @@ int listTreeContent(HWND hwnd, struct PairNode **pairs, wchar_t *source, wchar_t
 
 		// combine source path \ new filename
 		wchar_t currentItem[MAX_LINE] = {0};
-		wcscpy_s(currentItem, MAX_LINE, source);
-
-		if (wcslen(currentItem) + wcslen(ffd.cFileName) + 1 > MAX_LINE)
+		if (wcslen(source) + wcslen(ffd.cFileName) + 1 > MAX_LINE)
 		{
 			writeFileW(LOG_FILE, L"Folder path is full, can't add filename");
 			MessageBox(NULL, L"Folder path is full, can't add filename", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return 0;
 		}
-		wcscat(currentItem, L"\\");
-		wcscat(currentItem, ffd.cFileName);
+		catPath(currentItem, source, ffd.cFileName);
 
 		LARGE_INTEGER filesize;
 		filesize.LowPart = ffd.nFileSizeLow;
@@ -171,18 +185,18 @@ int listTreeContent(HWND hwnd, struct PairNode **pairs, wchar_t *source, wchar_t
 			wcscat(subFolder, L"\\");
 			//SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)subFolder);
 			listTreeContent(hwnd, pairs, currentItem, destination); //NOTE does this need extra path info added?
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = {0};
-//	swprintf(buf, MAX_LINE, L"Dir: %s", currentItem);
-//	writeFileW(LOG_FILE, buf);
-//#endif
+#if DEV_MODE
+	wchar_t buf[MAX_LINE] = {0};
+	swprintf(buf, MAX_LINE, L"LTC() Dir: %s", currentItem);
+	writeFileW(LOG_FILE, buf);
+#endif
 		}
 		else
 		{
 			// add to files list
 			struct Pair newPair = {0};
-			wcscpy_s(newPair.source, MAX_LINE, ffd.cFileName);
-			wcscpy_s(newPair.destination, MAX_LINE, destination); //TODO does this need extra path info added?
+			wcscpy_s(newPair.source, MAX_LINE, currentItem);
+			wcscpy_s(newPair.destination, MAX_LINE, destination);
 			appendPairNode(pairs, newPair, filesize.QuadPart);
 //#if DEV_MODE
 //	wchar_t buf[MAX_LINE] = {0};
@@ -201,26 +215,11 @@ int listTreeContent(HWND hwnd, struct PairNode **pairs, wchar_t *source, wchar_t
 	return dwError;
 }
 
-static void displayErrorBox(LPTSTR lpszFunction)
+static void catPath(wchar_t *path, wchar_t *folder, wchar_t *filename)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"DisplayErrorBox()");
-#endif
-	LPVOID lpMsgBuf;
-	LPVOID lpDisplayBuf;
-	DWORD dw = GetLastError();
-
-	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL, dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
-
-	lpDisplayBuf = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (lstrlen((LPCTSTR)lpMsgBuf) + (size_t)lstrlen((LPCTSTR)lpszFunction) + (size_t)40) * sizeof(TCHAR));
-	if (lpDisplayBuf)
-	{
-		swprintf((LPTSTR)lpDisplayBuf, LocalSize(lpDisplayBuf) / sizeof(TCHAR), TEXT("%s failed with error %lu: %s"), lpszFunction, dw, (LPTSTR)lpMsgBuf);
-		MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
-		HeapFree(GetProcessHeap(), 0, lpMsgBuf);
-		HeapFree(GetProcessHeap(), 0, lpDisplayBuf);
-	}
+	wcscpy_s(path, MAX_LINE, folder);
+	wcscat(path, L"\\");
+	wcscat(path, filename);
 }
 
 static bool fileExists(wchar_t *path)
@@ -364,21 +363,14 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 	writeFileW(LOG_FILE, L"previewFolderPairSourceTest()");
 #endif
 	wchar_t szDir[MAX_LINE];
-	wcscpy_s(szDir, MAX_LINE, project->pair.source);
-
-	if (wcslen(szDir) >= MAX_LINE)
+	if (wcslen(project->pair.source) >= MAX_LINE)
 	{
 		writeFileW(LOG_FILE, L"Folder path is full, can't add \\");
 		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return 0;
 	}
-	wcscat(szDir, L"\\*");
+	catPath(szDir, project->pair.source, L"*");
 
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = {0};
-//	swprintf(buf, MAX_LINE, L"Source folder %s", szDir);
-//	writeFileW(LOG_FILE, buf);
-//#endif
 	DWORD dwError = 0;
 	WIN32_FIND_DATA ffd;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
@@ -395,7 +387,6 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 		if (wcscmp(ffd.cFileName, L".") == 0 || wcscmp(ffd.cFileName, L"..") == 0)
 			continue;
 
-//NOTE what value does this have if it's a folder?
 		LARGE_INTEGER filesize;
 		filesize.LowPart = ffd.nFileSizeLow;
 		filesize.HighPart = ffd.nFileSizeHigh;
@@ -403,62 +394,55 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 		// folder
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
-			// check if target folder exists
-			wchar_t destination[MAX_LINE] = {0};
-			wcscpy_s(destination, MAX_LINE, project->pair.destination);
-			wcscat(destination, L"\\");
-			wcscat(destination, ffd.cFileName);
+			wchar_t newSource[MAX_LINE];
+			catPath(newSource, project->pair.source, ffd.cFileName);
 
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = {0};
-//	swprintf(buf, MAX_LINE, L"Target folder %s", destination);
-//	writeFileW(LOG_FILE, buf);
-//#endif
-			// if exists recursive Select folder
+			wchar_t destination[MAX_LINE] = {0};
+			catPath(destination, project->pair.destination, ffd.cFileName);
+
+			// check if target folder exists
+			// if exists do recursive Select folder
 			if (folderExists(destination))
 			{
-				wchar_t newSource[MAX_LINE];
-				wcscpy_s(newSource, MAX_LINE, project->pair.source);
-				wcscat(newSource, L"\\");
-				wcscat(newSource, ffd.cFileName);
-
+				//TODO test this
 				struct Project subFolder = {0};
 				wcscpy_s(subFolder.name, MAX_LINE, project->name);
 				wcscpy_s(subFolder.pair.source, MAX_LINE, newSource);
 				wcscpy_s(subFolder.pair.destination, MAX_LINE, destination);
 
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = {0};
-//	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSourceTest()");
-//	writeFileW(LOG_FILE, buf);
-//#endif
+#if DEV_MODE
+	wchar_t buf[MAX_LINE] = {0};
+	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSourceTest() for %s -> %s", newSource, destination);
+	writeFileW(LOG_FILE, buf);
+#endif
 				previewFolderPairSourceTest(hwnd, pairs, &subFolder);
 			}
 			else // target folder does not exist
 			{
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = {0};
-//	swprintf(buf, MAX_LINE, L"dump entire tree with listTreeContent()");
-//	writeFileW(LOG_FILE, buf);
-//#endif
+#if DEV_MODE
+	wchar_t buf[MAX_LINE] = {0};
+	swprintf(buf, MAX_LINE, L"dump entire tree with listTreeContent() for %s -> %s", newSource, destination);
+	writeFileW(LOG_FILE, buf);
+#endif
 				// if new, add entire folder contents to list (recursive but without comparison)
-				//TODO this needs to send the destination folder path as well
-				listTreeContent(hwnd, pairs, project->pair.source, destination);
+				listTreeContent(hwnd, pairs, newSource, destination);
 			}
 		}
 		else // item is a file
 		{
-			// check if target file exists
+			//TODO this could be merged with folder source definition
+			wchar_t srcFile[MAX_LINE] = { 0 };
+			catPath(srcFile, project->pair.source, ffd.cFileName);
+
 			wchar_t destination[MAX_LINE] = {0};
-			wcscpy_s(destination, MAX_LINE, project->pair.destination);
-			wcscat(destination, L"\\");
-			wcscat(destination, ffd.cFileName);
+			catPath(destination, project->pair.destination, ffd.cFileName);
 
 //#if DEV_MODE
 //	wchar_t buf[MAX_LINE] = {0};
 //	swprintf(buf, MAX_LINE, L"Target file: %s, Size: %lld", destination, filesize.QuadPart);
 //	writeFileW(LOG_FILE, buf);
 //#endif
+			// check if target file exists
 			if (fileExists(destination))
 			{
 #if DEV_MODE
@@ -467,11 +451,11 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 	writeFileW(LOG_FILE, buf);
 #endif
 				LONGLONG targetSize = getFileSize(destination);
-#if DEV_MODE
-	//wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"target file size %lld", targetSize);
-	writeFileW(LOG_FILE, buf);
-#endif
+//#if DEV_MODE
+//	wchar_t buf[MAX_LINE] = { 0 };
+//	swprintf(buf, MAX_LINE, L"target file size %lld", targetSize);
+//	writeFileW(LOG_FILE, buf);
+//#endif
 
 				//TODO filesize comparison, test this
 				// if different size, add file to list
@@ -482,20 +466,9 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 	swprintf(buf, MAX_LINE, L"target file is out of date, add to list");
 	writeFileW(LOG_FILE, buf);
 #endif
-
-					wchar_t srcFile[MAX_LINE] = {0};
-					wcscpy_s(srcFile, MAX_LINE, project->pair.source);
-					wcscat(srcFile, L"\\");
-					wcscat(srcFile, ffd.cFileName);
-
-					wchar_t destFile[MAX_LINE] = {0};
-					wcscpy_s(destFile, MAX_LINE, project->pair.destination);
-					wcscat(destFile, L"\\");
-					wcscat(destFile, ffd.cFileName);
-
 					struct Pair newPair = {0};
 					wcscpy_s(newPair.source, MAX_LINE, srcFile);
-					wcscpy_s(newPair.destination, MAX_LINE, destFile);
+					wcscpy_s(newPair.destination, MAX_LINE, destination);
 					appendPairNode(pairs, newPair, filesize.QuadPart);
 //#if DEV_MODE
 //	wchar_t buf[MAX_LINE] = {0};
@@ -503,7 +476,7 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 //	writeFileW(LOG_FILE, buf);
 //#endif
 				}
-				else
+				else // size is the same so test date/time
 				{
 					//TODO date/time comparison, test this
 					// if last write time is different between source and destination, add file to list
@@ -515,24 +488,14 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 	swprintf(buf, MAX_LINE, L"source & target files have different date/time, add to list");
 	writeFileW(LOG_FILE, buf);
 #endif
-						wchar_t srcFile[MAX_LINE] = { 0 };
-						wcscpy_s(srcFile, MAX_LINE, project->pair.source);
-						wcscat(srcFile, L"\\");
-						wcscat(srcFile, ffd.cFileName);
-
-						wchar_t destFile[MAX_LINE] = { 0 };
-						wcscpy_s(destFile, MAX_LINE, project->pair.destination);
-						wcscat(destFile, L"\\");
-						wcscat(destFile, ffd.cFileName);
-
 						struct Pair newPair = { 0 };
 						wcscpy_s(newPair.source, MAX_LINE, srcFile);
-						wcscpy_s(newPair.destination, MAX_LINE, destFile);
+						wcscpy_s(newPair.destination, MAX_LINE, destination);
 						appendPairNode(pairs, newPair, filesize.QuadPart);
 					}
 				}
 			}
-			else
+			else // destination file does not exist
 			{
 				// add to files list
 #if DEV_MODE
@@ -540,25 +503,10 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 	swprintf(buf, MAX_LINE, L"target file does not exist, add to list");
 	writeFileW(LOG_FILE, buf);
 #endif
-				wchar_t srcFile[MAX_LINE] = {0};
-				wcscpy_s(srcFile, MAX_LINE, project->pair.source);
-				wcscat(srcFile, L"\\");
-				wcscat(srcFile, ffd.cFileName);
-
-				wchar_t destFile[MAX_LINE] = {0};
-				wcscpy_s(destFile, MAX_LINE, project->pair.destination);
-				wcscat(destFile, L"\\");
-				wcscat(destFile, ffd.cFileName);
-
 				struct Pair newPair = {0};
 				wcscpy_s(newPair.source, MAX_LINE, srcFile);
-				wcscpy_s(newPair.destination, MAX_LINE, destFile);
+				wcscpy_s(newPair.destination, MAX_LINE, destination);
 				appendPairNode(pairs, newPair, filesize.QuadPart);
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = {0};
-//	swprintf(buf, MAX_LINE, L"Source file:\n%sDestination file:\n%s", srcFile, destFile);
-//	writeFileW(LOG_FILE, buf);
-//#endif
 			}
 		}
 	}

@@ -530,7 +530,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			if (LOWORD(wParam) == ID_BUTTON_ADD_FOLDER_PAIR)
 			{
 #if DEV_MODE
-				writeFileW(LOG_FILE, L"add folder pair");
+	writeFileW(LOG_FILE, L"add folder pair");
 #endif
 				// get row index
 				LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
@@ -543,9 +543,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						wcscpy_s(projectName, MAX_LINE, selectedRowText);
 #if DEV_MODE
-						wchar_t buf[100] = {0};
-						swprintf(buf, 100, L"Selected project name: %s", projectName);
-						writeFileW(LOG_FILE, buf);
+	wchar_t buf[100] = {0};
+	swprintf(buf, 100, L"Selected project name: %s", projectName);
+	writeFileW(LOG_FILE, buf);
 #endif
 						// change to folder pair tab and populate listboxes
 						wcscpy_s(folderPair, MAX_LINE, L"C: -> C:");
@@ -558,7 +558,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PAIR)
 			{
 #if DEV_MODE
-				writeFileW(LOG_FILE, L"add pair");
+	writeFileW(LOG_FILE, L"add pair");
 #endif
 				wcscpy_s(folderPair, MAX_LINE, L"C: -> C:");
 				addFolderPair();
@@ -568,15 +568,15 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			{
 				LRESULT tab = SendMessage(tabHwnd, TCM_GETCURFOCUS, 0, 0);
 #if DEV_MODE
-				wchar_t buf[100] = {0};
-				swprintf(buf, 100, L"Tab: %lld", tab);
-				writeFileW(LOG_FILE, buf);
+	wchar_t buf[100] = {0};
+	swprintf(buf, 100, L"Tab: %lld", tab);
+	writeFileW(LOG_FILE, buf);
 #endif
 
 				if (tab == TAB_PROJECTS)
 				{
 #if DEV_MODE
-					writeFileW(LOG_FILE, L"Delete button, projects");
+	writeFileW(LOG_FILE, L"Delete button, projects");
 #endif
 					EnableWindow(bDelete, false);
 					EnableWindow(bPreview, false);
@@ -613,7 +613,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				if (tab == TAB_PAIRS)
 				{
 #if DEV_MODE
-					writeFileW(LOG_FILE, L"Delete button, pairs");
+	writeFileW(LOG_FILE, L"Delete button, pairs");
 #endif
 					EnableWindow(bDelete, false);
 
@@ -638,7 +638,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				if (tab == TAB_SYNC)
 				{
 #if DEV_MODE
-					writeFileW(LOG_FILE, L"Delete button, sync");
+	writeFileW(LOG_FILE, L"Delete button, sync");
 #endif
 					EnableWindow(bDelete, false);
 
@@ -665,7 +665,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			if (LOWORD(wParam) == ID_BUTTON_PREVIEW)
 			{
 #if DEV_MODE
-				writeFileW(LOG_FILE, L"preview button");
+	writeFileW(LOG_FILE, L"preview button");
 #endif
 				// get row index
 				LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
@@ -754,7 +754,7 @@ static LRESULT CALLBACK customListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			{
 				case VK_DELETE:
 #if DEV_MODE
-					writeFileW(LOG_FILE, L"Del key");
+	writeFileW(LOG_FILE, L"Del key");
 #endif
 					SendMessage(bDelete, BM_CLICK, 0, 0);
 					break;
@@ -864,9 +864,9 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 				}
 
 #if DEV_MODE
-				wchar_t buf[100] = {0};
-				swprintf(buf, 100, L"New project name: %s", newProjectName);
-				writeFileW(LOG_FILE, buf);
+	wchar_t buf[100] = {0};
+	swprintf(buf, 100, L"New project name: %s", newProjectName);
+	writeFileW(LOG_FILE, buf);
 #endif
 				// new project being added
 				if (wcslen(newProjectName) > 0 && wcslen(projectName) == 0)
@@ -889,7 +889,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 					if (!existing)
 					{
 #if DEV_MODE
-						writeFileW(LOG_FILE, L"New project added");
+	writeFileW(LOG_FILE, L"New project added");
 #endif
 						struct Project project = {0};
 						wcscpy_s(project.name, MAX_LINE, newProjectName);
@@ -1088,7 +1088,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			if (wcscmp(folderPair, L"C: -> C:") != 0)
 			{
 #if DEV_MODE
-				writeFileW(LOG_FILE, L"Editing!");
+	writeFileW(LOG_FILE, L"Editing!");
 #endif
 				editingFolderPair = true;
 			}
