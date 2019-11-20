@@ -44,10 +44,6 @@ void writeFileW(char *filename, wchar_t *text)
 
 void writeSettings(HWND hwnd, char *filename)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"writeSettings()");
-#endif
-
 	FILE *f = fopen(filename, "w");
 	if (f == NULL)
 	{
@@ -70,10 +66,6 @@ void writeSettings(HWND hwnd, char *filename)
 
 void readSettings(HWND hwnd, char *filename)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"readSettings()");
-#endif
-
 	FILE *f = fopen(filename, "r");
 	if (f == NULL)
 	{
@@ -160,10 +152,6 @@ void readSettings(HWND hwnd, char *filename)
 
 void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"loadProjects()");
-#endif
-
 	FILE *f = fopen(filename, "rt, ccs=UNICODE");
 	if (f == NULL)
 	{
@@ -268,10 +256,6 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 // load all project nodes into Projects listbox
 void fillListbox(HWND hwnd, struct ProjectNode **head_ref)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"fillListbox()");
-#endif
-
 	wchar_t *currentProjectName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 	if (!currentProjectName)
 	{
@@ -313,10 +297,6 @@ void fillListbox(HWND hwnd, struct ProjectNode **head_ref)
 // load all file pair nodes into Sync listbox
 void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"fillSyncListbox()");
-#endif
-
 	wchar_t *currentPairName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 	if (!currentPairName)
 	{
@@ -392,10 +372,6 @@ static void sizeFormatted(LONGLONG size, wchar_t *buf)
 
 void saveProjects(char *filename, struct ProjectNode **head_ref)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"saveProjects()");
-#endif
-
 	FILE *f = fopen(filename, "wt, ccs=UNICODE");
 	if (f == NULL)
 	{
@@ -449,22 +425,13 @@ bool isProjectName(wchar_t *text, int len)
 }
 
 // look backwards to find project name from selected pair
-//TODO does this need to mess with *selectedRowText? can this be removed?
-//TODO test this update
-//void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *selectedRowText, wchar_t *projectName)
 void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *projectName)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"findProjectName()");
-#endif
-
-	//LRESULT projectPosition = selectedRow;
 	wchar_t selectedRowText[MAX_LINE] = {0};
 	bool found = false;
 
 	do
 	{
-		//int textLen = (int)SendMessage(hwnd, LB_GETTEXT, --projectPosition, (LPARAM)selectedRowText);
 		int textLen = (int)SendMessage(hwnd, LB_GETTEXT, --selectedRow, (LPARAM)selectedRowText);
 		if (isProjectName(selectedRowText, textLen))
 		{
@@ -472,17 +439,12 @@ void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *projectName)
 			found = true;
 		}
 	}
-	//while (!found && projectPosition >= 0);
 	while (!found && selectedRow >= 0);
 }
 
 // reload source & destination folder pair listboxes
 void reloadFolderPairs(HWND src, HWND dst, struct ProjectNode *projectsHead, wchar_t *projectName)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"reloadFolderPairs()");
-#endif
-
 	int position = 0;
 	struct ProjectNode *current = projectsHead;
 

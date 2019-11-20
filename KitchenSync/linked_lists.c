@@ -4,13 +4,17 @@ static void deletePairNode(struct PairNode **, int);
 static void deleteProjectNode(struct ProjectNode **, int);
 static void deleteProjectList(struct ProjectNode **);
 
+void addPair(struct PairNode **pairs, wchar_t *source, wchar_t *destination, LONGLONG size)
+{
+	struct Pair pair = { 0 };
+	wcscpy_s(pair.source, MAX_LINE, source);
+	wcscpy_s(pair.destination, MAX_LINE, destination);
+	appendPairNode(pairs, pair, size);
+}
+
 // append a new node at the end
 void appendPairNode(struct PairNode **head_ref, struct Pair pair, LONGLONG filesize)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"appendPairNode()");
-#endif
-
 	struct PairNode *newPairNode = (struct PairNode *)malloc(sizeof(struct PairNode));
 
 	if (!newPairNode)
@@ -56,10 +60,6 @@ void appendPairNode(struct PairNode **head_ref, struct Pair pair, LONGLONG files
 // append a new node at the end
 void appendProjectNode(struct ProjectNode **head_ref, struct Project project)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"appendProjectNode()");
-#endif
-
 	struct ProjectNode *newProjectNode = (struct ProjectNode *)malloc(sizeof(struct ProjectNode));
 
 	if (!newProjectNode)
@@ -112,10 +112,6 @@ void appendProjectNode(struct ProjectNode **head_ref, struct Project project)
 // delete entire project by name
 void deleteProject(struct ProjectNode **head_ref, wchar_t *projectName)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"deleteProject()");
-#endif
-
 	sortProjectNodes(head_ref);
 	struct ProjectNode *current = *head_ref;
 	int i = 0;
@@ -141,10 +137,6 @@ void deleteProject(struct ProjectNode **head_ref, wchar_t *projectName)
 // delete folder pair by name
 void deleteFolderPair(struct ProjectNode **head_ref, wchar_t *folderPair, wchar_t *projectName)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"deleteFolderPair()");
-#endif
-
 	sortProjectNodes(head_ref);
 	size_t length = wcslen(folderPair);
 	assert(length > 0);
@@ -177,10 +169,6 @@ void deleteFolderPair(struct ProjectNode **head_ref, wchar_t *folderPair, wchar_
 // delete folder pair by name
 void deleteFilePair(struct PairNode **head_ref, wchar_t *filePair)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"deleteFilePair()");
-#endif
-
 	//sortProjectNodes(head_ref);
 	size_t length = wcslen(filePair);
 	assert(length > 0);
@@ -212,10 +200,6 @@ void deleteFilePair(struct PairNode **head_ref, wchar_t *filePair)
 // replace existing folder pair
 void replaceFolderPair(struct ProjectNode **head_ref, wchar_t *projectName, wchar_t *folderPair, wchar_t *newSrc, wchar_t *newDst)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"replaceFolderPair()");
-#endif
-
 	sortProjectNodes(head_ref);
 	size_t length = wcslen(folderPair);
 	assert(length > 0);
@@ -377,10 +361,6 @@ static int countPairNodes(struct PairNode *head)
 // count nodes in list
 int countProjectNodes(struct ProjectNode *head)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"countProjectNodes()");
-#endif
-
 	int count = 0;
 	struct ProjectNode *current = head;
 
@@ -395,10 +375,6 @@ int countProjectNodes(struct ProjectNode *head)
 // sort list
 void sortProjectNodes(struct ProjectNode **head_ref)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"sortProjectNodes()");
-#endif
-
 	if (*head_ref == NULL)
 	{
 		writeFileW(LOG_FILE, L"Can't sort empty list");

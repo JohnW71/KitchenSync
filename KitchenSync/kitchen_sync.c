@@ -530,7 +530,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			if (LOWORD(wParam) == ID_BUTTON_ADD_FOLDER_PAIR)
 			{
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"add folder pair");
+	writeFileW(LOG_FILE, L"Add folder pair button");
 #endif
 				// get row index
 				LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
@@ -558,7 +558,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PAIR)
 			{
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"add pair");
+	writeFileW(LOG_FILE, L"Add pair button");
 #endif
 				wcscpy_s(folderPair, MAX_LINE, L"C: -> C:");
 				addFolderPair();
@@ -665,7 +665,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			if (LOWORD(wParam) == ID_BUTTON_PREVIEW)
 			{
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"preview button");
+	writeFileW(LOG_FILE, L"Preview button");
 #endif
 				// get row index
 				LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
@@ -1086,12 +1086,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			}
 
 			if (wcscmp(folderPair, L"C: -> C:") != 0)
-			{
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"Editing!");
-#endif
 				editingFolderPair = true;
-			}
 			else
 				editingFolderPair = false;
 			break;

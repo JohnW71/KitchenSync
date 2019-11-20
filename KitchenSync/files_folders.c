@@ -11,9 +11,6 @@ static int previewFolderPairTargetTest(HWND, struct PairNode **, struct Project 
 
 static void displayErrorBox(LPTSTR lpszFunction)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"DisplayErrorBox()");
-#endif
 	LPVOID lpMsgBuf;
 	LPVOID lpDisplayBuf;
 	DWORD dw = GetLastError();
@@ -34,9 +31,6 @@ static void displayErrorBox(LPTSTR lpszFunction)
 // list the folder names within the supplied folder level only to the specified listbox
 int listSubFolders(HWND hwnd, wchar_t *folder)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"listSubFolders()");
-#endif
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(folder) >= MAX_LINE)
 	{
@@ -85,9 +79,6 @@ int listSubFolders(HWND hwnd, wchar_t *folder)
 // find each matching folder pair under this project and send it for Preview
 void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *projectName)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"previewProject()");
-#endif
 	struct ProjectNode *current = *head_ref;
 	do
 	{
@@ -109,10 +100,6 @@ void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **
 
 // void previewFolderPair(HWND hwnd, struct PairNode **pairs, struct Project project)
 // {
-// #if DEV_MODE
-// 	writeFileW(LOG_FILE, L"previewFolderPair()");
-// #endif
-
 // 	listTreeContent(hwnd, pairs, project.pair.source);
 // }
 
@@ -127,9 +114,6 @@ void previewFolderPairTest(HWND hwnd, struct PairNode **pairs, struct Project *p
 //NOTE hwnd parameter is not currently used
 int listTreeContent(HWND hwnd, struct PairNode **pairs, wchar_t *source, wchar_t *destination)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"listTreeContent()");
-#endif
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(source) >= MAX_LINE)
 	{
@@ -194,15 +178,7 @@ int listTreeContent(HWND hwnd, struct PairNode **pairs, wchar_t *source, wchar_t
 		else
 		{
 			// add to files list
-			struct Pair newPair = {0};
-			wcscpy_s(newPair.source, MAX_LINE, currentItem);
-			wcscpy_s(newPair.destination, MAX_LINE, destination);
-			appendPairNode(pairs, newPair, filesize.QuadPart);
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = {0};
-//	swprintf(buf, MAX_LINE, L"File: %s, Size: %lld", currentItem, filesize.QuadPart);
-//	writeFileW(LOG_FILE, buf);
-//#endif
+			addPair(pairs, currentItem, destination, filesize.QuadPart);
 		}
 	}
 	while (FindNextFile(hFind, &ffd) != 0);
@@ -359,9 +335,6 @@ static void deleteFolder(wchar_t *path)
 //FIX some files are passed without path so are duplicated in the list
 static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struct Project *project)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"previewFolderPairSourceTest()");
-#endif
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(project->pair.source) >= MAX_LINE)
 	{
@@ -391,20 +364,19 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 		filesize.LowPart = ffd.nFileSizeLow;
 		filesize.HighPart = ffd.nFileSizeHigh;
 
+		wchar_t newSource[MAX_LINE];
+		catPath(newSource, project->pair.source, ffd.cFileName);
+
+		wchar_t destination[MAX_LINE] = { 0 };
+		catPath(destination, project->pair.destination, ffd.cFileName);
+
 		// folder
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
-			wchar_t newSource[MAX_LINE];
-			catPath(newSource, project->pair.source, ffd.cFileName);
-
-			wchar_t destination[MAX_LINE] = {0};
-			catPath(destination, project->pair.destination, ffd.cFileName);
-
 			// check if target folder exists
 			// if exists do recursive Select folder
 			if (folderExists(destination))
 			{
-				//TODO test this
 				struct Project subFolder = {0};
 				wcscpy_s(subFolder.name, MAX_LINE, project->name);
 				wcscpy_s(subFolder.pair.source, MAX_LINE, newSource);
@@ -430,18 +402,6 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 		}
 		else // item is a file
 		{
-			//TODO this could be merged with folder source definition
-			wchar_t srcFile[MAX_LINE] = { 0 };
-			catPath(srcFile, project->pair.source, ffd.cFileName);
-
-			wchar_t destination[MAX_LINE] = {0};
-			catPath(destination, project->pair.destination, ffd.cFileName);
-
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = {0};
-//	swprintf(buf, MAX_LINE, L"Target file: %s, Size: %lld", destination, filesize.QuadPart);
-//	writeFileW(LOG_FILE, buf);
-//#endif
 			// check if target file exists
 			if (fileExists(destination))
 			{
@@ -451,47 +411,28 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 	writeFileW(LOG_FILE, buf);
 #endif
 				LONGLONG targetSize = getFileSize(destination);
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = { 0 };
-//	swprintf(buf, MAX_LINE, L"target file size %lld", targetSize);
-//	writeFileW(LOG_FILE, buf);
-//#endif
 
-				//TODO filesize comparison, test this
 				// if different size, add file to list
 				if (targetSize != filesize.QuadPart)
 				{
 #if DEV_MODE
 	//wchar_t buf[MAX_LINE] = {0};
-	swprintf(buf, MAX_LINE, L"target file is out of date, add to list");
+	swprintf(buf, MAX_LINE, L"target file is out of date, add %s to list", destination);
 	writeFileW(LOG_FILE, buf);
 #endif
-					struct Pair newPair = {0};
-					wcscpy_s(newPair.source, MAX_LINE, srcFile);
-					wcscpy_s(newPair.destination, MAX_LINE, destination);
-					appendPairNode(pairs, newPair, filesize.QuadPart);
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = {0};
-//	swprintf(buf, MAX_LINE, L"Source file:\n%sDestination file:\n%s", srcFile, destFile);
-//	writeFileW(LOG_FILE, buf);
-//#endif
+					addPair(pairs, newSource, destination, filesize.QuadPart);
 				}
 				else // size is the same so test date/time
 				{
-					//TODO date/time comparison, test this
 					// if last write time is different between source and destination, add file to list
-					//if (fileDateIsDifferent(project.pair.source, destination))
 					if (fileDateIsDifferent(ffd.ftCreationTime, ffd.ftLastAccessTime, ffd.ftLastWriteTime, destination))
 					{
 #if DEV_MODE
 	//wchar_t buf[MAX_LINE] = {0};
-	swprintf(buf, MAX_LINE, L"source & target files have different date/time, add to list");
+	swprintf(buf, MAX_LINE, L"source & target files have different date/time, add %s to list", destination);
 	writeFileW(LOG_FILE, buf);
 #endif
-						struct Pair newPair = { 0 };
-						wcscpy_s(newPair.source, MAX_LINE, srcFile);
-						wcscpy_s(newPair.destination, MAX_LINE, destination);
-						appendPairNode(pairs, newPair, filesize.QuadPart);
+						addPair(pairs, newSource, destination, filesize.QuadPart);
 					}
 				}
 			}
@@ -500,13 +441,10 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 				// add to files list
 #if DEV_MODE
 	wchar_t buf[MAX_LINE] = {0};
-	swprintf(buf, MAX_LINE, L"target file does not exist, add to list");
+	swprintf(buf, MAX_LINE, L"target file does not exist, add %s to list", destination);
 	writeFileW(LOG_FILE, buf);
 #endif
-				struct Pair newPair = {0};
-				wcscpy_s(newPair.source, MAX_LINE, srcFile);
-				wcscpy_s(newPair.destination, MAX_LINE, destination);
-				appendPairNode(pairs, newPair, filesize.QuadPart);
+				addPair(pairs, newSource, destination, filesize.QuadPart);
 			}
 		}
 	}
@@ -522,8 +460,5 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 
 static int previewFolderPairTargetTest(HWND hwnd, struct PairNode **pairs, struct Project *project)
 {
-#if DEV_MODE
-	writeFileW(LOG_FILE, L"previewFolderPairTargetTest()");
-#endif
 	return 0;
 }
