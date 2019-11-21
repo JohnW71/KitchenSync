@@ -107,7 +107,14 @@ void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **
 void previewFolderPairTest(HWND hwnd, struct PairNode **pairs, struct Project *project)
 {
 	previewFolderPairSourceTest(hwnd, pairs, project);
-	previewFolderPairTargetTest(hwnd, pairs, project);
+
+	// reverse source & destination
+	struct Project reversed = { 0 };
+	wcscpy_s(reversed.name, MAX_LINE, project->name);
+	wcscpy_s(reversed.pair.source, MAX_LINE, project->pair.destination);
+	wcscpy_s(reversed.pair.destination, MAX_LINE, project->pair.source);
+
+	previewFolderPairTargetTest(hwnd, pairs, &reversed);
 }
 
 // this adds all the files/folders in and below the supplied folder to the pairs list
@@ -374,7 +381,7 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
 			// check if target folder exists
-			// if exists do recursive Select folder
+			// if exists do recursive search in folder
 			if (folderExists(destination))
 			{
 				struct Project subFolder = {0};
@@ -458,7 +465,102 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 	return dwError;
 }
 
+// reversed folder direction
 static int previewFolderPairTargetTest(HWND hwnd, struct PairNode **pairs, struct Project *project)
 {
-	return 0;
+	wchar_t szDir[MAX_LINE];
+	if (wcslen(project->pair.source) >= MAX_LINE)
+	{
+		writeFileW(LOG_FILE, L"Folder path is full, can't add \\");
+		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return 0;
+	}
+	catPath(szDir, project->pair.source, L"*");
+
+	DWORD dwError = 0;
+	WIN32_FIND_DATA ffd;
+	HANDLE hFind = INVALID_HANDLE_VALUE;
+	hFind = FindFirstFile(szDir, &ffd);
+
+	if (hFind == INVALID_HANDLE_VALUE)
+	{
+		displayErrorBox(TEXT("FindFirstFile"));
+		return dwError;
+	}
+
+	do
+	{
+		if (wcscmp(ffd.cFileName, L".") == 0 || wcscmp(ffd.cFileName, L"..") == 0)
+			continue;
+
+		LARGE_INTEGER filesize;
+		filesize.LowPart = ffd.nFileSizeLow;
+		filesize.HighPart = ffd.nFileSizeHigh;
+
+		wchar_t newSource[MAX_LINE];
+		catPath(newSource, project->pair.source, ffd.cFileName);
+
+		wchar_t destination[MAX_LINE] = { 0 };
+		catPath(destination, project->pair.destination, ffd.cFileName);
+
+		// folder
+		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		{
+			// check if target folder exists
+			// if exists do recursive search in folder
+			if (folderExists(destination))
+			{
+				struct Project subFolder = { 0 };
+				wcscpy_s(subFolder.name, MAX_LINE, project->name);
+				wcscpy_s(subFolder.pair.source, MAX_LINE, newSource);
+				wcscpy_s(subFolder.pair.destination, MAX_LINE, destination);
+
+#if DEV_MODE
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairTargetTest() for %s -> %s", newSource, destination);
+	writeFileW(LOG_FILE, buf);
+#endif
+				previewFolderPairTargetTest(hwnd, pairs, &subFolder);
+			}
+			else // target folder does not exist
+			{
+#if DEV_MODE
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"Entire folder tree to be removed %s", newSource);
+	writeFileW(LOG_FILE, buf);
+#endif
+				addPair(pairs, L"Delete folder", newSource, filesize.QuadPart);
+			}
+		}
+		else // item is a file
+		{
+			// check if target file exists
+			if (fileExists(destination))
+			{
+				//TODO do I care about this?
+#if DEV_MODE
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"target file exists, does it matter?");
+	writeFileW(LOG_FILE, buf);
+#endif
+			}
+			else // destination file does not exist
+			{
+				// remove source file
+#if DEV_MODE
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"target file does not exist, add source %s for deletion", newSource);
+	writeFileW(LOG_FILE, buf);
+#endif
+				addPair(pairs, L"Delete file", newSource, filesize.QuadPart);
+			}
+		}
+	} while (FindNextFile(hFind, &ffd) != 0);
+
+	dwError = GetLastError();
+	if (dwError != ERROR_NO_MORE_FILES)
+		displayErrorBox(TEXT("previewFolderPairTargetTest"));
+
+	FindClose(hFind);
+	return dwError;
 }
