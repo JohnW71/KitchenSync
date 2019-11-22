@@ -27,6 +27,9 @@
     <ClCompile Include="misc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="preview_scan.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="kitchen_sync.h">

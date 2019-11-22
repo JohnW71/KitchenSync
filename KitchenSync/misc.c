@@ -1,6 +1,7 @@
 #include "kitchen_sync.h"
 
 static void sizeFormatted(LONGLONG, wchar_t *);
+extern bool writing;
 
 void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 {
@@ -25,10 +26,10 @@ void centerWindow(HWND hwnd)
 
 void writeFileW(char *filename, wchar_t *text)
 {
-	//while (state.writing)
-	//	Sleep(100);
+	while (writing)
+		Sleep(50);
 
-	//state.writing = true;
+	writing = true;
 
 	FILE *f = fopen(filename, "at, ccs=UNICODE");
 	if (f == NULL)
@@ -39,7 +40,7 @@ void writeFileW(char *filename, wchar_t *text)
 
 	fwprintf(f, L"%s\n", text);
 	fclose(f);
-	//state.writing = false;
+	writing = false;
 }
 
 void writeSettings(HWND hwnd, char *filename)

@@ -47,17 +47,21 @@ void fillSyncListbox(HWND, struct PairNode **);
 void findProjectName(HWND, LRESULT, wchar_t *);
 void reloadFolderPairs(HWND, HWND, struct ProjectNode *, wchar_t *);
 void previewProject(HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
-//void previewFolderPair(HWND, struct PairNode **, struct Project);
-void previewFolderPairTest(HWND, struct PairNode **, struct Project *);
+void previewFolderPair(HWND, struct PairNode **, struct Project *);
 void deleteFilePair(struct PairNode **, wchar_t *);
 void deletePairList(struct PairNode **);
 void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
 void addPair(struct PairNode **, wchar_t *, wchar_t *, LONGLONG);
+void catPath(wchar_t *, wchar_t *, wchar_t *);
 bool isProjectName(wchar_t *, int);
+bool fileExists(wchar_t *);
+bool folderExists(wchar_t *);
+bool fileDateIsDifferent(FILETIME, FILETIME, FILETIME, wchar_t *);
 int countPairNodes(struct PairNode *);
 int countProjectNodes(struct ProjectNode *);
 int listSubFolders(HWND, wchar_t *);
-//int listTreeContent(struct PairNode **, wchar_t *, wchar_t *);
+LONGLONG getFileSize(wchar_t *);
+
 
 struct Pair
 {
@@ -82,4 +86,11 @@ struct ProjectNode
 {
 	struct Project project;
 	struct ProjectNode *next;
+};
+
+struct Arguments
+{
+	HWND hwnd;
+	struct PairNode **pairs;
+	struct Project *project;
 };

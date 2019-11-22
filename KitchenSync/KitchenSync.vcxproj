@@ -134,6 +134,7 @@
     <ClCompile Include="kitchen_sync.c" />
     <ClCompile Include="linked_lists.c" />
     <ClCompile Include="misc.c" />
+    <ClCompile Include="preview_scan.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="kitchen_sync.h" />

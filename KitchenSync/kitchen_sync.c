@@ -61,6 +61,9 @@ static wchar_t folderPair[MAX_LINE * 3] = {0};
 static wchar_t sourceFolder[MAX_LINE] = {0};
 static wchar_t destFolder[MAX_LINE] = {0};
 
+//TODO get rid of this global
+bool writing = false;
+
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
 {
 	instance = hInstance;
@@ -692,9 +695,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							findProjectName(lbProjectsHwnd, selectedRow, project.name);
 
 							SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
-							//previewFolderPair(lbSyncHwnd, &filesHead, project);
-							//listTreeContent(hwnd, pairs, project.pair.source);
-							previewFolderPairTest(lbSyncHwnd, &filesHead, &project);
+							previewFolderPair(lbSyncHwnd, &filesHead, &project);
 						}
 
 						fillSyncListbox(lbSyncHwnd, &filesHead);

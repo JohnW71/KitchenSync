@@ -12,7 +12,6 @@ void addPair(struct PairNode **pairs, wchar_t *source, wchar_t *destination, LON
 	appendPairNode(pairs, pair, size);
 }
 
-// append a new node at the end
 void appendPairNode(struct PairNode **head_ref, struct Pair pair, LONGLONG filesize)
 {
 	struct PairNode *newPairNode = (struct PairNode *)malloc(sizeof(struct PairNode));
@@ -57,7 +56,6 @@ void appendPairNode(struct PairNode **head_ref, struct Pair pair, LONGLONG files
 	last->next = newPairNode;
 }
 
-// append a new node at the end
 void appendProjectNode(struct ProjectNode **head_ref, struct Project project)
 {
 	struct ProjectNode *newProjectNode = (struct ProjectNode *)malloc(sizeof(struct ProjectNode));
@@ -134,7 +132,7 @@ void deleteProject(struct ProjectNode **head_ref, wchar_t *projectName)
 	while (*head_ref != NULL && current != NULL);
 }
 
-// delete folder pair by name
+// delete single folder pair by name
 void deleteFolderPair(struct ProjectNode **head_ref, wchar_t *folderPair, wchar_t *projectName)
 {
 	sortProjectNodes(head_ref);
@@ -166,7 +164,7 @@ void deleteFolderPair(struct ProjectNode **head_ref, wchar_t *folderPair, wchar_
 	}
 }
 
-// delete folder pair by name
+// delete single file pair by name
 void deleteFilePair(struct PairNode **head_ref, wchar_t *filePair)
 {
 	//sortProjectNodes(head_ref);
@@ -197,7 +195,7 @@ void deleteFilePair(struct PairNode **head_ref, wchar_t *filePair)
 	}
 }
 
-// replace existing folder pair
+// replace existing folder pair with edited pair
 void replaceFolderPair(struct ProjectNode **head_ref, wchar_t *projectName, wchar_t *folderPair, wchar_t *newSrc, wchar_t *newDst)
 {
 	sortProjectNodes(head_ref);
@@ -231,7 +229,7 @@ void replaceFolderPair(struct ProjectNode **head_ref, wchar_t *projectName, wcha
 }
 
 // Given a reference (pointer to pointer) to the head of a list
-// and a position, deletes the node at the given position
+// and a position, delete the node at the given position
 static void deletePairNode(struct PairNode **head_ref, int position)
 {
 	if (*head_ref == NULL)
@@ -268,7 +266,7 @@ static void deletePairNode(struct PairNode **head_ref, int position)
 }
 
 // Given a reference (pointer to pointer) to the head of a list
-// and a position, deletes the node at the given position
+// and a position, delete the node at the given position
 static void deleteProjectNode(struct ProjectNode **head_ref, int position)
 {
 	if (*head_ref == NULL)
@@ -358,7 +356,6 @@ static int countPairNodes(struct PairNode *head)
 }
 #endif
 
-// count nodes in list
 int countProjectNodes(struct ProjectNode *head)
 {
 	int count = 0;
@@ -372,7 +369,6 @@ int countProjectNodes(struct ProjectNode *head)
 	return count;
 }
 
-// sort list
 void sortProjectNodes(struct ProjectNode **head_ref)
 {
 	if (*head_ref == NULL)
