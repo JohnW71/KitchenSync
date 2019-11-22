@@ -442,3 +442,72 @@ void sortProjectNodes(struct ProjectNode **head_ref)
 	}
 	while (changed);
 }
+
+void sortPairNodes(struct PairNode **head_ref)
+{
+	if (*head_ref == NULL)
+	{
+		writeFileW(LOG_FILE, L"Can't sort empty list");
+		return;
+	}
+
+	struct PairNode *head = *head_ref;
+
+	if (head->next == NULL)
+	{
+		writeFileW(LOG_FILE, L"Can't sort only 1 entry");
+		return;
+	}
+
+	bool changed;
+
+	do
+	{
+		changed = false;
+
+		// swap head & second nodes
+		if (wcscmp(head->pair.source, head->next->pair.source) > 0)
+		{
+			struct PairNode *temp = head->next;
+
+			head->next = head->next->next;
+			temp->next = head;
+			*head_ref = temp;
+			head = *head_ref;
+			changed = true;
+		}
+
+		struct PairNode *previous = head;
+		struct PairNode *current = head->next;
+
+		if (current->next == NULL)
+		{
+			writeFileW(LOG_FILE, L"Can't sort more, only 2 entries");
+			return;
+		}
+
+		// swap folder pairs
+		while (current != NULL && current->next != NULL)
+		{
+			if (wcscmp(current->pair.source, current->next->pair.source) > 0 ||
+				(wcscmp(current->pair.source, current->next->pair.source) == 0 && 
+					wcscmp(current->pair.destination, current->next->pair.destination) > 0))
+			{
+				struct PairNode *temp = current->next;
+
+				if (current->next->next != NULL)
+					current->next = current->next->next;
+				else
+					current->next = NULL;
+				temp->next = current;
+				previous->next = temp;
+
+				changed = true;
+			}
+			else
+				current = current->next;
+
+			previous = previous->next;
+		}
+	} while (changed);
+}

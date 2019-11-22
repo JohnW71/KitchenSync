@@ -41,6 +41,7 @@ void deleteProject(struct ProjectNode **, wchar_t *);
 void deleteFolderPair(struct ProjectNode **, wchar_t *, wchar_t *);
 void replaceFolderPair(struct ProjectNode **, wchar_t *, wchar_t *, wchar_t *, wchar_t *);
 void sortProjectNodes(struct ProjectNode **);
+void sortPairNodes(struct PairNode **);
 void fillListbox(HWND, struct ProjectNode **);
 void fillSyncListbox(HWND, struct PairNode **);
 void findProjectName(HWND, LRESULT, wchar_t *);
@@ -56,7 +57,7 @@ bool isProjectName(wchar_t *, int);
 int countPairNodes(struct PairNode *);
 int countProjectNodes(struct ProjectNode *);
 int listSubFolders(HWND, wchar_t *);
-int listTreeContent(HWND, struct PairNode **, wchar_t *, wchar_t *);
+//int listTreeContent(struct PairNode **, wchar_t *, wchar_t *);
 
 struct Pair
 {

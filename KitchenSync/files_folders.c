@@ -8,6 +8,16 @@ static void displayErrorBox(LPTSTR);
 static void catPath(wchar_t *, wchar_t *, wchar_t *);
 static int previewFolderPairSourceTest(HWND, struct PairNode **, struct Project *);
 static int previewFolderPairTargetTest(HWND, struct PairNode **, struct Project *);
+static int listTreeContent(struct PairNode **, wchar_t *, wchar_t *);
+DWORD CALLBACK entryPointSource(LPVOID);
+DWORD CALLBACK entryPointTarget(LPVOID);
+
+struct Arguments
+{
+	HWND hwnd;
+	struct PairNode **pairs;
+	struct Project *project;
+};
 
 static void displayErrorBox(LPTSTR lpszFunction)
 {
@@ -106,7 +116,7 @@ void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **
 // send one specific folder pair for Preview
 void previewFolderPairTest(HWND hwnd, struct PairNode **pairs, struct Project *project)
 {
-	previewFolderPairSourceTest(hwnd, pairs, project);
+	//previewFolderPairSourceTest(hwnd, pairs, project);
 
 	// reverse source & destination
 	struct Project reversed = { 0 };
@@ -114,12 +124,61 @@ void previewFolderPairTest(HWND hwnd, struct PairNode **pairs, struct Project *p
 	wcscpy_s(reversed.pair.source, MAX_LINE, project->pair.destination);
 	wcscpy_s(reversed.pair.destination, MAX_LINE, project->pair.source);
 
-	previewFolderPairTargetTest(hwnd, pairs, &reversed);
+	//previewFolderPairTargetTest(hwnd, pairs, &reversed);
+
+	HANDLE threads[2];
+	DWORD threadIDs[2];
+
+	struct Arguments sourceArgs = { hwnd, pairs, project };
+
+	threads[0] = CreateThread(NULL, 0, entryPointSource, &sourceArgs, 0, &threadIDs[0]);
+	if (threads[0] == NULL)
+	{
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Failed to create source->destination thread");
+		writeFileW(LOG_FILE, buf);
+		return;
+	}
+
+	struct Arguments targetArgs = { hwnd, pairs, &reversed};
+
+	threads[1] = CreateThread(NULL, 0, entryPointTarget, &targetArgs, 0, &threadIDs[1]);
+	if (threads[1] == NULL)
+	{
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Failed to create destination->source thread");
+		writeFileW(LOG_FILE, buf);
+		return;
+	}
+
+	WaitForMultipleObjects(2, threads, TRUE, INFINITE);
+	sortPairNodes(pairs);
+}
+
+DWORD CALLBACK entryPointSource(LPVOID arguments)
+{
+	struct Arguments *args = (struct Arguments *)arguments;
+	HWND hwnd = args->hwnd;
+	struct PairNode **pairs = args->pairs;
+	struct Project *project = args->project;
+
+	previewFolderPairSourceTest(hwnd, pairs, project);
+	return 0;
+}
+
+DWORD CALLBACK entryPointTarget(LPVOID arguments)
+{
+	struct Arguments *args = (struct Arguments *)arguments;
+	HWND hwnd = args->hwnd;
+	struct PairNode **pairs = args->pairs;
+	struct Project *project = args->project;
+
+	previewFolderPairTargetTest(hwnd, pairs, project);
+	return 0;
 }
 
 // this adds all the files/folders in and below the supplied folder to the pairs list
-//NOTE hwnd parameter is not currently used
-int listTreeContent(HWND hwnd, struct PairNode **pairs, wchar_t *source, wchar_t *destination)
+static int listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *destination)
 {
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(source) >= MAX_LINE)
@@ -161,7 +220,6 @@ int listTreeContent(HWND hwnd, struct PairNode **pairs, wchar_t *source, wchar_t
 		filesize.HighPart = ffd.nFileSizeHigh;
 
 		// recursive folder reading
-		//static int position = 0;
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
 			wchar_t subFolder[MAX_LINE] = {0};
@@ -174,11 +232,10 @@ int listTreeContent(HWND hwnd, struct PairNode **pairs, wchar_t *source, wchar_t
 				return 0;
 			}
 			wcscat(subFolder, L"\\");
-			//SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)subFolder);
-			listTreeContent(hwnd, pairs, currentItem, destination); //NOTE does this need extra path info added?
+			listTreeContent(pairs, currentItem, destination); //NOTE does this need extra path info added?
 #if DEV_MODE
 	wchar_t buf[MAX_LINE] = {0};
-	swprintf(buf, MAX_LINE, L"LTC() Dir: %s", currentItem);
+	swprintf(buf, MAX_LINE, L"listTreeContent() Dir: %s", currentItem);
 	writeFileW(LOG_FILE, buf);
 #endif
 		}
@@ -404,7 +461,7 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 	writeFileW(LOG_FILE, buf);
 #endif
 				// if new, add entire folder contents to list (recursive but without comparison)
-				listTreeContent(hwnd, pairs, newSource, destination);
+				listTreeContent(pairs, newSource, destination);
 			}
 		}
 		else // item is a file
@@ -423,7 +480,7 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 				if (targetSize != filesize.QuadPart)
 				{
 #if DEV_MODE
-	//wchar_t buf[MAX_LINE] = {0};
+	wchar_t buf[MAX_LINE] = {0};
 	swprintf(buf, MAX_LINE, L"target file is out of date, add %s to list", destination);
 	writeFileW(LOG_FILE, buf);
 #endif
@@ -435,7 +492,7 @@ static int previewFolderPairSourceTest(HWND hwnd, struct PairNode **pairs, struc
 					if (fileDateIsDifferent(ffd.ftCreationTime, ffd.ftLastAccessTime, ffd.ftLastWriteTime, destination))
 					{
 #if DEV_MODE
-	//wchar_t buf[MAX_LINE] = {0};
+	wchar_t buf[MAX_LINE] = {0};
 	swprintf(buf, MAX_LINE, L"source & target files have different date/time, add %s to list", destination);
 	writeFileW(LOG_FILE, buf);
 #endif
@@ -529,6 +586,7 @@ static int previewFolderPairTargetTest(HWND hwnd, struct PairNode **pairs, struc
 	swprintf(buf, MAX_LINE, L"Entire folder tree to be removed %s", newSource);
 	writeFileW(LOG_FILE, buf);
 #endif
+				//TODO need to list all folder contents, marked as "Delete folder"
 				addPair(pairs, L"Delete folder", newSource, filesize.QuadPart);
 			}
 		}
