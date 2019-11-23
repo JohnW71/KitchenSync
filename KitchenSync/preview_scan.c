@@ -1,10 +1,10 @@
 #include "kitchen_sync.h"
 
 static void displayErrorBox(LPTSTR);
-static int previewFolderPairSource(HWND, struct PairNode **, struct Project *);
-static int previewFolderPairTarget(HWND, struct PairNode **, struct Project *);
-static int listTreeContent(struct PairNode **, wchar_t *, wchar_t *);
-static int listForRemoval(struct PairNode **, wchar_t *);
+static void previewFolderPairSource(HWND, struct PairNode **, struct Project *);
+static void previewFolderPairTarget(HWND, struct PairNode **, struct Project *);
+static void listTreeContent(struct PairNode **, wchar_t *, wchar_t *);
+static void listForRemoval(struct PairNode **, wchar_t *);
 DWORD CALLBACK entryPointSource(LPVOID);
 DWORD CALLBACK entryPointTarget(LPVOID);
 
@@ -46,6 +46,9 @@ int listSubFolders(HWND hwnd, wchar_t *folder)
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Unable to access %s", folder);
+		writeFileW(LOG_FILE, buf);
 		displayErrorBox(TEXT("listSubFolders"));
 		return dwError;
 	}
@@ -97,16 +100,16 @@ void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **
 // send one specific folder pair for Preview in both directions
 void previewFolderPair(HWND hwnd, struct PairNode **pairs, struct Project *project)
 {
-	//previewFolderPairSource(hwnd, pairs, project);
-
 	// reverse source & destination
 	struct Project reversed = { 0 };
 	wcscpy_s(reversed.name, MAX_LINE, project->name);
 	wcscpy_s(reversed.pair.source, MAX_LINE, project->pair.destination);
 	wcscpy_s(reversed.pair.destination, MAX_LINE, project->pair.source);
 
-	//previewFolderPairTarget(hwnd, pairs, &reversed);
-
+#if 1
+	previewFolderPairSource(hwnd, pairs, project);
+	previewFolderPairTarget(hwnd, pairs, &reversed);
+#else
 	HANDLE threads[2];
 	DWORD threadIDs[2];
 
@@ -133,6 +136,7 @@ void previewFolderPair(HWND hwnd, struct PairNode **pairs, struct Project *proje
 	}
 
 	WaitForMultipleObjects(2, threads, TRUE, INFINITE);
+#endif
 	sortPairNodes(pairs);
 }
 
@@ -159,14 +163,14 @@ DWORD CALLBACK entryPointTarget(LPVOID arguments)
 }
 
 // this recursively adds all the files/folders in and below the supplied folders to the pairs list
-static int listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *destination)
+static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *destination)
 {
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(source) >= MAX_LINE)
 	{
 		writeFileW(LOG_FILE, L"Folder path is full, can't add \\");
 		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
-		return 0;
+		return;
 	}
 	catPath(szDir, source, L"*");
 
@@ -177,8 +181,11 @@ static int listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *de
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Unable to access %s", source);
+		writeFileW(LOG_FILE, buf);
 		displayErrorBox(TEXT("listTreeContent"));
-		return dwError;
+		return; //dwError;
 	}
 
 	do
@@ -192,7 +199,7 @@ static int listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *de
 		{
 			writeFileW(LOG_FILE, L"Folder path is full, can't add filename");
 			MessageBox(NULL, L"Folder path is full, can't add filename", L"Error", MB_ICONEXCLAMATION | MB_OK);
-			return 0;
+			return;
 		}
 		catPath(currentItem, source, ffd.cFileName);
 
@@ -210,9 +217,10 @@ static int listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *de
 			{
 				writeFileW(LOG_FILE, L"Sub-folder path is full, can't add \\");
 				MessageBox(NULL, L"Sub-folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
-				return 0;
+				return;
 			}
 			wcscat(subFolder, L"\\");
+			addPair(pairs, currentItem, destination, filesize.QuadPart);
 			listTreeContent(pairs, currentItem, destination);
 #if DEV_MODE
 	wchar_t buf[MAX_LINE] = { 0 };
@@ -232,18 +240,18 @@ static int listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *de
 		displayErrorBox(TEXT("listTreeContent"));
 
 	FindClose(hFind);
-	return dwError;
+	return;// dwError;
 }
 
 // this recursively adds all the files/folders in and below the supplied folder to the pairs list for removal
-int listForRemoval(struct PairNode **pairs, wchar_t *path)
+void listForRemoval(struct PairNode **pairs, wchar_t *path)
 {
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(path) >= MAX_LINE)
 	{
 		writeFileW(LOG_FILE, L"Folder path is full, can't add \\");
 		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
-		return 0;
+		return;
 	}
 	catPath(szDir, path, L"*");
 
@@ -254,8 +262,11 @@ int listForRemoval(struct PairNode **pairs, wchar_t *path)
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Unable to access %s", path);
+		writeFileW(LOG_FILE, buf);
 		displayErrorBox(TEXT("listForRemoval"));
-		return dwError;
+		return; //dwError;
 	}
 
 	do
@@ -269,7 +280,7 @@ int listForRemoval(struct PairNode **pairs, wchar_t *path)
 		{
 			writeFileW(LOG_FILE, L"Folder path is full, can't add filename");
 			MessageBox(NULL, L"Folder path is full, can't add filename", L"Error", MB_ICONEXCLAMATION | MB_OK);
-			return 0;
+			return;
 		}
 		catPath(currentItem, path, ffd.cFileName);
 
@@ -287,7 +298,7 @@ int listForRemoval(struct PairNode **pairs, wchar_t *path)
 			{
 				writeFileW(LOG_FILE, L"Sub-folder path is full, can't add \\");
 				MessageBox(NULL, L"Sub-folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
-				return 0;
+				return;
 			}
 			wcscat(subFolder, L"\\");
 #if DEV_MODE
@@ -309,18 +320,17 @@ int listForRemoval(struct PairNode **pairs, wchar_t *path)
 		displayErrorBox(TEXT("listForRemoval"));
 
 	FindClose(hFind);
-	return dwError;
+	return;// dwError;
 }
 
-//FIX some files are passed without path so are duplicated in the list
-static int previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct Project *project)
+static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct Project *project)
 {
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(project->pair.source) >= MAX_LINE)
 	{
 		writeFileW(LOG_FILE, L"Folder path is full, can't add \\");
 		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
-		return 0;
+		return;
 	}
 	catPath(szDir, project->pair.source, L"*");
 
@@ -331,8 +341,11 @@ static int previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct Pr
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		displayErrorBox(TEXT("FindFirstFile"));
-		return dwError;
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Unable to access %s", szDir);
+		writeFileW(LOG_FILE, buf);
+		displayErrorBox(TEXT("previewFolderPairSource"));
+		return; //dwError;
 	}
 
 	do
@@ -361,7 +374,6 @@ static int previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct Pr
 				wcscpy_s(subFolder.name, MAX_LINE, project->name);
 				wcscpy_s(subFolder.pair.source, MAX_LINE, newSource);
 				wcscpy_s(subFolder.pair.destination, MAX_LINE, destination);
-
 #if DEV_MODE
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSource() for %s -> %s", newSource, destination);
@@ -377,6 +389,7 @@ static int previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct Pr
 	writeFileW(LOG_FILE, buf);
 #endif
 				// if new, add entire folder contents to list (recursive but without comparison)
+				addPair(pairs, newSource, destination, filesize.QuadPart);
 				listTreeContent(pairs, newSource, destination);
 			}
 		}
@@ -436,18 +449,18 @@ static int previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct Pr
 		displayErrorBox(TEXT("previewFolderPairSource"));
 
 	FindClose(hFind);
-	return dwError;
+	return; //dwError;
 }
 
 // reversed folder direction
-static int previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct Project *project)
+static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct Project *project)
 {
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(project->pair.source) >= MAX_LINE)
 	{
 		writeFileW(LOG_FILE, L"Folder path is full, can't add \\");
 		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
-		return 0;
+		return;
 	}
 	catPath(szDir, project->pair.source, L"*");
 
@@ -458,8 +471,11 @@ static int previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct Pr
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		displayErrorBox(TEXT("FindFirstFile"));
-		return dwError;
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Unable to access %s", szDir);
+		writeFileW(LOG_FILE, buf);
+		displayErrorBox(TEXT("previewFolderPairTarget"));
+		return; //dwError;
 	}
 
 	do
@@ -488,7 +504,6 @@ static int previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct Pr
 				wcscpy_s(subFolder.name, MAX_LINE, project->name);
 				wcscpy_s(subFolder.pair.source, MAX_LINE, newSource);
 				wcscpy_s(subFolder.pair.destination, MAX_LINE, destination);
-
 #if DEV_MODE
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairTarget() for %s -> %s", newSource, destination);
@@ -537,5 +552,5 @@ static int previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct Pr
 		displayErrorBox(TEXT("previewFolderPairTarget"));
 
 	FindClose(hFind);
-	return dwError;
+	return; //dwError;
 }
