@@ -62,7 +62,6 @@ int countProjectNodes(struct ProjectNode *);
 int listSubFolders(HWND, wchar_t *);
 LONGLONG getFileSize(wchar_t *);
 
-
 struct Pair
 {
 	wchar_t source[MAX_LINE];
@@ -93,4 +92,14 @@ struct Arguments
 	HWND hwnd;
 	struct PairNode **pairs;
 	struct Project *project;
+};
+
+void appendLoggerNode(struct LoggerNode **, wchar_t *);
+void deleteLoggerNode(struct LoggerNode **);
+void logger(wchar_t *);
+
+struct LoggerNode
+{
+	wchar_t text[MAX_LINE];
+	struct LoggerNode *next;
 };

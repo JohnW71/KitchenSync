@@ -64,6 +64,11 @@ static wchar_t destFolder[MAX_LINE] = {0};
 //TODO get rid of this global
 bool writing = false;
 
+//NOTE logger testing
+struct LoggerNode *loggerHead = NULL;
+DWORD CALLBACK entryPointLogger(LPVOID);
+HANDLE semaphoreHandle;
+
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
 {
 	instance = hInstance;
@@ -110,6 +115,29 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	{
 		fwprintf(lf, L"%s\n", L"Log file reset");
 		fclose(lf);
+	}
+
+	HANDLE threads[1];
+	DWORD threadIDs[1];
+	int initialCount = 0;
+	int threadCount = 1;
+	semaphoreHandle = CreateSemaphoreEx(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
+
+	struct Args
+	{
+		struct LoggerNode **loggerHead;
+	} args;
+
+	threads[0] = CreateThread(NULL, 0, entryPointLogger, &args, 0, &threadIDs[0]);
+	if (threads[0] == NULL)
+	{
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Failed to create logger thread");
+		writeFileW(LOG_FILE, buf);
+	}
+	else
+	{
+		logger(L"Test text");
 	}
 
 	ShowWindow(mainHwnd, nCmdShow);
@@ -526,8 +554,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PROJECT)
 			{
-				memset(projectName, '\0', MAX_LINE);
-				getProjectName();
+				logger(L"Test text");
+				//memset(projectName, '\0', MAX_LINE);
+				//getProjectName();
 			}
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_FOLDER_PAIR)
@@ -1381,3 +1410,48 @@ static LRESULT CALLBACK customDestinationEditboxProc(HWND hwnd, UINT msg, WPARAM
 //	}
 //	return CallWindowProc(originalDestinationListboxProc, hwnd, msg, wParam, lParam);
 //}
+
+
+DWORD CALLBACK entryPointLogger(LPVOID arguments)
+{
+	//struct Args
+	//{
+	//	struct LoggerNode **loggerHead;
+	//} *args = (struct Args *)arguments;
+
+	for (;;)
+	{
+		if (loggerHead != NULL)
+		{
+			wchar_t buf[100] = { 0 };
+			swprintf(buf, 100, L"logger text: %s", loggerHead->text);
+			writeFileW(LOG_FILE, buf);
+			deleteLoggerNode(&loggerHead);
+		}
+		WaitForSingleObjectEx(semaphoreHandle, INFINITE, FALSE);
+	}
+
+#if 0
+// writing function should open the file and write all available strings before closing
+	for (;;)
+		check if head_node is null
+		if null ?
+			enter wait state ?
+			if not null
+				write node text to file
+				if head_node has next
+					set head_node to next node
+					free head_node
+					--semaphore count
+					if semaphore count = 0
+						enter wait state
+#endif
+	return 0;
+}
+
+// add text to next node
+void logger(wchar_t *text)
+{
+	appendLoggerNode(&loggerHead, text);
+	ReleaseSemaphore(semaphoreHandle, 1, 0);
+}

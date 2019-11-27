@@ -507,3 +507,45 @@ void sortPairNodes(struct PairNode **head_ref)
 		}
 	} while (changed);
 }
+
+void appendLoggerNode(struct LoggerNode **head_ref, wchar_t *text)
+{
+	struct LoggerNode *newLoggerNode = (struct LoggerNode *)malloc(sizeof(struct LoggerNode));
+
+	if (!newLoggerNode)
+	{
+		writeFileW(LOG_FILE, L"Failed to allocate memory for new logger node");
+		MessageBox(NULL, L"Failed to allocate memory for new logger node", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return;
+	}
+
+	wcscpy_s(newLoggerNode->text, MAX_LINE, text);
+	newLoggerNode->next = NULL;
+
+	// if list is empty set newLoggerNode as head
+	if (*head_ref == NULL)
+	{
+		*head_ref = newLoggerNode;
+		return;
+	}
+
+	// divert current last node to newLoggerNode
+	struct LoggerNode *last = *head_ref;
+	while (last->next != NULL)
+		last = last->next;
+	last->next = newLoggerNode;
+}
+
+void deleteLoggerNode(struct LoggerNode **head_ref)
+{
+	if (*head_ref == NULL)
+		return;
+
+	// store current head node
+	struct LoggerNode *temp = *head_ref;
+
+	// if head is to be removed
+	*head_ref = temp->next;
+	free(temp);
+	return;
+}
