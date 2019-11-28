@@ -536,6 +536,7 @@ void appendLoggerNode(struct LoggerNode **head_ref, wchar_t *text)
 	last->next = newLoggerNode;
 }
 
+// delete first node only
 void deleteLoggerNode(struct LoggerNode **head_ref)
 {
 	if (*head_ref == NULL)

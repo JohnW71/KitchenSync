@@ -1,6 +1,9 @@
 #include "kitchen_sync.h"
 
 static void sizeFormatted(LONGLONG, wchar_t *);
+static DWORD CALLBACK entryPointLogger(LPVOID);
+
+static struct LoggerNode *loggerHead = NULL;
 extern bool writing;
 
 void shutDown(HWND hwnd, struct ProjectNode **head_ref)
@@ -472,4 +475,75 @@ void splitPair(wchar_t *pair, wchar_t *source, wchar_t *dest, size_t length)
 
 	wcsncpy_s(source, MAX_LINE, pair, sourceEnd);
 	wcsncpy_s(dest, MAX_LINE, pair + destStart, length);
+}
+
+void startLoggingThread()
+{
+	HANDLE threads[1];
+	DWORD threadIDs[1];
+	int initialCount = 0;
+	int threadCount = 1;
+	semaphoreHandle = CreateSemaphoreEx(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
+
+	//TODO use or lose this unused property
+	struct Args
+	{
+		struct LoggerNode **loggerHead;
+	} args;
+
+	threads[0] = CreateThread(NULL, 0, entryPointLogger, &args, 0, &threadIDs[0]);
+	if (threads[0] == NULL)
+	{
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Failed to create logger thread");
+		writeFileW(LOG_FILE, buf);
+	}
+	else
+	{
+		logger(L"Test text");
+	}
+}
+
+static DWORD CALLBACK entryPointLogger(LPVOID arguments)
+{
+	//struct Args
+	//{
+	//	struct LoggerNode **loggerHead;
+	//} *args = (struct Args *)arguments;
+
+	for (;;)
+	{
+		while (loggerHead != NULL)
+		{
+			wchar_t buf[100] = { 0 };
+			swprintf(buf, 100, L"logger text: %s", loggerHead->text);
+			writeFileW(LOG_FILE, buf);
+			deleteLoggerNode(&loggerHead);
+		}
+		WaitForSingleObjectEx(semaphoreHandle, INFINITE, FALSE);
+	}
+
+#if 0
+	// writing function should open the file and write all available strings before closing
+	for (;;)
+		check if head_node is null
+		if null ?
+			enter wait state ?
+			if not null
+				write node text to file
+				if head_node has next
+					set head_node to next node
+					free head_node
+					--semaphore count
+					if semaphore count = 0
+						enter wait state
+#endif
+						return 0;
+}
+
+// add text to next node for later writing
+void logger(wchar_t *text)
+{
+	appendLoggerNode(&loggerHead, text);
+	ReleaseSemaphore(semaphoreHandle, 1, 0);
 }
