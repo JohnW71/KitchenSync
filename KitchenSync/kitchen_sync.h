@@ -28,15 +28,12 @@
 #define assert(expression)
 #endif
 
-HANDLE semaphoreHandle;
-
 void shutDown(HWND, struct ProjectNode **);
 void centerWindow(HWND);
 void writeSettings(HWND, char *);
 void readSettings(HWND, char *);
 void loadProjects(HWND, char *, struct ProjectNode **);
 void saveProjects(char *, struct ProjectNode **);
-void writeFileW(char *, wchar_t *);
 void appendPairNode(struct PairNode **, struct Pair, LONGLONG);
 void appendProjectNode(struct ProjectNode **, struct Project);
 void deleteProject(struct ProjectNode **, wchar_t *);

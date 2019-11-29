@@ -4,10 +4,15 @@ static void sizeFormatted(LONGLONG, wchar_t *);
 static DWORD CALLBACK entryPointLogger(LPVOID);
 
 static struct LoggerNode *loggerHead = NULL;
+static HANDLE semaphoreHandle;
 extern bool writing;
 
 void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 {
+	while (loggerHead != NULL)
+	{
+		MessageBox(NULL, L"Logging still in progress", L"Error", MB_ICONEXCLAMATION | MB_OK);
+	}
 	writeSettings(hwnd, INI_FILE);
 	saveProjects(PRJ_FILE, head_ref);
 	PostQuitMessage(0);
@@ -27,31 +32,12 @@ void centerWindow(HWND hwnd)
 		(screenHeight - windowHeight) / 2, 0, 0, SWP_NOSIZE);
 }
 
-void writeFileW(char *filename, wchar_t *text)
-{
-	while (writing)
-		Sleep(50);
-
-	writing = true;
-
-	FILE *f = fopen(filename, "at, ccs=UNICODE");
-	if (f == NULL)
-	{
-		MessageBox(NULL, L"Can't open file", L"Error", MB_ICONEXCLAMATION | MB_OK);
-		return;
-	}
-
-	fwprintf(f, L"%s\n", text);
-	fclose(f);
-	writing = false;
-}
-
 void writeSettings(HWND hwnd, char *filename)
 {
 	FILE *f = fopen(filename, "w");
 	if (f == NULL)
 	{
-		writeFileW(LOG_FILE, L"Error saving settings!");
+		logger(L"Error saving settings!");
 		MessageBox(NULL, L"Error saving settings", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
@@ -85,7 +71,7 @@ void readSettings(HWND hwnd, char *filename)
 	char *line = (char *)malloc(MAX_LINE);
 	if (!line)
 	{
-		writeFileW(LOG_FILE, L"Failed to allocate memory for line from settings file");
+		logger(L"Failed to allocate memory for line from settings file");
 		MessageBox(NULL, L"Failed to allocate memory for line from settings file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		fclose(f);
 		return;
@@ -99,7 +85,7 @@ void readSettings(HWND hwnd, char *filename)
 		char *setting = (char *)calloc(MAX_LINE, sizeof(char));
 		if (!setting)
 		{
-			writeFileW(LOG_FILE, L"Failed to allocate memory for setting from settings file");
+			logger(L"Failed to allocate memory for setting from settings file");
 			MessageBox(NULL, L"Failed to allocate memory for setting from settings file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
@@ -108,7 +94,7 @@ void readSettings(HWND hwnd, char *filename)
 		char *value = (char *)calloc(MAX_LINE, sizeof(char));
 		if (!value)
 		{
-			writeFileW(LOG_FILE, L"Failed to allocate memory for value from settings file");
+			logger(L"Failed to allocate memory for value from settings file");
 			MessageBox(NULL, L"Failed to allocate memory for value from settings file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
@@ -159,14 +145,14 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 	FILE *f = fopen(filename, "rt, ccs=UNICODE");
 	if (f == NULL)
 	{
-		writeFileW(LOG_FILE, L"No project history found");
+		logger(L"No project history found");
 		return;
 	}
 
 	wchar_t *line = (wchar_t *)malloc(MAX_LINE * 4);
 	if (!line)
 	{
-		writeFileW(LOG_FILE, L"Failed to allocate memory for line from projects file");
+		logger(L"Failed to allocate memory for line from projects file");
 		MessageBox(NULL, L"Failed to allocate memory for line from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		fclose(f);
 		return;
@@ -180,7 +166,7 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 		wchar_t *name = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 		if (!name)
 		{
-			writeFileW(LOG_FILE, L"Failed to allocate memory for name from projects file");
+			logger(L"Failed to allocate memory for name from projects file");
 			MessageBox(NULL, L"Failed to allocate memory for name from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
@@ -189,7 +175,7 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 		wchar_t *source = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 		if (!source)
 		{
-			writeFileW(LOG_FILE, L"Failed to allocate memory for source from projects file");
+			logger(L"Failed to allocate memory for source from projects file");
 			MessageBox(NULL, L"Failed to allocate memory for source from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
@@ -198,7 +184,7 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 		wchar_t *destination = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 		if (!destination)
 		{
-			writeFileW(LOG_FILE, L"Failed to allocate memory for destination from projects file");
+			logger(L"Failed to allocate memory for destination from projects file");
 			MessageBox(NULL, L"Failed to allocate memory for destination from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
@@ -229,14 +215,14 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 		wchar_t *buf = (wchar_t *)calloc(MAX_LINE * 4, sizeof(wchar_t));
 		if (!buf)
 		{
-			writeFileW(LOG_FILE, L"Failed to allocate memory for logging buf");
+			logger(L"Failed to allocate memory for logging buf");
 			MessageBox(NULL, L"Failed to allocate memory for logging buf", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
 		}
 
 		swprintf(buf, MAX_LINE * 4, L"Name: %s, source: %s, dest: %s", name, source, destination);
-		writeFileW(LOG_FILE, buf);
+		logger(buf);
 
 		struct Project project = {0};
 		wcscpy_s(project.name, MAX_LINE, name);
@@ -249,7 +235,7 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 #if DEV_MODE
 	wchar_t buf[100] = {0};
 	swprintf(buf, 100, L"Loaded %d projects", countProjectNodes(*head_ref));
-	writeFileW(LOG_FILE, buf);
+	logger(buf);
 #endif
 
 	fclose(f);
@@ -263,7 +249,7 @@ void fillListbox(HWND hwnd, struct ProjectNode **head_ref)
 	wchar_t *currentProjectName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 	if (!currentProjectName)
 	{
-		writeFileW(LOG_FILE, L"Failed to allocate memory for currentProjectName from projects file");
+		logger(L"Failed to allocate memory for currentProjectName from projects file");
 		MessageBox(NULL, L"Failed to allocate memory for currentProjectName from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
@@ -286,7 +272,7 @@ void fillListbox(HWND hwnd, struct ProjectNode **head_ref)
 		wchar_t *buffer = (wchar_t *)calloc(MAX_LINE * 4, sizeof(wchar_t));
 		if (!buffer)
 		{
-			writeFileW(LOG_FILE, L"Failed to allocate memory for folder pair buffer from projects file");
+			logger(L"Failed to allocate memory for folder pair buffer from projects file");
 			MessageBox(NULL, L"Failed to allocate memory for folder pair buffer from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
@@ -304,7 +290,7 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 	wchar_t *currentPairName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 	if (!currentPairName)
 	{
-		writeFileW(LOG_FILE, L"Failed to allocate memory for currentPairName from preview list");
+		logger(L"Failed to allocate memory for currentPairName from preview list");
 		MessageBox(NULL, L"Failed to allocate memory for currentPairName from preview list", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
@@ -318,7 +304,7 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 		wchar_t *buffer = (wchar_t *)calloc(MAX_LINE * 3, sizeof(wchar_t));
 		if (!buffer)
 		{
-			writeFileW(LOG_FILE, L"Failed to allocate memory for file pair buffer from preview list");
+			logger(L"Failed to allocate memory for file pair buffer from preview list");
 			MessageBox(NULL, L"Failed to allocate memory for file pair buffer from preview list", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
@@ -379,7 +365,7 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 	FILE *f = fopen(filename, "wt, ccs=UNICODE");
 	if (f == NULL)
 	{
-		writeFileW(LOG_FILE, L"Unable to save project history");
+		logger(L"Unable to save project history");
 		return;
 	}
 
@@ -391,7 +377,7 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 		wchar_t *buf = (wchar_t *)calloc(MAX_LINE * 4, sizeof(wchar_t));
 		if (!buf)
 		{
-			writeFileW(LOG_FILE, L"Failed to allocate memory for buf for projects file");
+			logger(L"Failed to allocate memory for buf for projects file");
 			MessageBox(NULL, L"Failed to allocate memory for buf for projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
@@ -400,11 +386,11 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 		if (wcslen(current->project.pair.source) > 0 && wcslen(current->project.pair.destination) > 0)
 		{
 			swprintf(buf, MAX_LINE * 4, L"%s,%s,%s", current->project.name, current->project.pair.source, current->project.pair.destination);
-			writeFileW(PRJ_FILE, buf);
+			fwprintf(f, L"%s\n", buf);
 		}
 
 		swprintf(buf, MAX_LINE * 4, L"Name: %s, source: %s, dest: %s", current->project.name, current->project.pair.source, current->project.pair.destination);
-		writeFileW(LOG_FILE, buf);
+		logger(buf);
 
 		++count;
 		current = current->next;
@@ -413,7 +399,7 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 #if DEV_MODE
 	wchar_t buf[100] = {0};
 	swprintf(buf, 100, L"Saved %d projects", count);
-	writeFileW(LOG_FILE, buf);
+	logger(buf);
 #endif
 
 	fclose(f);
@@ -484,19 +470,13 @@ void startLoggingThread()
 	int initialCount = 0;
 	int threadCount = 1;
 	semaphoreHandle = CreateSemaphoreEx(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
+	threads[0] = CreateThread(NULL, 0, entryPointLogger, NULL, 0, &threadIDs[0]);
 
-	//TODO use or lose this unused property
-	struct Args
-	{
-		struct LoggerNode **loggerHead;
-	} args;
-
-	threads[0] = CreateThread(NULL, 0, entryPointLogger, &args, 0, &threadIDs[0]);
 	if (threads[0] == NULL)
 	{
 		wchar_t buf[MAX_LINE] = { 0 };
 		swprintf(buf, MAX_LINE, L"Failed to create logger thread");
-		writeFileW(LOG_FILE, buf);
+		logger(buf);
 	}
 	else
 	{
@@ -506,39 +486,30 @@ void startLoggingThread()
 
 static DWORD CALLBACK entryPointLogger(LPVOID arguments)
 {
-	//struct Args
-	//{
-	//	struct LoggerNode **loggerHead;
-	//} *args = (struct Args *)arguments;
+	FILE *f;
 
 	for (;;)
 	{
-		while (loggerHead != NULL)
+		if (loggerHead != NULL)
 		{
-			wchar_t buf[100] = { 0 };
-			swprintf(buf, 100, L"logger text: %s", loggerHead->text);
-			writeFileW(LOG_FILE, buf);
-			deleteLoggerNode(&loggerHead);
+			f = fopen(LOG_FILE, "at, ccs=UNICODE");
+			if (f == NULL)
+			{
+				MessageBox(NULL, L"Can't open file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+				return 0;
+			}
+
+			while (loggerHead != NULL)
+			{
+				fwprintf(f, L"%s\n", loggerHead->text);
+				deleteLoggerNode(&loggerHead);
+			}
+			fclose(f);
 		}
 		WaitForSingleObjectEx(semaphoreHandle, INFINITE, FALSE);
 	}
 
-#if 0
-	// writing function should open the file and write all available strings before closing
-	for (;;)
-		check if head_node is null
-		if null ?
-			enter wait state ?
-			if not null
-				write node text to file
-				if head_node has next
-					set head_node to next node
-					free head_node
-					--semaphore count
-					if semaphore count = 0
-						enter wait state
-#endif
-						return 0;
+	return 0;
 }
 
 // add text to next node for later writing

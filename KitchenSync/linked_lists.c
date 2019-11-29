@@ -18,23 +18,23 @@ void appendPairNode(struct PairNode **head_ref, struct Pair pair, LONGLONG files
 
 	if (!newPairNode)
 	{
-		writeFileW(LOG_FILE, L"Failed to allocate memory for new pair");
+		logger(L"Failed to allocate memory for new pair");
 		MessageBox(NULL, L"Failed to allocate memory for new pair", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 
 	if (wcscpy_s(newPairNode->pair.source, MAX_LINE, pair.source))
 	{
-		writeFileW(LOG_FILE, L"Failed copying new source");
-		writeFileW(LOG_FILE, pair.source);
+		logger(L"Failed copying new source");
+		logger(pair.source);
 		free(newPairNode);
 		return;
 	}
 
 	if (wcscpy_s(newPairNode->pair.destination, MAX_LINE, pair.destination))
 	{
-		writeFileW(LOG_FILE, L"Failed copying new destination");
-		writeFileW(LOG_FILE, pair.destination);
+		logger(L"Failed copying new destination");
+		logger(pair.destination);
 		free(newPairNode);
 		return;
 	}
@@ -62,31 +62,31 @@ void appendProjectNode(struct ProjectNode **head_ref, struct Project project)
 
 	if (!newProjectNode)
 	{
-		writeFileW(LOG_FILE, L"Failed to allocate memory for new project");
+		logger(L"Failed to allocate memory for new project");
 		MessageBox(NULL, L"Failed to allocate memory for new project", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 
 	if (wcscpy_s(newProjectNode->project.name, MAX_LINE, project.name))
 	{
-		writeFileW(LOG_FILE, L"Failed copying new project name");
-		writeFileW(LOG_FILE, project.name);
+		logger(L"Failed copying new project name");
+		logger(project.name);
 		free(newProjectNode);
 		return;
 	}
 
 	if (wcscpy_s(newProjectNode->project.pair.source, MAX_LINE, project.pair.source))
 	{
-		writeFileW(LOG_FILE, L"Failed copying new project source");
-		writeFileW(LOG_FILE, project.pair.source);
+		logger(L"Failed copying new project source");
+		logger(project.pair.source);
 		free(newProjectNode);
 		return;
 	}
 
 	if (wcscpy_s(newProjectNode->project.pair.destination, MAX_LINE, project.pair.destination))
 	{
-		writeFileW(LOG_FILE, L"Failed copying new project destination");
-		writeFileW(LOG_FILE, project.pair.destination);
+		logger(L"Failed copying new project destination");
+		logger(project.pair.destination);
 		free(newProjectNode);
 		return;
 	}
@@ -185,6 +185,7 @@ void deleteFilePair(struct PairNode **head_ref, wchar_t *filePair)
 			if (wcscmp(current->pair.source, src) == 0 &&
 				wcscmp(current->pair.destination, dst) == 0)
 			{
+				//TODO this is never reached
 				deletePairNode(head_ref, i);
 				return;
 			}
@@ -341,7 +342,7 @@ static void deleteProjectList(struct ProjectNode **head_ref)
 static int countPairNodes(struct PairNode *head)
 {
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"countPairNodes()");
+	logger(L"countPairNodes()");
 #endif
 
 	int count = 0;
@@ -373,7 +374,7 @@ void sortProjectNodes(struct ProjectNode **head_ref)
 {
 	if (*head_ref == NULL)
 	{
-		writeFileW(LOG_FILE, L"Can't sort empty list");
+		logger(L"Can't sort empty list");
 		return;
 	}
 
@@ -381,7 +382,7 @@ void sortProjectNodes(struct ProjectNode **head_ref)
 
 	if (head->next == NULL)
 	{
-		writeFileW(LOG_FILE, L"Can't sort only 1 entry");
+		logger(L"Can't sort only 1 entry");
 		return;
 	}
 
@@ -408,7 +409,7 @@ void sortProjectNodes(struct ProjectNode **head_ref)
 
 		if (current->next == NULL)
 		{
-			writeFileW(LOG_FILE, L"Can't sort more, only 2 entries");
+			logger(L"Can't sort more, only 2 entries");
 			return;
 		}
 
@@ -443,7 +444,7 @@ void sortPairNodes(struct PairNode **head_ref)
 {
 	if (*head_ref == NULL)
 	{
-		writeFileW(LOG_FILE, L"Can't sort empty list");
+		logger(L"Can't sort empty list");
 		return;
 	}
 
@@ -451,7 +452,7 @@ void sortPairNodes(struct PairNode **head_ref)
 
 	if (head->next == NULL)
 	{
-		writeFileW(LOG_FILE, L"Can't sort only 1 entry");
+		logger(L"Can't sort only 1 entry");
 		return;
 	}
 
@@ -478,7 +479,7 @@ void sortPairNodes(struct PairNode **head_ref)
 
 		if (current->next == NULL)
 		{
-			writeFileW(LOG_FILE, L"Can't sort more, only 2 entries");
+			logger(L"Can't sort more, only 2 entries");
 			return;
 		}
 
@@ -514,7 +515,6 @@ void appendLoggerNode(struct LoggerNode **head_ref, wchar_t *text)
 
 	if (!newLoggerNode)
 	{
-		writeFileW(LOG_FILE, L"Failed to allocate memory for new logger node");
 		MessageBox(NULL, L"Failed to allocate memory for new logger node", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}

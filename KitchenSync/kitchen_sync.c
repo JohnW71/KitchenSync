@@ -61,9 +61,6 @@ static wchar_t folderPair[MAX_LINE * 3] = {0};
 static wchar_t sourceFolder[MAX_LINE] = {0};
 static wchar_t destFolder[MAX_LINE] = {0};
 
-//TODO get rid of this global
-bool writing = false;
-
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
 {
 	instance = hInstance;
@@ -159,7 +156,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			if (tabHwnd == NULL)
 			{
-				writeFileW(LOG_FILE, L"Failed to create tab control");
+				logger(L"Failed to create tab control");
 				MessageBox(NULL, L"Failed to create tab control", L"Error", MB_ICONEXCLAMATION | MB_OK);
 				break;
 			}
@@ -527,24 +524,14 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PROJECT)
 			{
-				logger(L"Test text1");
-				logger(L"Test text2");
-				logger(L"Test text3");
-				logger(L"Test text4");
-				logger(L"Test text5");
-				logger(L"Test text6");
-				logger(L"Test text7");
-				logger(L"Test text8");
-				logger(L"Test text9");
-				logger(L"Test text10");
-				//memset(projectName, '\0', MAX_LINE);
-				//getProjectName();
+				memset(projectName, '\0', MAX_LINE);
+				getProjectName();
 			}
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_FOLDER_PAIR)
 			{
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"Add folder pair button");
+	logger(L"Add folder pair button");
 #endif
 				// get row index
 				LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
@@ -559,7 +546,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 #if DEV_MODE
 	wchar_t buf[100] = {0};
 	swprintf(buf, 100, L"Selected project name: %s", projectName);
-	writeFileW(LOG_FILE, buf);
+	logger(buf);
 #endif
 						// change to folder pair tab and populate listboxes
 						wcscpy_s(folderPair, MAX_LINE, L"C: -> C:");
@@ -572,7 +559,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PAIR)
 			{
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"Add pair button");
+	logger(L"Add pair button");
 #endif
 				wcscpy_s(folderPair, MAX_LINE, L"C: -> C:");
 				addFolderPair();
@@ -584,13 +571,13 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 #if DEV_MODE
 	wchar_t buf[100] = {0};
 	swprintf(buf, 100, L"Tab: %lld", tab);
-	writeFileW(LOG_FILE, buf);
+	logger(buf);
 #endif
 
 				if (tab == TAB_PROJECTS)
 				{
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"Delete button, projects");
+	logger(L"Delete button, projects");
 #endif
 					EnableWindow(bDelete, false);
 					EnableWindow(bPreview, false);
@@ -627,7 +614,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				if (tab == TAB_PAIRS)
 				{
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"Delete button, pairs");
+	logger(L"Delete button, pairs");
 #endif
 					EnableWindow(bDelete, false);
 
@@ -652,7 +639,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				if (tab == TAB_SYNC)
 				{
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"Delete button, sync");
+	logger(L"Delete button, sync");
 #endif
 					EnableWindow(bDelete, false);
 
@@ -679,7 +666,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			if (LOWORD(wParam) == ID_BUTTON_PREVIEW)
 			{
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"Preview button");
+	logger(L"Preview button");
 #endif
 				// get row index
 				LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
@@ -758,7 +745,7 @@ static LRESULT CALLBACK customListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 		//case WM_LBUTTONDBLCLK:
 		//{
 		//	listboxDoubleClicked = true;
-		//	writeFileW(LOG_FILE, L"Listbox double clicked");
+		//	logger(L"Listbox double clicked");
 		//}
 		//	break;
 		case WM_KEYUP:
@@ -766,7 +753,7 @@ static LRESULT CALLBACK customListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			{
 				case VK_DELETE:
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"Del key");
+	logger(L"Del key");
 #endif
 					SendMessage(bDelete, BM_CLICK, 0, 0);
 					break;
@@ -870,7 +857,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 				// blank project name
 				if (wcslen(newProjectName) == 0)
 				{
-					writeFileW(LOG_FILE, L"Blank name used");
+					logger(L"Blank name used");
 					DestroyWindow(hwnd);
 					break;
 				}
@@ -878,7 +865,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 #if DEV_MODE
 	wchar_t buf[100] = {0};
 	swprintf(buf, 100, L"New project name: %s", newProjectName);
-	writeFileW(LOG_FILE, buf);
+	logger(buf);
 #endif
 				// new project being added
 				if (wcslen(newProjectName) > 0 && wcslen(projectName) == 0)
@@ -891,7 +878,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 						if (wcscmp(node->project.name, newProjectName) == 0)
 						{
 							MessageBox(NULL, L"Project name already exists", L"Error", MB_ICONEXCLAMATION | MB_OK);
-							writeFileW(LOG_FILE, L"Pre-existing name used");
+							logger(L"Pre-existing name used");
 							existing = true;
 							break;
 						}
@@ -901,7 +888,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 					if (!existing)
 					{
 #if DEV_MODE
-	writeFileW(LOG_FILE, L"New project added");
+	logger(L"New project added");
 #endif
 						struct Project project = {0};
 						wcscpy_s(project.name, MAX_LINE, newProjectName);
@@ -1357,7 +1344,7 @@ static LRESULT CALLBACK customDestinationEditboxProc(HWND hwnd, UINT msg, WPARAM
 //	{
 //		//case WM_LBUTTONDBLCLK:
 //		//{
-//		//	writeFileW(LOG_FILE, L"Listbox double clicked");
+//		//	logger(L"Listbox double clicked");
 //		//}
 //		//	break;
 //		case WM_KEYUP:
@@ -1378,7 +1365,7 @@ static LRESULT CALLBACK customDestinationEditboxProc(HWND hwnd, UINT msg, WPARAM
 //	{
 //		//case WM_LBUTTONDBLCLK:
 //		//{
-//		//	writeFileW(LOG_FILE, L"Listbox double clicked");
+//		//	logger(L"Listbox double clicked");
 //		//}
 //		//	break;
 //		case WM_KEYUP:
