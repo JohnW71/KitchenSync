@@ -568,11 +568,11 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			if (LOWORD(wParam) == ID_BUTTON_DELETE)
 			{
 				LRESULT tab = SendMessage(tabHwnd, TCM_GETCURFOCUS, 0, 0);
-#if DEV_MODE
-	wchar_t buf[100] = {0};
-	swprintf(buf, 100, L"Tab: %lld", tab);
-	logger(buf);
-#endif
+//#if DEV_MODE
+//	wchar_t buf[100] = {0};
+//	swprintf(buf, 100, L"Tab: %lld", tab);
+//	logger(buf);
+//#endif
 
 				if (tab == TAB_PROJECTS)
 				{
@@ -654,7 +654,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						{
 							// delete folder pair from list and listbox
 							deleteFilePair(&filesHead, selectedRowText);
-							SendMessage(lbSyncHwnd, LB_DELETESTRING, selectedRow, 0);
+							SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+							fillSyncListbox(lbSyncHwnd, &filesHead);
 
 							if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) == 0)
 								EnableWindow(bSync, false);

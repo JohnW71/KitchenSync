@@ -526,15 +526,6 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 		{
 			// check if target file exists
 			if (!fileExists(destination))
-//			{
-//				//TODO do I care about this?
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = { 0 };
-//	swprintf(buf, MAX_LINE, L"target file exists, does it matter?");
-//	logger(buf);
-//#endif
-//			}
-//			else // destination file does not exist
 			{
 				// remove source file
 #if DEV_MODE

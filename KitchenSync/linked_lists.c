@@ -185,7 +185,6 @@ void deleteFilePair(struct PairNode **head_ref, wchar_t *filePair)
 			if (wcscmp(current->pair.source, src) == 0 &&
 				wcscmp(current->pair.destination, dst) == 0)
 			{
-				//TODO this is never reached
 				deletePairNode(head_ref, i);
 				return;
 			}

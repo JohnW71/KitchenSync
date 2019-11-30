@@ -452,12 +452,22 @@ void reloadFolderPairs(HWND src, HWND dst, struct ProjectNode *projectsHead, wch
 
 void splitPair(wchar_t *pair, wchar_t *source, wchar_t *dest, size_t length)
 {
+	assert(length > 0);
+
 	int pos = 0;
 	while (pos < length && pair[pos] != '>')
 		++pos;
 
+	// get positions before & after >
 	int sourceEnd = pos - 2;
 	int destStart = pos + 2;
+
+	// find position of size marker (xx)
+	size_t bracketPos = length;
+	while (bracketPos > 0 && pair[bracketPos] != '(')
+		--bracketPos;
+	if (bracketPos > 0)
+		length = bracketPos - destStart - 2;
 
 	wcsncpy_s(source, MAX_LINE, pair, sourceEnd);
 	wcsncpy_s(dest, MAX_LINE, pair + destStart, length);
