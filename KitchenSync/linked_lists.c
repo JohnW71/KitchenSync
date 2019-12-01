@@ -369,6 +369,20 @@ int countProjectNodes(struct ProjectNode *head)
 	return count;
 }
 
+int countProjectPairs(struct ProjectNode *head, wchar_t *projectName)
+{
+	int count = 0;
+	struct ProjectNode *current = head;
+
+	while (current != NULL)
+	{
+		if (wcscmp(current->project.name, projectName) == 0)
+			++count;
+		current = current->next;
+	}
+	return count;
+}
+
 void sortProjectNodes(struct ProjectNode **head_ref)
 {
 	if (*head_ref == NULL)

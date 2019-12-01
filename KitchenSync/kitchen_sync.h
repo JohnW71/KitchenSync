@@ -62,6 +62,7 @@ bool folderExists(wchar_t *);
 bool fileDateIsDifferent(FILETIME, FILETIME, FILETIME, wchar_t *);
 int countPairNodes(struct PairNode *);
 int countProjectNodes(struct ProjectNode *);
+int countProjectPairs(struct ProjectNode *, wchar_t *);
 int listSubFolders(HWND, wchar_t *);
 LONGLONG getFileSize(wchar_t *);
 

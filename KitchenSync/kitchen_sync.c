@@ -21,6 +21,7 @@
 #define ID_EDIT_PAIR_DEST 45
 #define ID_PROGRESS_BAR 50
 #define ID_TIMER1 51
+#define ID_TIMER2 52
 
 #include "kitchen_sync.h"
 #pragma comment(lib, "comctl32.lib")
@@ -60,6 +61,8 @@ static wchar_t projectName[MAX_LINE] = {0};
 static wchar_t folderPair[MAX_LINE * 3] = {0};
 static wchar_t sourceFolder[MAX_LINE] = {0};
 static wchar_t destFolder[MAX_LINE] = {0};
+
+int progressPosition = 0;
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
 {
@@ -128,7 +131,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static INITCOMMONCONTROLSEX icex = {0};
-	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, tabHwnd, lbSyncHwnd;
+	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, tabHwnd, lbSyncHwnd, pbHwnd;
 	static bool listboxClicked = false;
 
 	enum Tabs
@@ -144,7 +147,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 		case WM_CREATE:
 			// initialize common controls
 			icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
-			icex.dwICC = ICC_TAB_CLASSES;
+			icex.dwICC = ICC_TAB_CLASSES|ICC_PROGRESS_CLASS;
 			InitCommonControlsEx(&icex);
 
 			RECT rc = {0};
@@ -227,6 +230,13 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				WS_CHILD | WS_TABSTOP | WS_DISABLED,
 				10, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_SYNC, NULL, NULL);
 
+			pbHwnd = CreateWindowEx(WS_EX_LEFT, PROGRESS_CLASS, NULL,
+				WS_CHILD | PBS_SMOOTH,
+				10, rc.bottom-35, rc.right-20, 25, hwnd, (HMENU)ID_PROGRESS_BAR, NULL, NULL);
+
+			SendMessage(pbHwnd, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
+			SendMessage(pbHwnd, PBM_SETSTEP, (WPARAM)1, 0);
+
 			break;
 		case WM_NOTIFY:
 		{
@@ -239,6 +249,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				}
 				case TCN_SELCHANGE:
 				{
+					progressPosition = 0;
 					int page = TabCtrl_GetCurSel(tabHwnd);
 					switch (page)
 					{
@@ -271,6 +282,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bPreview, SW_SHOW);
 							ShowWindow(bSync, SW_HIDE);
 							ShowWindow(bDelete, SW_SHOW);
+							ShowWindow(pbHwnd, SW_HIDE);
+
+							SendMessage(pbHwnd, PBM_SETPOS, 0, 0);
 							break;
 						}
 						case 1: // add folders
@@ -287,6 +301,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bPreview, SW_HIDE);
 							ShowWindow(bSync, SW_HIDE);
 							ShowWindow(bDelete, SW_SHOW);
+							ShowWindow(pbHwnd, SW_HIDE);
+
+							SendMessage(pbHwnd, PBM_SETPOS, 0, 0);
 
 							// if a project name is detected load the pairs
 							if (wcslen(projectName) > 0)
@@ -308,6 +325,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bPreview, SW_HIDE);
 							ShowWindow(bSync, SW_SHOW);
 							ShowWindow(bDelete, SW_SHOW);
+							ShowWindow(pbHwnd, SW_SHOW);
+
+							SetTimer(hwnd, ID_TIMER2, 10, NULL); // progress bar
 							break;
 						}
 						case 3: // settings
@@ -322,6 +342,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bPreview, SW_HIDE);
 							ShowWindow(bSync, SW_HIDE);
 							ShowWindow(bDelete, SW_HIDE);
+							ShowWindow(pbHwnd, SW_HIDE);
+
+							SendMessage(pbHwnd, PBM_SETPOS, 0, 0);
 							break;
 						}
 					}
@@ -678,6 +701,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 					if (textLen > 0)
 					{
+						//int pairCount = countProjectPairs(projectsHead, selectedRowText);
+
 						SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 
 						if (isProjectName(selectedRowText, textLen))
@@ -685,6 +710,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							// preview whole project
 							SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
 							previewProject(lbSyncHwnd, &projectsHead, &filesHead, selectedRowText);
+							progressPosition = 100;
 						}
 						else
 						{
@@ -695,6 +721,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 							SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
 							previewFolderPair(lbSyncHwnd, &filesHead, &project);
+							progressPosition = 100;
 						}
 
 						fillSyncListbox(lbSyncHwnd, &filesHead);
@@ -705,9 +732,31 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				}
 			}
 
+			if (LOWORD(wParam) == ID_BUTTON_SYNC)
+			{
+#if DEV_MODE
+	logger(L"Sync button");
+#endif
+			}
+
 			break;
-		case WM_SIZE:
-		{
+		case WM_TIMER:
+			if (wParam == ID_TIMER2)
+			{
+				if (progressPosition < 100)
+				{
+					SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
+				}
+
+				if (progressPosition == 100)
+				{
+					SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
+					KillTimer(hwnd, ID_TIMER2);
+				}
+			}
+			break;
+		//case WM_SIZE:
+		//{
 			//RECT rc = {0};
 			//GetWindowRect(hwnd, &rc);
 			//int windowHeight = rc.bottom - rc.top;
@@ -722,8 +771,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			// force minimum height
 			//if (windowHeight < WINDOW_HEIGHT_MINIMUM)
 			//	SetWindowPos(hwnd, HWND_TOP, rc.left, rc.top, WINDOW_WIDTH, WINDOW_HEIGHT_MINIMUM, SWP_SHOWWINDOW);
-		}
-			break;
+		//}
+		//	break;
 		case WM_KEYUP:
 			switch (wParam)
 			{
