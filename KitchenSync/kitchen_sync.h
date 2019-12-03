@@ -53,6 +53,8 @@ void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
 void addPair(struct PairNode **, wchar_t *, wchar_t *, LONGLONG);
 void catPath(wchar_t *, wchar_t *, wchar_t *);
 void startLoggingThread(void);
+void startProgressBarThread(HWND);
+void activateProgressBar();
 void appendLoggerNode(struct LoggerNode **, wchar_t *);
 void deleteLoggerNode(struct LoggerNode **);
 void logger(wchar_t *);

@@ -8,6 +8,8 @@ static void listForRemoval(struct PairNode **, wchar_t *);
 DWORD CALLBACK entryPointSource(LPVOID);
 DWORD CALLBACK entryPointTarget(LPVOID);
 
+extern int progressPosition;
+
 static void displayErrorBox(LPTSTR lpszFunction)
 {
 	LPVOID lpMsgBuf;
@@ -82,6 +84,8 @@ int listSubFolders(HWND hwnd, wchar_t *folder)
 void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *projectName)
 {
 	struct ProjectNode *current = *head_ref;
+	int completed = 0;
+	int pairCount = countProjectPairs(*head_ref, projectName);
 	do
 	{
 		if (wcscmp(current->project.name, projectName) == 0)
@@ -91,6 +95,7 @@ void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **
 			wcscpy_s(project.pair.source, MAX_LINE, current->project.pair.source);
 			wcscpy_s(project.pair.destination, MAX_LINE, current->project.pair.destination);
 
+			progressPosition = (100 / pairCount) * ++completed;
 			previewFolderPair(hwnd, pairs, &project);
 		}
 		current = current->next;

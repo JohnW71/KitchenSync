@@ -2,10 +2,11 @@
 
 static void sizeFormatted(LONGLONG, wchar_t *);
 static DWORD CALLBACK entryPointLogger(LPVOID);
+static DWORD CALLBACK entryPointProgressBar(LPVOID);
 
 static struct LoggerNode *loggerHead = NULL;
-static HANDLE semaphoreHandle;
-extern bool writing;
+static HANDLE loggerSemaphoreHandle;
+static HANDLE progressSemaphoreHandle;
 
 void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 {
@@ -479,7 +480,7 @@ void startLoggingThread()
 	DWORD threadIDs[1];
 	int initialCount = 0;
 	int threadCount = 1;
-	semaphoreHandle = CreateSemaphoreEx(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
+	loggerSemaphoreHandle = CreateSemaphoreEx(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
 	threads[0] = CreateThread(NULL, 0, entryPointLogger, NULL, 0, &threadIDs[0]);
 
 	if (threads[0] == NULL)
@@ -516,7 +517,7 @@ static DWORD CALLBACK entryPointLogger(LPVOID arguments)
 			}
 			fclose(f);
 		}
-		WaitForSingleObjectEx(semaphoreHandle, INFINITE, FALSE);
+		WaitForSingleObjectEx(loggerSemaphoreHandle, INFINITE, FALSE);
 	}
 
 	return 0;
@@ -526,5 +527,53 @@ static DWORD CALLBACK entryPointLogger(LPVOID arguments)
 void logger(wchar_t *text)
 {
 	appendLoggerNode(&loggerHead, text);
-	ReleaseSemaphore(semaphoreHandle, 1, 0);
+	ReleaseSemaphore(loggerSemaphoreHandle, 1, 0);
+}
+
+extern int progressPosition;
+
+void startProgressBarThread(HWND hwnd)
+{
+	HANDLE threads[1];
+	DWORD threadIDs[1];
+	int initialCount = 0;
+	int threadCount = 1;
+
+	progressSemaphoreHandle = CreateSemaphoreEx(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
+	struct Arguments args = { hwnd };
+	threads[0] = CreateThread(NULL, 0, entryPointProgressBar, &args, 0, &threadIDs[0]);
+
+	if (threads[0] == NULL)
+	{
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Failed to create progress bar thread");
+		logger(buf);
+	}
+	else
+	{
+		logger(L"Progress bar thread started");
+	}
+}
+
+static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
+{
+	struct Arguments *args = (struct Arguments *)arguments;
+	HWND hwnd = args->hwnd;
+
+	for (;;)
+	{
+		if (progressPosition > 0)
+		{
+			SendMessage(hwnd, PBM_SETPOS, progressPosition, 0);
+			WaitForSingleObjectEx(progressSemaphoreHandle, INFINITE, FALSE);
+		}
+	}
+
+	return 0;
+}
+
+void activateProgressBar()
+{
+	//
+	ReleaseSemaphore(progressSemaphoreHandle, 1, 0);
 }

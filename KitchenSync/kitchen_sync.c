@@ -50,6 +50,7 @@ static HWND lbPairSourceHwnd;
 static HWND lbPairDestHwnd;
 static HWND bProjectNameOK;
 static HWND bDelete;
+static HWND pbHwnd;
 static HINSTANCE instance;
 
 static void getProjectName(void);
@@ -113,6 +114,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	}
 
 	startLoggingThread();
+	startProgressBarThread(pbHwnd);
 	ShowWindow(mainHwnd, nCmdShow);
 	readSettings(mainHwnd, INI_FILE);
 	loadProjects(lbProjectsHwnd, PRJ_FILE, &projectsHead);
@@ -131,7 +133,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static INITCOMMONCONTROLSEX icex = {0};
-	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, tabHwnd, lbSyncHwnd, pbHwnd;
+	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, tabHwnd, lbSyncHwnd;
 	static bool listboxClicked = false;
 
 	enum Tabs
@@ -147,7 +149,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 		case WM_CREATE:
 			// initialize common controls
 			icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
-			icex.dwICC = ICC_TAB_CLASSES|ICC_PROGRESS_CLASS;
+			icex.dwICC = ICC_TAB_CLASSES | ICC_PROGRESS_CLASS;
 			InitCommonControlsEx(&icex);
 
 			RECT rc = {0};
@@ -249,7 +251,6 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				}
 				case TCN_SELCHANGE:
 				{
-					progressPosition = 0;
 					int page = TabCtrl_GetCurSel(tabHwnd);
 					switch (page)
 					{
@@ -284,7 +285,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bDelete, SW_SHOW);
 							ShowWindow(pbHwnd, SW_HIDE);
 
-							SendMessage(pbHwnd, PBM_SETPOS, 0, 0);
+							progressPosition = 0;
 							break;
 						}
 						case 1: // add folders
@@ -303,7 +304,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bDelete, SW_SHOW);
 							ShowWindow(pbHwnd, SW_HIDE);
 
-							SendMessage(pbHwnd, PBM_SETPOS, 0, 0);
+							progressPosition = 0;
 
 							// if a project name is detected load the pairs
 							if (wcslen(projectName) > 0)
@@ -327,7 +328,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bDelete, SW_SHOW);
 							ShowWindow(pbHwnd, SW_SHOW);
 
-							SetTimer(hwnd, ID_TIMER2, 10, NULL); // progress bar
+							SetTimer(hwnd, ID_TIMER2, 100, NULL); // progress bar
 							break;
 						}
 						case 3: // settings
@@ -344,7 +345,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bDelete, SW_HIDE);
 							ShowWindow(pbHwnd, SW_HIDE);
 
-							SendMessage(pbHwnd, PBM_SETPOS, 0, 0);
+							progressPosition = 0;
 							break;
 						}
 					}
@@ -710,7 +711,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							// preview whole project
 							SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
 							previewProject(lbSyncHwnd, &projectsHead, &filesHead, selectedRowText);
-							progressPosition = 100;
+							//progressPosition = 100;
 						}
 						else
 						{
@@ -737,40 +738,43 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 #if DEV_MODE
 	logger(L"Sync button");
 #endif
+				//progressPosition = 33;
+				//activateProgressBar();
 			}
 
 			break;
 		case WM_TIMER:
 			if (wParam == ID_TIMER2)
 			{
-				if (progressPosition < 100)
-				{
+				//if (progressPosition < 100)
+				//{
 					SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
-				}
+					activateProgressBar();
+				//}
 
-				if (progressPosition == 100)
-				{
-					SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
-					KillTimer(hwnd, ID_TIMER2);
-				}
+				//if (progressPosition == 100)
+				//{
+				//	SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
+				//	KillTimer(hwnd, ID_TIMER2);
+				//}
 			}
 			break;
 		//case WM_SIZE:
 		//{
-			//RECT rc = {0};
-			//GetWindowRect(hwnd, &rc);
-			//int windowHeight = rc.bottom - rc.top;
+		//	RECT rc = {0};
+		//	GetWindowRect(hwnd, &rc);
+		//	int windowHeight = rc.bottom - rc.top;
 
-			// resize listbox & textbox to fit window
-			//SetWindowPos(listboxProjectsHwnd, HWND_TOP, 10, 10, 500, windowHeight - 320, SWP_SHOWWINDOW);
-			//SetWindowPos(listboxPairsHwnd, HWND_TOP, 520, 10, WINDOW_WIDTH-500-45, 25, SWP_SHOWWINDOW);
+		//	// resize listbox & textbox to fit window
+		//	SetWindowPos(listboxProjectsHwnd, HWND_TOP, 10, 10, 500, windowHeight - 320, SWP_SHOWWINDOW);
+		//	SetWindowPos(listboxPairsHwnd, HWND_TOP, 520, 10, WINDOW_WIDTH-500-45, 25, SWP_SHOWWINDOW);
 
-			// maintain main window width
-			//SetWindowPos(hwnd, HWND_TOP, rc.left, rc.top, WINDOW_WIDTH, windowHeight, SWP_SHOWWINDOW);
+		//	// maintain main window width
+		//	SetWindowPos(hwnd, HWND_TOP, rc.left, rc.top, WINDOW_WIDTH, windowHeight, SWP_SHOWWINDOW);
 
-			// force minimum height
-			//if (windowHeight < WINDOW_HEIGHT_MINIMUM)
-			//	SetWindowPos(hwnd, HWND_TOP, rc.left, rc.top, WINDOW_WIDTH, WINDOW_HEIGHT_MINIMUM, SWP_SHOWWINDOW);
+		//	// force minimum height
+		//	if (windowHeight < WINDOW_HEIGHT_MINIMUM)
+		//		SetWindowPos(hwnd, HWND_TOP, rc.left, rc.top, WINDOW_WIDTH, WINDOW_HEIGHT_MINIMUM, SWP_SHOWWINDOW);
 		//}
 		//	break;
 		case WM_KEYUP:
