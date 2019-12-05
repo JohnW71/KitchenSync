@@ -6,7 +6,7 @@ static DWORD CALLBACK entryPointProgressBar(LPVOID);
 
 static struct LoggerNode *loggerHead = NULL;
 static HANDLE loggerSemaphoreHandle;
-static HANDLE progressSemaphoreHandle;
+//static HANDLE progressSemaphoreHandle;
 
 void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 {
@@ -530,17 +530,15 @@ void logger(wchar_t *text)
 	ReleaseSemaphore(loggerSemaphoreHandle, 1, 0);
 }
 
-extern int progressPosition;
-
-void startProgressBarThread(HWND hwnd)
+void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, HWND bSync, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *selectedRowText, LRESULT selectedRow)
 {
 	HANDLE threads[1];
 	DWORD threadIDs[1];
 	int initialCount = 0;
 	int threadCount = 1;
 
-	progressSemaphoreHandle = CreateSemaphoreEx(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
-	struct Arguments args = { hwnd };
+	//progressSemaphoreHandle = CreateSemaphoreEx(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
+	struct ProgressArguments args = { pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, head_ref, pairs, selectedRowText, selectedRow };
 	threads[0] = CreateThread(NULL, 0, entryPointProgressBar, &args, 0, &threadIDs[0]);
 
 	if (threads[0] == NULL)
@@ -557,23 +555,53 @@ void startProgressBarThread(HWND hwnd)
 
 static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
 {
-	struct Arguments *args = (struct Arguments *)arguments;
-	HWND hwnd = args->hwnd;
+	struct ProgressArguments *args = (struct ProgressArguments *)arguments;
+	HWND pbHwnd = args->pbHwnd;
+	HWND lbSyncHwnd = args->lbSyncHwnd;
+	HWND lbProjectsHwnd = args->lbProjectsHwnd;
+	HWND bSync = args->bSync;
+	struct ProjectNode **project = args->project;
+	struct PairNode **pairs = args->pairs;
+	wchar_t selectedRowText[MAX_LINE];
+	LRESULT selectedRow = args->selectedRow;
+	wcscpy_s(selectedRowText, MAX_LINE, args->selectedRowText);
+	int textLen = (int)wcslen(selectedRowText);
 
-	for (;;)
+	//for (;;)
+	//{
+	//	if (progressPosition > 0)
+	//	{
+	//		SendMessage(hwnd, PBM_SETPOS, progressPosition, 0);
+	//		WaitForSingleObjectEx(progressSemaphoreHandle, INFINITE, FALSE);
+	//	}
+	//}
+
+	SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+
+	if (isProjectName(selectedRowText, textLen))
 	{
-		if (progressPosition > 0)
-		{
-			SendMessage(hwnd, PBM_SETPOS, progressPosition, 0);
-			WaitForSingleObjectEx(progressSemaphoreHandle, INFINITE, FALSE);
-		}
+		// preview whole project
+		previewProject(pbHwnd, lbSyncHwnd, project, pairs, selectedRowText);
 	}
+	else
+	{
+		// preview folder pair
+		struct Project project = { 0 };
+		splitPair(selectedRowText, project.pair.source, project.pair.destination, textLen);
+		findProjectName(lbProjectsHwnd, selectedRow, project.name);
+		previewFolderPair(pbHwnd, lbSyncHwnd, pairs, &project);
+	}
+
+	fillSyncListbox(lbSyncHwnd, pairs);
+
+	if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) > 0)
+		EnableWindow(bSync, true);
 
 	return 0;
 }
 
-void activateProgressBar()
-{
-	//
-	ReleaseSemaphore(progressSemaphoreHandle, 1, 0);
-}
+//void activateProgressBar()
+//{
+//	//
+//	ReleaseSemaphore(progressSemaphoreHandle, 1, 0);
+//}

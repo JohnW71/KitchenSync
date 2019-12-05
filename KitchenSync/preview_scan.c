@@ -8,8 +8,6 @@ static void listForRemoval(struct PairNode **, wchar_t *);
 DWORD CALLBACK entryPointSource(LPVOID);
 DWORD CALLBACK entryPointTarget(LPVOID);
 
-extern int progressPosition;
-
 static void displayErrorBox(LPTSTR lpszFunction)
 {
 	LPVOID lpMsgBuf;
@@ -81,7 +79,7 @@ int listSubFolders(HWND hwnd, wchar_t *folder)
 }
 
 // find each matching folder pair under this project and send it for Preview
-void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *projectName)
+void previewProject(HWND pbHwnd, HWND lbSyncHwnd, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *projectName)
 {
 	struct ProjectNode *current = *head_ref;
 	int completed = 0;
@@ -95,15 +93,16 @@ void previewProject(HWND hwnd, struct ProjectNode **head_ref, struct PairNode **
 			wcscpy_s(project.pair.source, MAX_LINE, current->project.pair.source);
 			wcscpy_s(project.pair.destination, MAX_LINE, current->project.pair.destination);
 
-			progressPosition = (100 / pairCount) * ++completed;
-			previewFolderPair(hwnd, pairs, &project);
+			int progressPosition = (100 / pairCount) * ++completed;
+			SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
+			previewFolderPair(pbHwnd, lbSyncHwnd, pairs, &project);
 		}
 		current = current->next;
 	} while (*head_ref != NULL && current != NULL);
 }
 
 // send one specific folder pair for Preview in both directions
-void previewFolderPair(HWND hwnd, struct PairNode **pairs, struct Project *project)
+void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, struct Project *project)
 {
 	// reverse source & destination
 	struct Project reversed = { 0 };
@@ -112,13 +111,13 @@ void previewFolderPair(HWND hwnd, struct PairNode **pairs, struct Project *proje
 	wcscpy_s(reversed.pair.destination, MAX_LINE, project->pair.source);
 
 #if 1
-	previewFolderPairSource(hwnd, pairs, project);
-	previewFolderPairTarget(hwnd, pairs, &reversed);
+	previewFolderPairSource(lbSyncHwnd, pairs, project);
+	previewFolderPairTarget(lbSyncHwnd, pairs, &reversed);
 #else
 	HANDLE threads[2];
 	DWORD threadIDs[2];
 
-	struct Arguments sourceArgs = { hwnd, pairs, project };
+	struct Arguments sourceArgs = { lbSyncHwnd, pairs, project };
 
 	threads[0] = CreateThread(NULL, 0, entryPointSource, &sourceArgs, 0, &threadIDs[0]);
 	if (threads[0] == NULL)
@@ -129,7 +128,7 @@ void previewFolderPair(HWND hwnd, struct PairNode **pairs, struct Project *proje
 		return;
 	}
 
-	struct Arguments targetArgs = { hwnd, pairs, &reversed };
+	struct Arguments targetArgs = { lbSyncHwnd, pairs, &reversed };
 
 	threads[1] = CreateThread(NULL, 0, entryPointTarget, &targetArgs, 0, &threadIDs[1]);
 	if (threads[1] == NULL)
@@ -142,6 +141,7 @@ void previewFolderPair(HWND hwnd, struct PairNode **pairs, struct Project *proje
 
 	WaitForMultipleObjects(2, threads, TRUE, INFINITE);
 #endif
+	SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
 	sortPairNodes(pairs);
 }
 
@@ -388,11 +388,11 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 			}
 			else // target folder does not exist
 			{
-#if DEV_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"dump entire tree with listTreeContent() for %s -> %s", newSource, destination);
-	logger(buf);
-#endif
+//#if DEV_MODE
+//	wchar_t buf[MAX_LINE] = { 0 };
+//	swprintf(buf, MAX_LINE, L"dump entire tree with listTreeContent() for %s -> %s", newSource, destination);
+//	logger(buf);
+//#endif
 				// if new, add entire folder contents to list (recursive but without comparison)
 				addPair(pairs, newSource, destination, filesize.QuadPart);
 				listTreeContent(pairs, newSource, destination);

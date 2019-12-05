@@ -21,7 +21,6 @@
 #define ID_EDIT_PAIR_DEST 45
 #define ID_PROGRESS_BAR 50
 #define ID_TIMER1 51
-#define ID_TIMER2 52
 
 #include "kitchen_sync.h"
 #pragma comment(lib, "comctl32.lib")
@@ -62,8 +61,6 @@ static wchar_t projectName[MAX_LINE] = {0};
 static wchar_t folderPair[MAX_LINE * 3] = {0};
 static wchar_t sourceFolder[MAX_LINE] = {0};
 static wchar_t destFolder[MAX_LINE] = {0};
-
-int progressPosition = 0;
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
 {
@@ -114,7 +111,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	}
 
 	startLoggingThread();
-	startProgressBarThread(pbHwnd);
 	ShowWindow(mainHwnd, nCmdShow);
 	readSettings(mainHwnd, INI_FILE);
 	loadProjects(lbProjectsHwnd, PRJ_FILE, &projectsHead);
@@ -285,7 +281,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bDelete, SW_SHOW);
 							ShowWindow(pbHwnd, SW_HIDE);
 
-							progressPosition = 0;
+							//progressPosition = 0;
+							//KillTimer(hwnd, ID_TIMER2);
 							break;
 						}
 						case 1: // add folders
@@ -304,7 +301,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bDelete, SW_SHOW);
 							ShowWindow(pbHwnd, SW_HIDE);
 
-							progressPosition = 0;
+							//progressPosition = 0;
 
 							// if a project name is detected load the pairs
 							if (wcslen(projectName) > 0)
@@ -328,7 +325,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bDelete, SW_SHOW);
 							ShowWindow(pbHwnd, SW_SHOW);
 
-							SetTimer(hwnd, ID_TIMER2, 100, NULL); // progress bar
+							//previewReady = false;
+							//SetTimer(hwnd, ID_TIMER2, 50, NULL); // progress bar
+							//SetTimer(hwnd, ID_TIMER3, 500, NULL); // view loader
 							break;
 						}
 						case 3: // settings
@@ -345,7 +344,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bDelete, SW_HIDE);
 							ShowWindow(pbHwnd, SW_HIDE);
 
-							progressPosition = 0;
+							//progressPosition = 0;
+							//KillTimer(hwnd, ID_TIMER2);
 							break;
 						}
 					}
@@ -702,33 +702,37 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 					if (textLen > 0)
 					{
+						SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
+						startProgressBarThread(pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, &projectsHead, &filesHead, selectedRowText, selectedRow);
 						//int pairCount = countProjectPairs(projectsHead, selectedRowText);
 
-						SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+						//SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 
-						if (isProjectName(selectedRowText, textLen))
-						{
-							// preview whole project
-							SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
-							previewProject(lbSyncHwnd, &projectsHead, &filesHead, selectedRowText);
-							//progressPosition = 100;
-						}
-						else
-						{
-							// preview folder pair
-							struct Project project = {0};
-							splitPair(selectedRowText, project.pair.source, project.pair.destination, textLen);
-							findProjectName(lbProjectsHwnd, selectedRow, project.name);
+						//if (isProjectName(selectedRowText, textLen))
+						//{
+						//	// preview whole project
+						//	SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
+						//	previewProject(lbSyncHwnd, &projectsHead, &filesHead, selectedRowText);
+						//	//progressPosition = 100;
+						//}
+						//else
+						//{
+						//	// preview folder pair
+						//	struct Project project = {0};
+						//	splitPair(selectedRowText, project.pair.source, project.pair.destination, textLen);
+						//	findProjectName(lbProjectsHwnd, selectedRow, project.name);
 
-							SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
-							previewFolderPair(lbSyncHwnd, &filesHead, &project);
-							progressPosition = 100;
-						}
+						//	SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
+						//	previewFolderPair(lbSyncHwnd, &filesHead, &project);
+						//	//progressPosition = 100;
+						//}
 
-						fillSyncListbox(lbSyncHwnd, &filesHead);
+						////previewReady = true;
 
-						if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) > 0)
-							EnableWindow(bSync, true);
+						//fillSyncListbox(lbSyncHwnd, &filesHead);
+
+						//if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) > 0)
+						//	EnableWindow(bSync, true);
 					}
 				}
 			}
@@ -738,28 +742,38 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 #if DEV_MODE
 	logger(L"Sync button");
 #endif
-				//progressPosition = 33;
-				//activateProgressBar();
 			}
 
 			break;
-		case WM_TIMER:
-			if (wParam == ID_TIMER2)
-			{
-				//if (progressPosition < 100)
-				//{
-					SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
-					activateProgressBar();
-				//}
+		//case WM_TIMER:
+		//	if (wParam == ID_TIMER2)
+		//	{
+		//		//SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
 
-				//if (progressPosition == 100)
-				//{
-				//	SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
-				//	KillTimer(hwnd, ID_TIMER2);
-				//}
-			}
-			break;
-		//case WM_SIZE:
+		//		if (previewReady)
+		//		{
+		//			activateProgressBar();
+		//			//KillTimer(hwnd, ID_TIMER2);
+		//			SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+		//			fillSyncListbox(lbSyncHwnd, &filesHead);
+		//			if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) > 0)
+		//				EnableWindow(bSync, true);
+		//			previewReady = false;
+		//		}
+		//	}
+		//	//if (wParam == ID_TIMER3)
+		//	//{
+		//	//	if (previewReady)
+		//	//	{
+		//	//		SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+		//	//		fillSyncListbox(lbSyncHwnd, &filesHead);
+		//	//		if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) > 0)
+		//	//			EnableWindow(bSync, true);
+		//	//		previewReady = false;
+		//	//	}
+		//	//}
+		//	break;
+			//case WM_SIZE:
 		//{
 		//	RECT rc = {0};
 		//	GetWindowRect(hwnd, &rc);

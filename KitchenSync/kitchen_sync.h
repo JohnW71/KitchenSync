@@ -45,16 +45,15 @@ void fillListbox(HWND, struct ProjectNode **);
 void fillSyncListbox(HWND, struct PairNode **);
 void findProjectName(HWND, LRESULT, wchar_t *);
 void reloadFolderPairs(HWND, HWND, struct ProjectNode *, wchar_t *);
-void previewProject(HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
-void previewFolderPair(HWND, struct PairNode **, struct Project *);
+void previewProject(HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
+void previewFolderPair(HWND, HWND, struct PairNode **, struct Project *);
 void deleteFilePair(struct PairNode **, wchar_t *);
 void deletePairList(struct PairNode **);
 void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
 void addPair(struct PairNode **, wchar_t *, wchar_t *, LONGLONG);
 void catPath(wchar_t *, wchar_t *, wchar_t *);
 void startLoggingThread(void);
-void startProgressBarThread(HWND);
-void activateProgressBar();
+void startProgressBarThread(HWND, HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t *, LRESULT);
 void appendLoggerNode(struct LoggerNode **, wchar_t *);
 void deleteLoggerNode(struct LoggerNode **);
 void logger(wchar_t *);
@@ -104,4 +103,16 @@ struct LoggerNode
 {
 	wchar_t text[MAX_LINE];
 	struct LoggerNode *next;
+};
+
+struct ProgressArguments
+{
+	HWND pbHwnd;
+	HWND lbSyncHwnd;
+	HWND lbProjectsHwnd;
+	HWND bSync;
+	struct ProjectNode **project;
+	struct PairNode **pairs;
+	wchar_t *selectedRowText;
+	LRESULT selectedRow;
 };
