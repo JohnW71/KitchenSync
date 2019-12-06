@@ -96,6 +96,8 @@ void previewProject(HWND pbHwnd, HWND lbSyncHwnd, struct ProjectNode **head_ref,
 			int progressPosition = (100 / pairCount) * ++completed;
 			SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
 			previewFolderPair(pbHwnd, lbSyncHwnd, pairs, &project);
+			SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+			fillSyncListbox(lbSyncHwnd, pairs);
 		}
 		current = current->next;
 	} while (*head_ref != NULL && current != NULL);

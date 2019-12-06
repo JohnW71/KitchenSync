@@ -53,7 +53,7 @@ void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
 void addPair(struct PairNode **, wchar_t *, wchar_t *, LONGLONG);
 void catPath(wchar_t *, wchar_t *, wchar_t *);
 void startLoggingThread(void);
-void startProgressBarThread(HWND, HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t *, LRESULT);
+void startProgressBarThread(HWND, HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t [MAX_LINE], LRESULT);
 void appendLoggerNode(struct LoggerNode **, wchar_t *);
 void deleteLoggerNode(struct LoggerNode **);
 void logger(wchar_t *);
@@ -113,6 +113,6 @@ struct ProgressArguments
 	HWND bSync;
 	struct ProjectNode **project;
 	struct PairNode **pairs;
-	wchar_t *selectedRowText;
 	LRESULT selectedRow;
+	wchar_t selectedRowText[MAX_LINE];
 };

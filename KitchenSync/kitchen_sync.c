@@ -57,16 +57,16 @@ static void addFolderPair(void);
 
 static bool showingFolderPair = false;
 static bool showingProjectName = false;
-static wchar_t projectName[MAX_LINE] = {0};
-static wchar_t folderPair[MAX_LINE * 3] = {0};
-static wchar_t sourceFolder[MAX_LINE] = {0};
-static wchar_t destFolder[MAX_LINE] = {0};
+static wchar_t projectName[MAX_LINE] = { 0 };
+static wchar_t folderPair[MAX_LINE * 3] = { 0 };
+static wchar_t sourceFolder[MAX_LINE] = { 0 };
+static wchar_t destFolder[MAX_LINE] = { 0 };
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
 {
 	instance = hInstance;
 
-	WNDCLASSEX wc = {0};
+	WNDCLASSEX wc = { 0 };
 	wc.cbSize = sizeof(WNDCLASSEX);
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
@@ -115,7 +115,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	readSettings(mainHwnd, INI_FILE);
 	loadProjects(lbProjectsHwnd, PRJ_FILE, &projectsHead);
 
-	MSG msg = {0};
+	MSG msg = { 0 };
 
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
@@ -128,7 +128,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	static INITCOMMONCONTROLSEX icex = {0};
+	static INITCOMMONCONTROLSEX icex = { 0 };
 	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, tabHwnd, lbSyncHwnd;
 	static bool listboxClicked = false;
 
@@ -148,7 +148,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			icex.dwICC = ICC_TAB_CLASSES | ICC_PROGRESS_CLASS;
 			InitCommonControlsEx(&icex);
 
-			RECT rc = {0};
+			RECT rc = { 0 };
 			GetClientRect(hwnd, &rc);
 
 			tabHwnd = CreateWindow(WC_TABCONTROL, L"",
@@ -162,7 +162,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				break;
 			}
 
-			TCITEM tie = {0};
+			TCITEM tie = { 0 };
 			tie.mask = TCIF_TEXT | TCIF_IMAGE;
 			tie.iImage = -1;
 			tie.pszText = L"Projects";
@@ -280,9 +280,6 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bSync, SW_HIDE);
 							ShowWindow(bDelete, SW_SHOW);
 							ShowWindow(pbHwnd, SW_HIDE);
-
-							//progressPosition = 0;
-							//KillTimer(hwnd, ID_TIMER2);
 							break;
 						}
 						case 1: // add folders
@@ -300,8 +297,6 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bSync, SW_HIDE);
 							ShowWindow(bDelete, SW_SHOW);
 							ShowWindow(pbHwnd, SW_HIDE);
-
-							//progressPosition = 0;
 
 							// if a project name is detected load the pairs
 							if (wcslen(projectName) > 0)
@@ -324,10 +319,6 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bSync, SW_SHOW);
 							ShowWindow(bDelete, SW_SHOW);
 							ShowWindow(pbHwnd, SW_SHOW);
-
-							//previewReady = false;
-							//SetTimer(hwnd, ID_TIMER2, 50, NULL); // progress bar
-							//SetTimer(hwnd, ID_TIMER3, 500, NULL); // view loader
 							break;
 						}
 						case 3: // settings
@@ -343,9 +334,6 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bSync, SW_HIDE);
 							ShowWindow(bDelete, SW_HIDE);
 							ShowWindow(pbHwnd, SW_HIDE);
-
-							//progressPosition = 0;
-							//KillTimer(hwnd, ID_TIMER2);
 							break;
 						}
 					}
@@ -367,7 +355,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						wchar_t selectedRowText[MAX_LINE] = {0};
+						wchar_t selectedRowText[MAX_LINE] = { 0 };
 						int textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
@@ -396,7 +384,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						wchar_t selectedRowText[MAX_LINE] = {0};
+						wchar_t selectedRowText[MAX_LINE] = { 0 };
 						int textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
@@ -430,7 +418,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					if (selectedRow != LB_ERR)
 					{
 						SendMessage(lbDestHwnd, LB_SETCURSEL, selectedRow, 0);
-						wchar_t selectedRowText[MAX_LINE] = {0};
+						wchar_t selectedRowText[MAX_LINE] = { 0 };
 						int textLen = (int)SendMessage(lbSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
@@ -447,7 +435,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					LRESULT selectedRow = SendMessage(lbSourceHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						wchar_t selectedRowText[MAX_LINE] = {0};
+						wchar_t selectedRowText[MAX_LINE] = { 0 };
 						int textLen = (int)SendMessage(lbSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
@@ -476,7 +464,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						SendMessage(lbSourceHwnd, LB_SETCURSEL, selectedRow, 0);
 						SendMessage(lbSourceHwnd, LB_SETCARETINDEX, selectedRow, 0);
-						wchar_t selectedRowText[MAX_LINE] = {0};
+						wchar_t selectedRowText[MAX_LINE] = { 0 };
 						int textLen = (int)SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
@@ -493,7 +481,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					LRESULT selectedRow = SendMessage(lbDestHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						wchar_t selectedRowText[MAX_LINE] = {0};
+						wchar_t selectedRowText[MAX_LINE] = { 0 };
 						int textLen = (int)SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
@@ -518,7 +506,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					LRESULT selectedRow = SendMessage(lbSyncHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						wchar_t selectedRowText[MAX_LINE] = {0};
+						wchar_t selectedRowText[MAX_LINE] = { 0 };
 						int textLen = (int)SendMessage(lbSyncHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
@@ -535,7 +523,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				//	LRESULT selectedRow = SendMessage(lbSyncHwnd, LB_GETCURSEL, 0, 0);
 				//	if (selectedRow != LB_ERR)
 				//	{
-				//		wchar_t selectedRowText[MAX_LINE] = {0};
+				//		wchar_t selectedRowText[MAX_LINE] = { 0 };
 				//		int textLen = (int)SendMessage(lbSyncHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 				//		if (textLen > 0)
@@ -561,14 +549,14 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
 				if (selectedRow != LB_ERR)
 				{
-					wchar_t selectedRowText[MAX_LINE] = {0};
+					wchar_t selectedRowText[MAX_LINE] = { 0 };
 					int textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 					if (textLen > 0 && isProjectName(selectedRowText, textLen))
 					{
 						wcscpy_s(projectName, MAX_LINE, selectedRowText);
 #if DEV_MODE
-	wchar_t buf[100] = {0};
+	wchar_t buf[100] = { 0 };
 	swprintf(buf, 100, L"Selected project name: %s", projectName);
 	logger(buf);
 #endif
@@ -593,7 +581,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			{
 				LRESULT tab = SendMessage(tabHwnd, TCM_GETCURFOCUS, 0, 0);
 //#if DEV_MODE
-//	wchar_t buf[100] = {0};
+//	wchar_t buf[100] = { 0 };
 //	swprintf(buf, 100, L"Tab: %lld", tab);
 //	logger(buf);
 //#endif
@@ -610,7 +598,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						wchar_t selectedRowText[MAX_LINE] = {0};
+						wchar_t selectedRowText[MAX_LINE] = { 0 };
 						int textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
@@ -646,7 +634,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					LRESULT selectedRow = SendMessage(lbSourceHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						wchar_t selectedRowText[MAX_LINE] = {0};
+						wchar_t selectedRowText[MAX_LINE] = { 0 };
 						int textLen = (int)SendMessage(lbSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
@@ -671,7 +659,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					LRESULT selectedRow = SendMessage(lbSyncHwnd, LB_GETCURSEL, 0, 0);
 					if (selectedRow != LB_ERR)
 					{
-						wchar_t selectedRowText[MAX_LINE] = {0};
+						wchar_t selectedRowText[MAX_LINE] = { 0 };
 						int textLen = (int)SendMessage(lbSyncHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
@@ -697,7 +685,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
 				if (selectedRow != LB_ERR)
 				{
-					wchar_t selectedRowText[MAX_LINE] = {0};
+					wchar_t selectedRowText[MAX_LINE] = { 0 };
 					int textLen = (int)SendMessage(lbProjectsHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 					if (textLen > 0)
@@ -718,7 +706,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						//else
 						//{
 						//	// preview folder pair
-						//	struct Project project = {0};
+						//	struct Project project = { 0 };
 						//	splitPair(selectedRowText, project.pair.source, project.pair.destination, textLen);
 						//	findProjectName(lbProjectsHwnd, selectedRow, project.name);
 
@@ -743,39 +731,10 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 	logger(L"Sync button");
 #endif
 			}
-
 			break;
-		//case WM_TIMER:
-		//	if (wParam == ID_TIMER2)
-		//	{
-		//		//SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
-
-		//		if (previewReady)
-		//		{
-		//			activateProgressBar();
-		//			//KillTimer(hwnd, ID_TIMER2);
-		//			SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
-		//			fillSyncListbox(lbSyncHwnd, &filesHead);
-		//			if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) > 0)
-		//				EnableWindow(bSync, true);
-		//			previewReady = false;
-		//		}
-		//	}
-		//	//if (wParam == ID_TIMER3)
-		//	//{
-		//	//	if (previewReady)
-		//	//	{
-		//	//		SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
-		//	//		fillSyncListbox(lbSyncHwnd, &filesHead);
-		//	//		if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) > 0)
-		//	//			EnableWindow(bSync, true);
-		//	//		previewReady = false;
-		//	//	}
-		//	//}
-		//	break;
-			//case WM_SIZE:
+		//case WM_SIZE:
 		//{
-		//	RECT rc = {0};
+		//	RECT rc = { 0 };
 		//	GetWindowRect(hwnd, &rc);
 		//	int windowHeight = rc.bottom - rc.top;
 
@@ -836,7 +795,7 @@ static LRESULT CALLBACK customListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 
 static void getProjectName(void)
 {
-	static WNDCLASSEX wcProjectName = {0};
+	static WNDCLASSEX wcProjectName = { 0 };
 	static bool projectNameClassRegistered = false;
 
 	if (showingProjectName)
@@ -931,7 +890,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 				}
 
 #if DEV_MODE
-	wchar_t buf[100] = {0};
+	wchar_t buf[100] = { 0 };
 	swprintf(buf, 100, L"New project name: %s", newProjectName);
 	logger(buf);
 #endif
@@ -958,7 +917,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 #if DEV_MODE
 	logger(L"New project added");
 #endif
-						struct Project project = {0};
+						struct Project project = { 0 };
 						wcscpy_s(project.name, MAX_LINE, newProjectName);
 						wcscpy_s(project.pair.source, MAX_LINE, L"C:");
 						wcscpy_s(project.pair.destination, MAX_LINE, L"C:");
@@ -1035,7 +994,7 @@ static LRESULT CALLBACK customProjectNameProc(HWND hwnd, UINT msg, WPARAM wParam
 
 static void addFolderPair(void)
 {
-	static WNDCLASSEX wcFolderPair = {0};
+	static WNDCLASSEX wcFolderPair = { 0 };
 	static bool folderPairClassRegistered = false;
 
 	if (showingFolderPair)
@@ -1168,7 +1127,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 				//	LRESULT selectedRow = SendMessage(lbPairSourceHwnd, LB_GETCURSEL, 0, 0);
 				//	if (selectedRow != LB_ERR)
 				//	{
-				//		wchar_t selectedRowText[MAX_LINE] = {0};
+				//		wchar_t selectedRowText[MAX_LINE] = { 0 };
 				//		int textLen = (int)SendMessage(lbPairSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 				//		if (textLen > 0)
@@ -1186,12 +1145,12 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 					if (selectedRow != LB_ERR)
 					{
 						// change to selected folder and load contents
-						wchar_t selectedRowText[MAX_LINE] = {0};
+						wchar_t selectedRowText[MAX_LINE] = { 0 };
 						int textLen = (int)SendMessage(lbPairSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
 						{
-							wchar_t currentFolder[MAX_LINE] = {0};
+							wchar_t currentFolder[MAX_LINE] = { 0 };
 							wcscpy_s(currentFolder, MAX_LINE, sourceFolder);
 
 							// handle .. or get new folder name
@@ -1242,7 +1201,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 				//	LRESULT selectedRow = SendMessage(lbPairDestHwnd, LB_GETCURSEL, 0, 0);
 				//	if (selectedRow != LB_ERR)
 				//	{
-				//		wchar_t selectedRowText[MAX_LINE] = {0};
+				//		wchar_t selectedRowText[MAX_LINE] = { 0 };
 				//		int textLen = (int)SendMessage(lbPairDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 				//		if (textLen > 0)
@@ -1260,12 +1219,12 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 					if (selectedRow != LB_ERR)
 					{
 						// change to selected folder and load contents
-						wchar_t selectedRowText[MAX_LINE] = {0};
+						wchar_t selectedRowText[MAX_LINE] = { 0 };
 						int textLen = (int)SendMessage(lbPairDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
 						{
-							wchar_t currentFolder[MAX_LINE] = {0};
+							wchar_t currentFolder[MAX_LINE] = { 0 };
 							wcscpy_s(currentFolder, MAX_LINE, destFolder);
 
 							// handle .. or get new folder name
@@ -1321,7 +1280,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 				}
 				else
 				{
-					struct Project project = {0};
+					struct Project project = { 0 };
 					wcscpy_s(project.name, MAX_LINE, projectName);
 					wcscpy_s(project.pair.source, MAX_LINE, sourceFolder);
 					wcscpy_s(project.pair.destination, MAX_LINE, destFolder);

@@ -6,7 +6,6 @@ static DWORD CALLBACK entryPointProgressBar(LPVOID);
 
 static struct LoggerNode *loggerHead = NULL;
 static HANDLE loggerSemaphoreHandle;
-//static HANDLE progressSemaphoreHandle;
 
 void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 {
@@ -21,7 +20,7 @@ void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 
 void centerWindow(HWND hwnd)
 {
-	RECT rc = {0};
+	RECT rc = { 0 };
 
 	GetWindowRect(hwnd, &rc);
 	int windowWidth = rc.right - rc.left;
@@ -43,7 +42,7 @@ void writeSettings(HWND hwnd, char *filename)
 		return;
 	}
 
-	RECT rc = {0};
+	RECT rc = { 0 };
 	GetWindowRect(hwnd, &rc);
 	int windowHeight = rc.bottom - rc.top;
 	int windowCol = rc.left;
@@ -225,7 +224,7 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 		swprintf(buf, MAX_LINE * 4, L"Name: %s, source: %s, dest: %s", name, source, destination);
 		logger(buf);
 
-		struct Project project = {0};
+		struct Project project = { 0 };
 		wcscpy_s(project.name, MAX_LINE, name);
 		wcscpy_s(project.pair.source, MAX_LINE, source);
 		wcscpy_s(project.pair.destination, MAX_LINE, destination);
@@ -234,7 +233,7 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 	}
 
 #if DEV_MODE
-	wchar_t buf[100] = {0};
+	wchar_t buf[100] = { 0 };
 	swprintf(buf, 100, L"Loaded %d projects", countProjectNodes(*head_ref));
 	logger(buf);
 #endif
@@ -288,6 +287,8 @@ void fillListbox(HWND hwnd, struct ProjectNode **head_ref)
 // load all file pair nodes into Sync listbox
 void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 {
+	assert(head_ref != NULL);
+
 	wchar_t *currentPairName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 	if (!currentPairName)
 	{
@@ -312,15 +313,15 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 
 		LONGLONG size = current->pair.filesize;
 		totalSize += size;
-		wchar_t formatted[MAX_LINE] = {0};
+		wchar_t formatted[MAX_LINE] = { 0 };
 		sizeFormatted(size, formatted);
 		swprintf(buffer, MAX_LINE * 3, L"%s -> %s  (%s)", current->pair.source, current->pair.destination, formatted);
 		SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)buffer);
 		current = current->next;
 	}
 
-	wchar_t buf[MAX_LINE] = {0};
-	wchar_t formatted[MAX_LINE] = {0};
+	wchar_t buf[MAX_LINE] = { 0 };
+	wchar_t formatted[MAX_LINE] = { 0 };
 	sizeFormatted(totalSize, formatted);
 	swprintf(buf, MAX_LINE, L"Total size to copy: %s", formatted);
 	SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)L"");
@@ -332,12 +333,12 @@ static void sizeFormatted(LONGLONG size, wchar_t *buf)
 	#define LIMIT 256
 
 	// convert size to string
-	wchar_t text[LIMIT] = {0};
+	wchar_t text[LIMIT] = { 0 };
 	swprintf(text, LIMIT, L"%lld", size);
 	size_t length = wcslen(text);
 	wchar_t *t = text + (length - 1);
 
-	wchar_t reversed[LIMIT] = {0};
+	wchar_t reversed[LIMIT] = { 0 };
 	wchar_t *r = reversed;
 
 	// reverse it and add commas
@@ -398,7 +399,7 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 	}
 
 #if DEV_MODE
-	wchar_t buf[100] = {0};
+	wchar_t buf[100] = { 0 };
 	swprintf(buf, 100, L"Saved %d projects", count);
 	logger(buf);
 #endif
@@ -418,7 +419,7 @@ bool isProjectName(wchar_t *text, int len)
 // look backwards to find project name from selected pair
 void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *projectName)
 {
-	wchar_t selectedRowText[MAX_LINE] = {0};
+	wchar_t selectedRowText[MAX_LINE] = { 0 };
 	bool found = false;
 
 	do
@@ -530,15 +531,20 @@ void logger(wchar_t *text)
 	ReleaseSemaphore(loggerSemaphoreHandle, 1, 0);
 }
 
-void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, HWND bSync, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *selectedRowText, LRESULT selectedRow)
+void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, HWND bSync, 
+	struct ProjectNode **head_ref, 
+	struct PairNode **pairs, 
+	wchar_t selectedRowText[MAX_LINE], 
+	LRESULT selectedRow)
 {
 	HANDLE threads[1];
 	DWORD threadIDs[1];
-	int initialCount = 0;
-	int threadCount = 1;
+	//int initialCount = 0;
+	//int threadCount = 1;
 
 	//progressSemaphoreHandle = CreateSemaphoreEx(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
-	struct ProgressArguments args = { pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, head_ref, pairs, selectedRowText, selectedRow };
+	struct ProgressArguments args = { pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, head_ref, pairs, selectedRow };
+	wcscpy_s(args.selectedRowText, MAX_LINE, selectedRowText);
 	threads[0] = CreateThread(NULL, 0, entryPointProgressBar, &args, 0, &threadIDs[0]);
 
 	if (threads[0] == NULL)
@@ -547,10 +553,10 @@ void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, H
 		swprintf(buf, MAX_LINE, L"Failed to create progress bar thread");
 		logger(buf);
 	}
-	else
-	{
-		logger(L"Progress bar thread started");
-	}
+	//else
+	//{
+	//	logger(L"Progress bar thread started");
+	//}
 }
 
 static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
@@ -562,10 +568,12 @@ static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
 	HWND bSync = args->bSync;
 	struct ProjectNode **project = args->project;
 	struct PairNode **pairs = args->pairs;
-	wchar_t selectedRowText[MAX_LINE];
 	LRESULT selectedRow = args->selectedRow;
+	wchar_t selectedRowText[MAX_LINE];
 	wcscpy_s(selectedRowText, MAX_LINE, args->selectedRowText);
 	int textLen = (int)wcslen(selectedRowText);
+
+	assert(textLen > 0);
 
 	//for (;;)
 	//{
@@ -576,7 +584,7 @@ static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
 	//	}
 	//}
 
-	SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+	//SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 
 	if (isProjectName(selectedRowText, textLen))
 	{
@@ -586,13 +594,15 @@ static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
 	else
 	{
 		// preview folder pair
-		struct Project project = { 0 };
-		splitPair(selectedRowText, project.pair.source, project.pair.destination, textLen);
-		findProjectName(lbProjectsHwnd, selectedRow, project.name);
-		previewFolderPair(pbHwnd, lbSyncHwnd, pairs, &project);
+		struct Project sourceProject = { 0 };
+		splitPair(selectedRowText, sourceProject.pair.source, sourceProject.pair.destination, textLen);
+		findProjectName(lbProjectsHwnd, selectedRow, sourceProject.name);
+		previewFolderPair(pbHwnd, lbSyncHwnd, pairs, &sourceProject);
+		SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+		fillSyncListbox(lbSyncHwnd, pairs);
 	}
 
-	fillSyncListbox(lbSyncHwnd, pairs);
+	//fillSyncListbox(lbSyncHwnd, pairs);
 
 	if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) > 0)
 		EnableWindow(bSync, true);

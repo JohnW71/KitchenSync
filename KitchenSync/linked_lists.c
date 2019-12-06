@@ -141,8 +141,8 @@ void deleteFolderPair(struct ProjectNode **head_ref, wchar_t *folderPair, wchar_
 
 	if (length > 0)
 	{
-		wchar_t src[MAX_LINE] = {0};
-		wchar_t dst[MAX_LINE] = {0};
+		wchar_t src[MAX_LINE] = { 0 };
+		wchar_t dst[MAX_LINE] = { 0 };
 		splitPair(folderPair, src, dst, length);
 
 		struct ProjectNode *current = *head_ref;
@@ -173,8 +173,8 @@ void deleteFilePair(struct PairNode **head_ref, wchar_t *filePair)
 
 	if (length > 0)
 	{
-		wchar_t src[MAX_LINE] = {0};
-		wchar_t dst[MAX_LINE] = {0};
+		wchar_t src[MAX_LINE] = { 0 };
+		wchar_t dst[MAX_LINE] = { 0 };
 		splitPair(filePair, src, dst, length);
 
 		struct PairNode *current = *head_ref;
@@ -205,8 +205,8 @@ void replaceFolderPair(struct ProjectNode **head_ref, wchar_t *projectName, wcha
 	if (length > 0)
 	{
 		// extract old folder pair
-		wchar_t src[MAX_LINE] = {0};
-		wchar_t dst[MAX_LINE] = {0};
+		wchar_t src[MAX_LINE] = { 0 };
+		wchar_t dst[MAX_LINE] = { 0 };
 		splitPair(folderPair, src, dst, length);
 
 		// find & replace folder pair
