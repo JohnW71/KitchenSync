@@ -580,11 +580,6 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			if (LOWORD(wParam) == ID_BUTTON_DELETE)
 			{
 				LRESULT tab = SendMessage(tabHwnd, TCM_GETCURFOCUS, 0, 0);
-//#if DEV_MODE
-//	wchar_t buf[100] = { 0 };
-//	swprintf(buf, 100, L"Tab: %lld", tab);
-//	logger(buf);
-//#endif
 
 				if (tab == TAB_PROJECTS)
 				{
@@ -692,35 +687,6 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
 						startProgressBarThread(pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, &projectsHead, &filesHead, selectedRowText, selectedRow);
-						//int pairCount = countProjectPairs(projectsHead, selectedRowText);
-
-						//SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
-
-						//if (isProjectName(selectedRowText, textLen))
-						//{
-						//	// preview whole project
-						//	SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
-						//	previewProject(lbSyncHwnd, &projectsHead, &filesHead, selectedRowText);
-						//	//progressPosition = 100;
-						//}
-						//else
-						//{
-						//	// preview folder pair
-						//	struct Project project = { 0 };
-						//	splitPair(selectedRowText, project.pair.source, project.pair.destination, textLen);
-						//	findProjectName(lbProjectsHwnd, selectedRow, project.name);
-
-						//	SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
-						//	previewFolderPair(lbSyncHwnd, &filesHead, &project);
-						//	//progressPosition = 100;
-						//}
-
-						////previewReady = true;
-
-						//fillSyncListbox(lbSyncHwnd, &filesHead);
-
-						//if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) > 0)
-						//	EnableWindow(bSync, true);
 					}
 				}
 			}

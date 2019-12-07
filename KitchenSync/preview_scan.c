@@ -61,11 +61,11 @@ int listSubFolders(HWND hwnd, wchar_t *folder)
 			if (wcscmp(ffd.cFileName, L".") == 0)
 				continue;
 
-#if DEV_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"LSF() Dir: %s", ffd.cFileName);
-	logger(buf);
-#endif
+//#if DEV_MODE
+//	wchar_t buf[MAX_LINE] = { 0 };
+//	swprintf(buf, MAX_LINE, L"LSF() Dir: %s", ffd.cFileName);
+//	logger(buf);
+//#endif
 			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)ffd.cFileName);
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
@@ -112,7 +112,7 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 	wcscpy_s(reversed.pair.source, MAX_LINE, project->pair.destination);
 	wcscpy_s(reversed.pair.destination, MAX_LINE, project->pair.source);
 
-#if 1
+#if 0
 	previewFolderPairSource(lbSyncHwnd, pairs, project);
 	previewFolderPairTarget(lbSyncHwnd, pairs, &reversed);
 #else
@@ -229,11 +229,11 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 			wcscat(subFolder, L"\\");
 			addPair(pairs, currentItem, destination, filesize.QuadPart);
 			listTreeContent(pairs, currentItem, destination);
-#if DEV_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"listTreeContent() Dir: %s", currentItem);
-	logger(buf);
-#endif
+//#if DEV_MODE
+//	wchar_t buf[MAX_LINE] = { 0 };
+//	swprintf(buf, MAX_LINE, L"listTreeContent() Dir: %s", currentItem);
+//	logger(buf);
+//#endif
 		}
 		else
 		{
@@ -308,11 +308,11 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 				return;
 			}
 			wcscat(subFolder, L"\\");
-#if DEV_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"listForRemoval() Dir: %s", currentItem);
-	logger(buf);
-#endif
+//#if DEV_MODE
+//	wchar_t buf[MAX_LINE] = { 0 };
+//	swprintf(buf, MAX_LINE, L"listForRemoval() Dir: %s", currentItem);
+//	logger(buf);
+//#endif
 			listForRemoval(pairs, currentItem);
 		}
 		else
@@ -381,11 +381,11 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 				wcscpy_s(subFolder.name, MAX_LINE, project->name);
 				wcscpy_s(subFolder.pair.source, MAX_LINE, newSource);
 				wcscpy_s(subFolder.pair.destination, MAX_LINE, destination);
-#if DEV_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSource() for %s -> %s", newSource, destination);
-	logger(buf);
-#endif
+//#if DEV_MODE
+//	wchar_t buf[MAX_LINE] = { 0 };
+//	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSource() for %s -> %s", newSource, destination);
+//	logger(buf);
+//#endif
 				previewFolderPairSource(hwnd, pairs, &subFolder);
 			}
 			else // target folder does not exist
@@ -511,11 +511,11 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 				wcscpy_s(subFolder.name, MAX_LINE, project->name);
 				wcscpy_s(subFolder.pair.source, MAX_LINE, newSource);
 				wcscpy_s(subFolder.pair.destination, MAX_LINE, destination);
-#if DEV_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairTarget() for %s -> %s", newSource, destination);
-	logger(buf);
-#endif
+//#if DEV_MODE
+//	wchar_t buf[MAX_LINE] = { 0 };
+//	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairTarget() for %s -> %s", newSource, destination);
+//	logger(buf);
+//#endif
 				previewFolderPairTarget(hwnd, pairs, &subFolder);
 			}
 			else // target folder does not exist

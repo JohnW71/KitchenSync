@@ -539,10 +539,7 @@ void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, H
 {
 	HANDLE threads[1];
 	DWORD threadIDs[1];
-	//int initialCount = 0;
-	//int threadCount = 1;
 
-	//progressSemaphoreHandle = CreateSemaphoreEx(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
 	struct ProgressArguments args = { pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, head_ref, pairs, selectedRow };
 	wcscpy_s(args.selectedRowText, MAX_LINE, selectedRowText);
 	threads[0] = CreateThread(NULL, 0, entryPointProgressBar, &args, 0, &threadIDs[0]);
@@ -553,10 +550,6 @@ void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, H
 		swprintf(buf, MAX_LINE, L"Failed to create progress bar thread");
 		logger(buf);
 	}
-	//else
-	//{
-	//	logger(L"Progress bar thread started");
-	//}
 }
 
 static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
@@ -575,17 +568,6 @@ static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
 
 	assert(textLen > 0);
 
-	//for (;;)
-	//{
-	//	if (progressPosition > 0)
-	//	{
-	//		SendMessage(hwnd, PBM_SETPOS, progressPosition, 0);
-	//		WaitForSingleObjectEx(progressSemaphoreHandle, INFINITE, FALSE);
-	//	}
-	//}
-
-	//SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
-
 	if (isProjectName(selectedRowText, textLen))
 	{
 		// preview whole project
@@ -602,16 +584,8 @@ static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
 		fillSyncListbox(lbSyncHwnd, pairs);
 	}
 
-	//fillSyncListbox(lbSyncHwnd, pairs);
-
 	if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) > 0)
 		EnableWindow(bSync, true);
 
 	return 0;
 }
-
-//void activateProgressBar()
-//{
-//	//
-//	ReleaseSemaphore(progressSemaphoreHandle, 1, 0);
-//}
