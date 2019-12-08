@@ -119,7 +119,7 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 	HANDLE threads[2];
 	DWORD threadIDs[2];
 
-	struct Arguments sourceArgs = { lbSyncHwnd, pairs, project };
+	struct PreviewArguments sourceArgs = { lbSyncHwnd, pairs, project };
 
 	threads[0] = CreateThread(NULL, 0, entryPointSource, &sourceArgs, 0, &threadIDs[0]);
 	if (threads[0] == NULL)
@@ -130,7 +130,7 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 		return;
 	}
 
-	struct Arguments targetArgs = { lbSyncHwnd, pairs, &reversed };
+	struct PreviewArguments targetArgs = { lbSyncHwnd, pairs, &reversed };
 
 	threads[1] = CreateThread(NULL, 0, entryPointTarget, &targetArgs, 0, &threadIDs[1]);
 	if (threads[1] == NULL)
@@ -149,7 +149,7 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 
 DWORD CALLBACK entryPointSource(LPVOID arguments)
 {
-	struct Arguments *args = (struct Arguments *)arguments;
+	struct PreviewArguments *args = (struct PreviewArguments *)arguments;
 	HWND hwnd = args->hwnd;
 	struct PairNode **pairs = args->pairs;
 	struct Project *project = args->project;
@@ -160,7 +160,7 @@ DWORD CALLBACK entryPointSource(LPVOID arguments)
 
 DWORD CALLBACK entryPointTarget(LPVOID arguments)
 {
-	struct Arguments *args = (struct Arguments *)arguments;
+	struct PreviewArguments *args = (struct PreviewArguments *)arguments;
 	HWND hwnd = args->hwnd;
 	struct PairNode **pairs = args->pairs;
 	struct Project *project = args->project;
@@ -373,8 +373,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 		// folder
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
-			// check if target folder exists
-			// if exists do recursive search in folder
+			// check if target folder exists. if exists do recursive search in folder
 			if (folderExists(destination))
 			{
 				struct Project subFolder = { 0 };

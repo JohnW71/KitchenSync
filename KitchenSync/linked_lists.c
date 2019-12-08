@@ -49,15 +49,20 @@ void appendPairNode(struct PairNode **head_ref, struct Pair pair, LONGLONG files
 		return;
 	}
 
-	// divert current last node to newPairNode
+	// point current last node to newPairNode
 	struct PairNode *last = *head_ref;
 	while (last->next != NULL)
 		last = last->next;
 	last->next = newPairNode;
 }
 
-void appendProjectNode(struct ProjectNode **head_ref, struct Project project)
+void appendProjectNode(struct ProjectNode **head_ref, wchar_t *projectName, wchar_t *sourceFolder, wchar_t *destFolder)
 {
+	struct Project project = { 0 };
+	wcscpy_s(project.name, MAX_LINE, projectName);
+	wcscpy_s(project.pair.source, MAX_LINE, sourceFolder);
+	wcscpy_s(project.pair.destination, MAX_LINE, destFolder);
+
 	struct ProjectNode *newProjectNode = (struct ProjectNode *)malloc(sizeof(struct ProjectNode));
 
 	if (!newProjectNode)
@@ -167,7 +172,6 @@ void deleteFolderPair(struct ProjectNode **head_ref, wchar_t *folderPair, wchar_
 // delete single file pair by name
 void deleteFilePair(struct PairNode **head_ref, wchar_t *filePair)
 {
-	//sortProjectNodes(head_ref);
 	size_t length = wcslen(filePair);
 	assert(length > 0);
 
@@ -228,14 +232,11 @@ void replaceFolderPair(struct ProjectNode **head_ref, wchar_t *projectName, wcha
 	}
 }
 
-// Given a reference (pointer to pointer) to the head of a list
-// and a position, delete the node at the given position
 static void deletePairNode(struct PairNode **head_ref, int position)
 {
 	if (*head_ref == NULL)
 		return;
 
-	// store current head node
 	struct PairNode *temp = *head_ref;
 
 	// if head is to be removed
@@ -254,28 +255,19 @@ static void deletePairNode(struct PairNode **head_ref, int position)
 	if (temp == NULL || temp->next == NULL)
 		return;
 
-	// node temp->next is the node to be deleted
-	// store pointer to the next node after the node to be deleted
 	struct PairNode *next = temp->next->next;
-
-	// unlink the node from the list
 	free(temp->next);
-
-	// link to next node
 	temp->next = next;
 }
 
-// Given a reference (pointer to pointer) to the head of a list
-// and a position, delete the node at the given position
 static void deleteProjectNode(struct ProjectNode **head_ref, int position)
 {
 	if (*head_ref == NULL)
 		return;
 
-	// store current head node
 	struct ProjectNode *temp = *head_ref;
 
-	// head is to be removed
+	// if head is to be removed
 	if (position == 0)
 	{
 		*head_ref = temp->next;
@@ -291,21 +283,14 @@ static void deleteProjectNode(struct ProjectNode **head_ref, int position)
 	if (temp == NULL || temp->next == NULL)
 		return;
 
-	// node temp->next is the node to be deleted
-	// store pointer to the next node after the node to be deleted
 	struct ProjectNode *next = temp->next->next;
-
-	// unlink the node from the list
 	free(temp->next);
-
-	// link to next node
 	temp->next = next;
 }
 
 // delete the entire linked list
 void deletePairList(struct PairNode **head_ref)
 {
-	// de-reference head_ref to get the real head
 	struct PairNode *current = *head_ref;
 	struct PairNode *next;
 
@@ -323,7 +308,6 @@ void deletePairList(struct PairNode **head_ref)
 // delete the entire linked list
 static void deleteProjectList(struct ProjectNode **head_ref)
 {
-	// de-reference head_ref to get the real head
 	struct ProjectNode *current = *head_ref;
 	struct ProjectNode *next;
 
@@ -340,10 +324,6 @@ static void deleteProjectList(struct ProjectNode **head_ref)
 // count nodes in list
 static int countPairNodes(struct PairNode *head)
 {
-#if DEV_MODE
-	logger(L"countPairNodes()");
-#endif
-
 	int count = 0;
 	struct PairNode *current = head;
 
@@ -355,6 +335,19 @@ static int countPairNodes(struct PairNode *head)
 	return count;
 }
 #endif
+
+// replace all occurrences of old project name with new name
+void renameProject(struct ProjectNode **head, wchar_t *oldName, wchar_t *newName)
+{
+	struct ProjectNode *current = *head_ref;
+
+	while (current != NULL)
+	{
+		if (wcscmp(current->project.name, oldName) == 0)
+			wcscpy_s(current->project.name, MAX_LINE, newName);
+		current = current->next;
+	}
+}
 
 int countProjectNodes(struct ProjectNode *head)
 {
@@ -500,7 +493,7 @@ void sortPairNodes(struct PairNode **head_ref)
 		while (current != NULL && current->next != NULL)
 		{
 			if (wcscmp(current->pair.source, current->next->pair.source) > 0 ||
-				(wcscmp(current->pair.source, current->next->pair.source) == 0 && 
+				(wcscmp(current->pair.source, current->next->pair.source) == 0 &&
 					wcscmp(current->pair.destination, current->next->pair.destination) > 0))
 			{
 				struct PairNode *temp = current->next;
@@ -542,7 +535,7 @@ void appendLoggerNode(struct LoggerNode **head_ref, wchar_t *text)
 		return;
 	}
 
-	// divert current last node to newLoggerNode
+	// point current last node to newLoggerNode
 	struct LoggerNode *last = *head_ref;
 	while (last->next != NULL)
 		last = last->next;
@@ -555,10 +548,9 @@ void deleteLoggerNode(struct LoggerNode **head_ref)
 	if (*head_ref == NULL)
 		return;
 
-	// store current head node
 	struct LoggerNode *temp = *head_ref;
 
-	// if head is to be removed
+	// remove head
 	*head_ref = temp->next;
 	free(temp);
 	return;

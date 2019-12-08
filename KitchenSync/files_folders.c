@@ -136,3 +136,13 @@ void deleteFolder(wchar_t *path)
 	}
 }
 */
+
+// cut off last folder name from path
+void cutOffLastFolder(wchar_t *folderPath)
+{
+	size_t len = wcslen(folderPath);
+	assert(len > 0);
+	while (folderPath[len] != '\\' && len > 0)
+		--len;
+	folderPath[len] = '\0';
+}

@@ -263,7 +263,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 
 							deletePairList(&filesHead);
-							fillListbox(lbProjectsHwnd, &projectsHead);
+							fillProjectListbox(lbProjectsHwnd, &projectsHead);
 
 							EnableWindow(bAddFolders, false);
 							EnableWindow(bPreview, false);
@@ -422,9 +422,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						int textLen = (int)SendMessage(lbSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
-						{
 							EnableWindow(bDelete, true);
-						}
 					}
 				}
 
@@ -468,9 +466,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						int textLen = (int)SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
-						{
 							EnableWindow(bDelete, true);
-						}
 					}
 				}
 
@@ -510,9 +506,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						int textLen = (int)SendMessage(lbSyncHwnd, LB_GETTEXT, selectedRow, (LPARAM)selectedRowText);
 
 						if (textLen > 0)
-						{
 							EnableWindow(bDelete, true);
-						}
 					}
 				}
 
@@ -528,7 +522,6 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 				//		if (textLen > 0)
 				//		{
-
 				//		}
 				//	}
 				//}
@@ -612,7 +605,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							}
 
 							SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
-							fillListbox(lbProjectsHwnd, &projectsHead);
+							fillProjectListbox(lbProjectsHwnd, &projectsHead);
 							SetFocus(lbProjectsHwnd);
 						}
 					}
@@ -883,32 +876,18 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 #if DEV_MODE
 	logger(L"New project added");
 #endif
-						struct Project project = { 0 };
-						wcscpy_s(project.name, MAX_LINE, newProjectName);
-						wcscpy_s(project.pair.source, MAX_LINE, L"C:");
-						wcscpy_s(project.pair.destination, MAX_LINE, L"C:");
-
-						appendProjectNode(&projectsHead, project);
+						appendProjectNode(&projectsHead, newProjectName, L"C:", L"C:");
 						memset(projectName, '\0', MAX_LINE);
 					}
 				}
 
 				// existing project being renamed
 				if (wcslen(newProjectName) > 0 && wcslen(projectName) > 0)
-				{
-					// replace all occurrences of old project name with new name
-					struct ProjectNode *node = projectsHead;
-					while (node != NULL)
-					{
-						if (wcscmp(node->project.name, projectName) == 0)
-							wcscpy_s(node->project.name, MAX_LINE, newProjectName);
-						node = node->next;
-					}
-				}
+					renameProject(&projectsHead, projectName, newProjectName);
 
 				SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
 				sortProjectNodes(&projectsHead);
-				fillListbox(lbProjectsHwnd, &projectsHead);
+				fillProjectListbox(lbProjectsHwnd, &projectsHead);
 				memset(projectName, '\0', MAX_LINE);
 				showingProjectName = false;
 				DestroyWindow(hwnd);
@@ -1119,16 +1098,9 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							wchar_t currentFolder[MAX_LINE] = { 0 };
 							wcscpy_s(currentFolder, MAX_LINE, sourceFolder);
 
-							// handle .. or get new folder name
+							// handle '..' or get new folder name
 							if (wcscmp(selectedRowText, L"..") == 0)
-							{
-								// cut off last folder from path
-								size_t len = wcslen(sourceFolder);
-								while (sourceFolder[len] != '\\' && len > 0)
-									--len;
-
-								sourceFolder[len] = '\0';
-							}
+								cutOffLastFolder(sourceFolder);
 							else
 							{
 								GetWindowText(eSource, sourceFolder, MAX_LINE);
@@ -1195,14 +1167,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 
 							// handle .. or get new folder name
 							if (wcscmp(selectedRowText, L"..") == 0)
-							{
-								// cut off last folder from path
-								size_t len = wcslen(destFolder);
-								while (destFolder[len] != '\\' && len > 0)
-									--len;
-
-								destFolder[len] = '\0';
-							}
+								cutOffLastFolder(destFolder);
 							else
 							{
 								GetWindowText(eDestination, destFolder, MAX_LINE);
@@ -1245,14 +1210,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 					editingFolderPair = false;
 				}
 				else
-				{
-					struct Project project = { 0 };
-					wcscpy_s(project.name, MAX_LINE, projectName);
-					wcscpy_s(project.pair.source, MAX_LINE, sourceFolder);
-					wcscpy_s(project.pair.destination, MAX_LINE, destFolder);
-
-					appendProjectNode(&projectsHead, project);
-				}
+					appendProjectNode(&projectsHead, projectName, sourceFolder, destFolder);
 
 				// reload pairs listboxes
 				SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);

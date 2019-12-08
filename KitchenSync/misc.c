@@ -69,6 +69,7 @@ void readSettings(HWND hwnd, char *filename)
 	int windowCol = 0;
 	int windowRow = 0;
 	char *line = (char *)malloc(MAX_LINE);
+
 	if (!line)
 	{
 		logger(L"Failed to allocate memory for line from settings file");
@@ -224,14 +225,8 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 		swprintf(buf, MAX_LINE * 4, L"Name: %s, source: %s, dest: %s", name, source, destination);
 		logger(buf);
 
-		struct Project project = { 0 };
-		wcscpy_s(project.name, MAX_LINE, name);
-		wcscpy_s(project.pair.source, MAX_LINE, source);
-		wcscpy_s(project.pair.destination, MAX_LINE, destination);
-
-		appendProjectNode(head_ref, project);
+		appendProjectNode(head_ref, name, source, destination);
 	}
-
 #if DEV_MODE
 	wchar_t buf[100] = { 0 };
 	swprintf(buf, 100, L"Loaded %d projects", countProjectNodes(*head_ref));
@@ -240,11 +235,11 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 
 	fclose(f);
 	sortProjectNodes(head_ref);
-	fillListbox(hwnd, head_ref);
+	fillProjectListbox(hwnd, head_ref);
 }
 
 // load all project nodes into Projects listbox
-void fillListbox(HWND hwnd, struct ProjectNode **head_ref)
+void fillProjectListbox(HWND hwnd, struct ProjectNode **head_ref)
 {
 	wchar_t *currentProjectName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 	if (!currentProjectName)
@@ -259,7 +254,7 @@ void fillListbox(HWND hwnd, struct ProjectNode **head_ref)
 
 	while (current != NULL)
 	{
-		// add folder pair, into a new or existing project section
+		// add folder pair into a new or existing project section
 		if (wcscmp(currentProjectName, current->project.name) != 0) // new project section
 		{
 			// add blank line between each project
@@ -397,7 +392,6 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 		++count;
 		current = current->next;
 	}
-
 #if DEV_MODE
 	wchar_t buf[100] = { 0 };
 	swprintf(buf, 100, L"Saved %d projects", count);
@@ -407,7 +401,7 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 	fclose(f);
 }
 
-// determine if project name by absence of > character
+// determine if text is a project name by absence of > character
 bool isProjectName(wchar_t *text, int len)
 {
 	for (int i = 0; i < len && text[i] != '\0'; ++i)
@@ -416,7 +410,7 @@ bool isProjectName(wchar_t *text, int len)
 	return true;
 }
 
-// look backwards to find project name from selected pair
+// search backwards to find project name from selected pair
 void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *projectName)
 {
 	wchar_t selectedRowText[MAX_LINE] = { 0 };
@@ -490,10 +484,6 @@ void startLoggingThread()
 		swprintf(buf, MAX_LINE, L"Failed to create logger thread");
 		logger(buf);
 	}
-	else
-	{
-		logger(L"Test text");
-	}
 }
 
 static DWORD CALLBACK entryPointLogger(LPVOID arguments)
@@ -531,10 +521,10 @@ void logger(wchar_t *text)
 	ReleaseSemaphore(loggerSemaphoreHandle, 1, 0);
 }
 
-void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, HWND bSync, 
-	struct ProjectNode **head_ref, 
-	struct PairNode **pairs, 
-	wchar_t selectedRowText[MAX_LINE], 
+void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, HWND bSync,
+	struct ProjectNode **head_ref,
+	struct PairNode **pairs,
+	wchar_t selectedRowText[MAX_LINE],
 	LRESULT selectedRow)
 {
 	HANDLE threads[1];

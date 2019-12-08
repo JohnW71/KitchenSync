@@ -35,13 +35,13 @@ void readSettings(HWND, char *);
 void loadProjects(HWND, char *, struct ProjectNode **);
 void saveProjects(char *, struct ProjectNode **);
 void appendPairNode(struct PairNode **, struct Pair, LONGLONG);
-void appendProjectNode(struct ProjectNode **, struct Project);
+void appendProjectNode(struct ProjectNode **, wchar_t *, wchar_t *, wchar_t *);
 void deleteProject(struct ProjectNode **, wchar_t *);
 void deleteFolderPair(struct ProjectNode **, wchar_t *, wchar_t *);
 void replaceFolderPair(struct ProjectNode **, wchar_t *, wchar_t *, wchar_t *, wchar_t *);
 void sortProjectNodes(struct ProjectNode **);
 void sortPairNodes(struct PairNode **);
-void fillListbox(HWND, struct ProjectNode **);
+void fillProjectListbox(HWND, struct ProjectNode **);
 void fillSyncListbox(HWND, struct PairNode **);
 void findProjectName(HWND, LRESULT, wchar_t *);
 void reloadFolderPairs(HWND, HWND, struct ProjectNode *, wchar_t *);
@@ -57,6 +57,8 @@ void startProgressBarThread(HWND, HWND, HWND, HWND, struct ProjectNode **, struc
 void appendLoggerNode(struct LoggerNode **, wchar_t *);
 void deleteLoggerNode(struct LoggerNode **);
 void logger(wchar_t *);
+void cutOffLastFolder(wchar_t *);
+void renameProject(struct ProjectNode **, wchar_t *, wchar_t *);
 bool isProjectName(wchar_t *, int);
 bool fileExists(wchar_t *);
 bool folderExists(wchar_t *);
@@ -92,17 +94,17 @@ struct ProjectNode
 	struct ProjectNode *next;
 };
 
-struct Arguments
-{
-	HWND hwnd;
-	struct PairNode **pairs;
-	struct Project *project;
-};
-
 struct LoggerNode
 {
 	wchar_t text[MAX_LINE];
 	struct LoggerNode *next;
+};
+
+struct PreviewArguments
+{
+	HWND hwnd;
+	struct PairNode **pairs;
+	struct Project *project;
 };
 
 struct ProgressArguments
