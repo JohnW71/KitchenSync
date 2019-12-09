@@ -25,7 +25,7 @@
 #include "kitchen_sync.h"
 #pragma comment(lib, "comctl32.lib")
 
-static struct PairNode *filesHead = NULL;
+static struct PairNode *pairsHead = NULL;
 static struct ProjectNode *projectsHead = NULL;
 
 static LRESULT CALLBACK mainWndProc(HWND, UINT, WPARAM, LPARAM);
@@ -228,6 +228,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				WS_CHILD | WS_TABSTOP | WS_DISABLED,
 				10, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_SYNC, NULL, NULL);
 
+			// progress bar
 			pbHwnd = CreateWindowEx(WS_EX_LEFT, PROGRESS_CLASS, NULL,
 				WS_CHILD | PBS_SMOOTH,
 				10, rc.bottom-35, rc.right-20, 25, hwnd, (HMENU)ID_PROGRESS_BAR, NULL, NULL);
@@ -262,7 +263,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 
-							deletePairList(&filesHead);
+							deletePairList(&pairsHead);
 							fillProjectListbox(lbProjectsHwnd, &projectsHead);
 
 							EnableWindow(bAddFolders, false);
@@ -653,9 +654,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						if (textLen > 0)
 						{
 							// delete folder pair from list and listbox
-							deleteFilePair(&filesHead, selectedRowText);
+							deleteFilePair(&pairsHead, selectedRowText);
 							SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
-							fillSyncListbox(lbSyncHwnd, &filesHead);
+							fillSyncListbox(lbSyncHwnd, &pairsHead);
 
 							if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) == 0)
 								EnableWindow(bSync, false);
@@ -679,7 +680,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					if (textLen > 0)
 					{
 						SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
-						startProgressBarThread(pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, &projectsHead, &filesHead, selectedRowText, selectedRow);
+						startProgressBarThread(pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, &projectsHead, &pairsHead, selectedRowText, selectedRow);
 					}
 				}
 			}
@@ -689,6 +690,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 #if DEV_MODE
 	logger(L"Sync button");
 #endif
+				synchronizeFiles(lbSyncHwnd, &pairsHead);
 			}
 			break;
 		//case WM_SIZE:
@@ -840,7 +842,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 				wchar_t newProjectName[MAX_LINE];
 				GetWindowText(eProjectName, newProjectName, MAX_LINE);
 
-				// blank project name
+				// blank project name entered
 				if (wcslen(newProjectName) == 0)
 				{
 					logger(L"Blank name used");
@@ -1173,7 +1175,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 								GetWindowText(eDestination, destFolder, MAX_LINE);
 
 								if (wcslen(destFolder) + wcslen(selectedRowText) + 1 > MAX_LINE)
-									MessageBox(NULL, L"Path is at the limit, can't add new folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
+									MessageBox(NULL, L"Path would be over the limit, can't add new folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
 								else
 								{
 									wcscat(destFolder, L"\\");

@@ -84,20 +84,19 @@ void previewProject(HWND pbHwnd, HWND lbSyncHwnd, struct ProjectNode **head_ref,
 	struct ProjectNode *current = *head_ref;
 	int completed = 0;
 	int pairCount = countProjectPairs(*head_ref, projectName);
+	SendMessage(pbHwnd, PBM_SETPOS, 0, 0);
 	do
 	{
 		if (wcscmp(current->project.name, projectName) == 0)
 		{
 			struct Project project = { 0 };
-			wcscpy_s(project.name, MAX_LINE, projectName);
-			wcscpy_s(project.pair.source, MAX_LINE, current->project.pair.source);
-			wcscpy_s(project.pair.destination, MAX_LINE, current->project.pair.destination);
-
-			int progressPosition = (100 / pairCount) * ++completed;
-			SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
+			fillInProject(&project, projectName, current->project.pair.source, current->project.pair.destination);
+			int progressPosition = ((100 / pairCount) * ++completed) + 1;
 			previewFolderPair(pbHwnd, lbSyncHwnd, pairs, &project);
+			sortPairNodes(pairs);
 			SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 			fillSyncListbox(lbSyncHwnd, pairs);
+			SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
 		}
 		current = current->next;
 	} while (*head_ref != NULL && current != NULL);
@@ -108,11 +107,9 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 {
 	// reverse source & destination
 	struct Project reversed = { 0 };
-	wcscpy_s(reversed.name, MAX_LINE, project->name);
-	wcscpy_s(reversed.pair.source, MAX_LINE, project->pair.destination);
-	wcscpy_s(reversed.pair.destination, MAX_LINE, project->pair.source);
+	fillInProject(&reversed, project->name, project->pair.destination, project->pair.source);
 
-#if 0
+#if 1
 	previewFolderPairSource(lbSyncHwnd, pairs, project);
 	previewFolderPairTarget(lbSyncHwnd, pairs, &reversed);
 #else
@@ -143,8 +140,6 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 
 	WaitForMultipleObjects(2, threads, TRUE, INFINITE);
 #endif
-	SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
-	sortPairNodes(pairs);
 }
 
 DWORD CALLBACK entryPointSource(LPVOID arguments)
@@ -377,9 +372,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 			if (folderExists(destination))
 			{
 				struct Project subFolder = { 0 };
-				wcscpy_s(subFolder.name, MAX_LINE, project->name);
-				wcscpy_s(subFolder.pair.source, MAX_LINE, newSource);
-				wcscpy_s(subFolder.pair.destination, MAX_LINE, destination);
+				fillInProject(&subFolder, project->name, newSource, destination);
 //#if DEV_MODE
 //	wchar_t buf[MAX_LINE] = { 0 };
 //	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSource() for %s -> %s", newSource, destination);
@@ -507,9 +500,7 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 			if (folderExists(destination))
 			{
 				struct Project subFolder = { 0 };
-				wcscpy_s(subFolder.name, MAX_LINE, project->name);
-				wcscpy_s(subFolder.pair.source, MAX_LINE, newSource);
-				wcscpy_s(subFolder.pair.destination, MAX_LINE, destination);
+				fillInProject(&subFolder, project->name, newSource, destination);
 //#if DEV_MODE
 //	wchar_t buf[MAX_LINE] = { 0 };
 //	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairTarget() for %s -> %s", newSource, destination);

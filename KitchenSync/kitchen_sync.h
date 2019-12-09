@@ -59,6 +59,8 @@ void deleteLoggerNode(struct LoggerNode **);
 void logger(wchar_t *);
 void cutOffLastFolder(wchar_t *);
 void renameProject(struct ProjectNode **, wchar_t *, wchar_t *);
+void fillInProject(struct Project *, wchar_t *, wchar_t *, wchar_t *);
+void synchronizeFiles(HWND, struct PairNode **);
 bool isProjectName(wchar_t *, int);
 bool fileExists(wchar_t *);
 bool folderExists(wchar_t *);

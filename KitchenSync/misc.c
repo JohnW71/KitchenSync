@@ -469,6 +469,13 @@ void splitPair(wchar_t *pair, wchar_t *source, wchar_t *dest, size_t length)
 	wcsncpy_s(dest, MAX_LINE, pair + destStart, length);
 }
 
+void fillInProject(struct Project *project, wchar_t *name, wchar_t *source, wchar_t *destination)
+{
+	wcscpy_s(project->name, MAX_LINE, name);
+	wcscpy_s(project->pair.source, MAX_LINE, source);
+	wcscpy_s(project->pair.destination, MAX_LINE, destination);
+}
+
 void startLoggingThread()
 {
 	HANDLE threads[1];
@@ -571,7 +578,9 @@ static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
 		findProjectName(lbProjectsHwnd, selectedRow, sourceProject.name);
 		previewFolderPair(pbHwnd, lbSyncHwnd, pairs, &sourceProject);
 		SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+		sortPairNodes(pairs);
 		fillSyncListbox(lbSyncHwnd, pairs);
+		SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
 	}
 
 	if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) > 0)

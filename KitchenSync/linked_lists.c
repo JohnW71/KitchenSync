@@ -59,9 +59,7 @@ void appendPairNode(struct PairNode **head_ref, struct Pair pair, LONGLONG files
 void appendProjectNode(struct ProjectNode **head_ref, wchar_t *projectName, wchar_t *sourceFolder, wchar_t *destFolder)
 {
 	struct Project project = { 0 };
-	wcscpy_s(project.name, MAX_LINE, projectName);
-	wcscpy_s(project.pair.source, MAX_LINE, sourceFolder);
-	wcscpy_s(project.pair.destination, MAX_LINE, destFolder);
+	fillInProject(&project, projectName, sourceFolder, destFolder);
 
 	struct ProjectNode *newProjectNode = (struct ProjectNode *)malloc(sizeof(struct ProjectNode));
 
@@ -337,7 +335,7 @@ static int countPairNodes(struct PairNode *head)
 #endif
 
 // replace all occurrences of old project name with new name
-void renameProject(struct ProjectNode **head, wchar_t *oldName, wchar_t *newName)
+void renameProject(struct ProjectNode **head_ref, wchar_t *oldName, wchar_t *newName)
 {
 	struct ProjectNode *current = *head_ref;
 
