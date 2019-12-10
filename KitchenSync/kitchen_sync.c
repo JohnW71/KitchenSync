@@ -1250,6 +1250,8 @@ static LRESULT CALLBACK customSourceEditboxProc(HWND hwnd, UINT msg, WPARAM wPar
 				case VK_RETURN:
 					// load folder contents
 					GetWindowText(hwnd, sourceFolder, MAX_LINE);
+					if (destFolder[1] == ':')
+						destFolder[0] = toupper(destFolder[0]);
 					SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
 					if (listSubFolders(lbPairSourceHwnd, sourceFolder))
 						SetWindowText(hwnd, sourceFolder);
@@ -1277,6 +1279,8 @@ static LRESULT CALLBACK customDestinationEditboxProc(HWND hwnd, UINT msg, WPARAM
 				case VK_RETURN:
 					// load folder contents
 					GetWindowText(hwnd, destFolder, MAX_LINE);
+					if (destFolder[1] == ':')
+						destFolder[0] = toupper(destFolder[0]);
 					SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
 					if (listSubFolders(lbPairDestHwnd, destFolder))
 						SetWindowText(hwnd, destFolder);
