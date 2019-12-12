@@ -234,7 +234,9 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 		else
 		{
 			// add to files list
-			addPair(pairs, currentItem, destination, filesize.QuadPart);
+			wchar_t newDestination[MAX_LINE] = { 0 };
+			catPath(newDestination, destination, ffd.cFileName);
+			addPair(pairs, currentItem, newDestination, filesize.QuadPart);
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 
