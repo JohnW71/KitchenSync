@@ -583,8 +583,10 @@ static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
 		SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
 	}
 
-	if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) > 0)
+	if (countPairNodes(*pairs) > 0)
 		EnableWindow(bSync, true);
+	else
+		EnableWindow(bSync, false);
 
 	return 0;
 }

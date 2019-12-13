@@ -307,6 +307,10 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						}
 						case 2: // sync
 						{
+							if (countPairNodes(pairsHead) > 0)
+								EnableWindow(bSync, true);
+							else
+								EnableWindow(bSync, false);
 							EnableWindow(bDelete, false);
 
 							ShowWindow(lbProjectsHwnd, SW_HIDE);
@@ -658,7 +662,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 							fillSyncListbox(lbSyncHwnd, &pairsHead);
 
-							if (SendMessage(lbSyncHwnd, LB_GETCOUNT, 0, 0) == 0)
+							if (countPairNodes(pairsHead) > 0)
+								EnableWindow(bSync, true);
+							else
 								EnableWindow(bSync, false);
 						}
 					}
@@ -690,7 +696,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 #if DEV_MODE
 	logger(L"Sync button");
 #endif
-				synchronizeFiles(lbSyncHwnd, &pairsHead);
+				synchronizeFiles(pbHwnd, lbSyncHwnd, &pairsHead);
+				SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
 			}
 			break;
 		//case WM_SIZE:
