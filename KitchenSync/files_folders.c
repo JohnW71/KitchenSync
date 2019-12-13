@@ -94,48 +94,54 @@ bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWri
 	return false;
 }
 
-/*
-void copyFile(wchar_t *source, wchar_t *dest)
+bool copyFile(wchar_t *source, wchar_t *dest)
 {
-	//TODO handle hidden & read-only & failures
+	//TODO handle hidden & read-only
 //FILE_ATTRIBUTE_HIDDEN
 //FILE_ATTRIBUTE_READONLY
 
-	if (!CopyFile(source, dest, false))
-	{
-		logger(L"Error copying file!");
-		MessageBox(NULL, L"Error copying file", L"Error", MB_ICONEXCLAMATION | MB_OK);
-	}
+	if (CopyFile(source, dest, false))
+		return true;
+
+	logger(L"Error copying file!");
+	logger(source);
+	MessageBox(NULL, L"Error copying file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+	return false;
 }
 
-void createFolder(wchar_t *path)
+bool createFolder(wchar_t *path)
 {
-	if (!CreateDirectory(path, NULL))
-	{
-		logger(L"Error creating folder!");
-		MessageBox(NULL, L"Error creating folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
-	}
+	if (CreateDirectory(path, NULL))
+		return true;
+
+	logger(L"Error creating folder!");
+	logger(path);
+	MessageBox(NULL, L"Error creating folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
+	return false;
 }
 
-void deleteFile(wchar_t *path)
+bool deleteFile(wchar_t *path)
 {
-	if (!DeleteFileW(path))
-	{
-		logger(L"Error deleting file!");
-		MessageBox(NULL, L"Error deleting file", L"Error", MB_ICONEXCLAMATION | MB_OK);
-	}
+	if (DeleteFileW(path))
+		return true;
+
+	logger(L"Error deleting file!");
+	logger(path);
+	MessageBox(NULL, L"Error deleting file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+	return false;
 }
 
-void deleteFolder(wchar_t *path)
+bool deleteFolder(wchar_t *path)
 {
 	//NOTE is this function recursive?
-	if (!RemoveDirectory(path))
-	{
-		logger(L"Error deleting folder!");
-		MessageBox(NULL, L"Error deleting folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
-	}
+	if (RemoveDirectory(path))
+		return true;
+
+	logger(L"Error deleting folder!");
+	logger(path);
+	MessageBox(NULL, L"Error deleting folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
+	return false;
 }
-*/
 
 // cut off last folder name from path
 void cutOffLastFolder(wchar_t *folderPath)

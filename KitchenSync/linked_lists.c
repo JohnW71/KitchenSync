@@ -304,7 +304,7 @@ void deletePairList(struct PairNode **head_ref)
 
 #if 0
 // delete the entire linked list
-static void deleteProjectList(struct ProjectNode **head_ref)
+void deleteProjectList(struct ProjectNode **head_ref)
 {
 	struct ProjectNode *current = *head_ref;
 	struct ProjectNode *next;
@@ -318,9 +318,10 @@ static void deleteProjectList(struct ProjectNode **head_ref)
 
 	*head_ref = NULL;
 }
+#endif
 
 // count nodes in list
-static int countPairNodes(struct PairNode *head)
+int countPairNodes(struct PairNode *head)
 {
 	int count = 0;
 	struct PairNode *current = head;
@@ -332,7 +333,6 @@ static int countPairNodes(struct PairNode *head)
 	}
 	return count;
 }
-#endif
 
 // replace all occurrences of old project name with new name
 void renameProject(struct ProjectNode **head_ref, wchar_t *oldName, wchar_t *newName)
