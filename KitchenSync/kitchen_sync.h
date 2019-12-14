@@ -60,7 +60,7 @@ void logger(wchar_t *);
 void cutOffLastFolder(wchar_t *);
 void renameProject(struct ProjectNode **, wchar_t *, wchar_t *);
 void fillInProject(struct Project *, wchar_t *, wchar_t *, wchar_t *);
-void synchronizeFiles(HWND, struct PairNode **);
+void synchronizeFiles(HWND, HWND, struct PairNode **);
 bool copyFile(wchar_t *, wchar_t *);
 bool createFolder(wchar_t *);
 bool deleteFile(wchar_t *);

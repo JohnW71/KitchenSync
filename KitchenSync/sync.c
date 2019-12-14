@@ -2,7 +2,7 @@
 
 #define DANGEROUS 0
 
-void synchronizeFiles(HWND lbSyncHwnd, struct PairNode **pairs)
+void synchronizeFiles(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs)
 {
 #if DEV_MODE
 	logger(L"sync()");
@@ -16,9 +16,12 @@ void synchronizeFiles(HWND lbSyncHwnd, struct PairNode **pairs)
 	}
 
 	int position = 0;
-	wchar_t buf[MAX_LINE] = { 0 };
+	int completed = 0;
 	int actionCount = countPairNodes(*pairs);
+	wchar_t buf[MAX_LINE] = { 0 };
+
 	SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+	SendMessage(pbHwnd, PBM_SETPOS, 0, 0);
 
 	for (int i = 0; i < actionCount; ++i)
 	{
@@ -29,6 +32,7 @@ void synchronizeFiles(HWND lbSyncHwnd, struct PairNode **pairs)
 			{
 				swprintf(buf, MAX_LINE, L"%d: Delete file %s", i, current->pair.destination);
 				logger(buf);
+				swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);
 #if DANGEROUS
 				if (deleteFile(current->pair.destination))
 					swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);
@@ -42,6 +46,7 @@ void synchronizeFiles(HWND lbSyncHwnd, struct PairNode **pairs)
 			{
 				swprintf(buf, MAX_LINE, L"%d: Delete folder %s", i, current->pair.destination);
 				logger(buf);
+				swprintf(buf, MAX_LINE, L"Deleted folder %s OK", current->pair.destination);
 #if DANGEROUS
 				if (deleteFolder(current->pair.destination))
 					swprintf(buf, MAX_LINE, L"Deleted folder %s OK", current->pair.destination);
@@ -59,9 +64,10 @@ void synchronizeFiles(HWND lbSyncHwnd, struct PairNode **pairs)
 			{
 				swprintf(buf, MAX_LINE, L"%d: Create folder %s -> %s", i, current->pair.source, current->pair.destination);
 				logger(buf);
+				swprintf(buf, MAX_LINE, L"Created folder %s -> %s OK", current->pair.source, current->pair.destination);
 #if DANGEROUS
 				if (createFolder(current->pair.destination))
-					swprintf(buf, MAX_LINE, L"Ceated folder %s -> %s OK", current->pair.source, current->pair.destination);
+					swprintf(buf, MAX_LINE, L"Created folder %s -> %s OK", current->pair.source, current->pair.destination);
 				else
 					swprintf(buf, MAX_LINE, L"Failed creating folder %s -> %s", current->pair.source, current->pair.destination);
 #endif
@@ -70,17 +76,19 @@ void synchronizeFiles(HWND lbSyncHwnd, struct PairNode **pairs)
 			{
 				swprintf(buf, MAX_LINE, L"%d: Copy file %s -> %s", i, current->pair.source, current->pair.destination);
 				logger(buf);
-				swprintf(buf, MAX_LINE, L"Copy file %s -> %s OK", current->pair.source, current->pair.destination);
+				swprintf(buf, MAX_LINE, L"Copied file %s -> %s OK", current->pair.source, current->pair.destination);
 
 #if DANGEROUS
 				if (copyFile(current->pair.source, current->pair.destination))
-					swprintf(buf, MAX_LINE, L"Copy file %s -> %s OK", current->pair.source, current->pair.destination);
+					swprintf(buf, MAX_LINE, L"Copied file %s -> %s OK", current->pair.source, current->pair.destination);
 				else
 					swprintf(buf, MAX_LINE, L"Failed copying file %s -> %s", current->pair.source, current->pair.destination);
 #endif
 			}
 		}
 
+		int progressPosition = (100 / actionCount) * ++completed;
+		SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
 		SendMessage(lbSyncHwnd, LB_ADDSTRING, position++, (LPARAM)buf);
 		current = current->next;
 	}
