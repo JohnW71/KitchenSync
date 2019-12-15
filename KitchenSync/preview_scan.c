@@ -60,12 +60,6 @@ int listSubFolders(HWND hwnd, wchar_t *folder)
 		{
 			if (wcscmp(ffd.cFileName, L".") == 0)
 				continue;
-
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = { 0 };
-//	swprintf(buf, MAX_LINE, L"LSF() Dir: %s", ffd.cFileName);
-//	logger(buf);
-//#endif
 			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)ffd.cFileName);
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
@@ -109,7 +103,7 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 	struct Project reversed = { 0 };
 	fillInProject(&reversed, project->name, project->pair.destination, project->pair.source);
 
-#if 1
+#if 0
 	previewFolderPairSource(lbSyncHwnd, pairs, project);
 	previewFolderPairTarget(lbSyncHwnd, pairs, &reversed);
 #else
@@ -214,22 +208,38 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 		{
 			wchar_t currentItemSlash[MAX_LINE] = { 0 };
 			wcscpy_s(currentItemSlash, MAX_LINE, currentItem);
-
-			//if (wcslen(destinationSubFolder) >= MAX_LINE)
-			//{
-			//	logger(L"Sub-folder path is full, can't add \\");
-			//	MessageBox(NULL, L"Sub-folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
-			//	return;
-			//}
-
+			if (wcslen(currentItemSlash) + 2 >= MAX_LINE)
+			{
+				logger(L"Sub-folder path is full, can't add \\");
+				MessageBox(NULL, L"Sub-folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+				return;
+			}
 			wcscat(currentItemSlash, L"\\");
-			addPair(pairs, currentItem, currentItemSlash, filesize.QuadPart);
-			listTreeContent(pairs, currentItem, destination);
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = { 0 };
-//	swprintf(buf, MAX_LINE, L"listTreeContent() Dir: %s", currentItem);
-//	logger(buf);
-//#endif
+
+			// make new destination subfolder path
+			wchar_t destinationSubFolder[MAX_LINE] = { 0 };
+			wcscpy_s(destinationSubFolder, MAX_LINE, destination);
+			if ((wcslen(destinationSubFolder) + wcslen(currentItem) + 2) >= MAX_LINE)
+			{
+				logger(L"Sub-folder path is full, can't add \\ & folder name");
+				MessageBox(NULL, L"Sub-folder path is full, can't add \\ & folder name", L"Error", MB_ICONEXCLAMATION | MB_OK);
+				return;
+			}
+			wcscat(destinationSubFolder, L"\\");
+			wcscat(destinationSubFolder, ffd.cFileName);
+
+			wchar_t destinationSubFolderSlash[MAX_LINE] = { 0 };
+			wcscpy_s(destinationSubFolderSlash, MAX_LINE, destinationSubFolder);
+			if (wcslen(destinationSubFolderSlash) + 2 >= MAX_LINE)
+			{
+				logger(L"Sub-folder path is full, can't add \\");
+				MessageBox(NULL, L"Sub-folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+				return;
+			}
+			wcscat(destinationSubFolderSlash, L"\\");
+
+			addPair(pairs, currentItemSlash, destinationSubFolderSlash, filesize.QuadPart);
+			listTreeContent(pairs, currentItem, destinationSubFolder);
 		}
 		else
 		{
@@ -295,14 +305,7 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 
 		// recursive folder reading
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-		{
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = { 0 };
-//	swprintf(buf, MAX_LINE, L"listForRemoval() Dir: %s", currentItem);
-//	logger(buf);
-//#endif
 			listForRemoval(pairs, currentItem);
-		}
 		else
 		{
 			// add to files list

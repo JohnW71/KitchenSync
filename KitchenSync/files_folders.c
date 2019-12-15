@@ -96,7 +96,6 @@ bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWri
 
 bool copyFile(wchar_t *source, wchar_t *dest)
 {
-	//TODO handle hidden & read-only
 //FILE_ATTRIBUTE_HIDDEN
 //FILE_ATTRIBUTE_READONLY
 

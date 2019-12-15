@@ -111,7 +111,6 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 			}
 		}
 
-		//int progressPosition = (100 / actionCount) * ++completed;
 		int progressPosition = (int)(((float)++completed / actionCount) * 100.0f);
 		SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
 		SendMessage(lbSyncHwnd, LB_ADDSTRING, position++, (LPARAM)buf);
