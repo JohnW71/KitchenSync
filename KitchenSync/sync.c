@@ -2,17 +2,41 @@
 
 #define DANGEROUS 0
 
-void synchronizeFiles(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs)
+DWORD CALLBACK entryPointSync(LPVOID);
+
+void synchronizeFiles(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, struct PairNode **pairs)
 {
 #if DEV_MODE
 	logger(L"sync()");
 #endif
+	HANDLE threads[2];
+	DWORD threadIDs[2];
+
+	struct SyncArguments syncArgs = { pbHwnd, lbSyncHwnd, bSync, pairs };
+
+	threads[0] = CreateThread(NULL, 0, entryPointSync, &syncArgs, 0, &threadIDs[0]);
+	if (threads[0] == NULL)
+	{
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Failed to create sync thread");
+		logger(buf);
+		return;
+	}
+}
+
+DWORD CALLBACK entryPointSync(LPVOID arguments)
+{
+	struct SyncArguments *args = (struct SyncArguments *)arguments;
+	HWND pbHwnd = args->pbHwnd;
+	HWND lbSyncHwnd = args->lbSyncHwnd;
+	HWND bSync = args->bSync;
+	struct PairNode **pairs = args->pairs;
 	struct PairNode *current = *pairs;
 
 	if (current == NULL)
 	{
 		logger(L"Can't sync, list is empty");
-		return;
+		return 0;
 	}
 
 	int position = 0;
@@ -87,9 +111,13 @@ void synchronizeFiles(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs)
 			}
 		}
 
-		int progressPosition = (100 / actionCount) * ++completed;
+		//int progressPosition = (100 / actionCount) * ++completed;
+		int progressPosition = (int)(((float)++completed / actionCount) * 100.0f);
 		SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
 		SendMessage(lbSyncHwnd, LB_ADDSTRING, position++, (LPARAM)buf);
 		current = current->next;
 	}
+
+	EnableWindow(bSync, true);
+	return 0;
 }

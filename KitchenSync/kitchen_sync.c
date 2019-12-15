@@ -696,8 +696,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 #if DEV_MODE
 	logger(L"Sync button");
 #endif
-				synchronizeFiles(pbHwnd, lbSyncHwnd, &pairsHead);
-				SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
+				EnableWindow(bSync, false);
+				synchronizeFiles(pbHwnd, lbSyncHwnd, bSync, &pairsHead);
 			}
 			break;
 		//case WM_SIZE:
