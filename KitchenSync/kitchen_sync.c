@@ -540,7 +540,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_FOLDER_PAIR)
 			{
-#if DEV_MODE
+#if DEBUG_MODE
 	logger(L"Add folder pair button");
 #endif
 				// get row index
@@ -553,7 +553,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					if (textLen > 0 && isProjectName(selectedRowText, textLen))
 					{
 						wcscpy_s(projectName, MAX_LINE, selectedRowText);
-#if DEV_MODE
+#if DEBUG_MODE
 	wchar_t buf[100] = { 0 };
 	swprintf(buf, 100, L"Selected project name: %s", projectName);
 	logger(buf);
@@ -568,7 +568,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			if (LOWORD(wParam) == ID_BUTTON_ADD_PAIR)
 			{
-#if DEV_MODE
+#if DEBUG_MODE
 	logger(L"Add pair button");
 #endif
 				wcscpy_s(folderPair, MAX_LINE, L"C: -> C:");
@@ -581,7 +581,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 				if (tab == TAB_PROJECTS)
 				{
-#if DEV_MODE
+#if DEBUG_MODE
 	logger(L"Delete button, projects");
 #endif
 					EnableWindow(bDelete, false);
@@ -618,7 +618,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 				if (tab == TAB_PAIRS)
 				{
-#if DEV_MODE
+#if DEBUG_MODE
 	logger(L"Delete button, pairs");
 #endif
 					EnableWindow(bDelete, false);
@@ -643,7 +643,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 				if (tab == TAB_SYNC)
 				{
-#if DEV_MODE
+#if DEBUG_MODE
 	logger(L"Delete button, sync");
 #endif
 					EnableWindow(bDelete, false);
@@ -673,7 +673,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			if (LOWORD(wParam) == ID_BUTTON_PREVIEW)
 			{
-#if DEV_MODE
+#if DEBUG_MODE
 	logger(L"Preview button");
 #endif
 				// get row index
@@ -693,7 +693,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			if (LOWORD(wParam) == ID_BUTTON_SYNC)
 			{
-#if DEV_MODE
+#if DEBUG_MODE
 	logger(L"Sync button");
 #endif
 				EnableWindow(bSync, false);
@@ -747,7 +747,7 @@ static LRESULT CALLBACK customListboxProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			switch (wParam)
 			{
 				case VK_DELETE:
-#if DEV_MODE
+#if DEBUG_MODE
 	logger(L"Del key");
 #endif
 					SendMessage(bDelete, BM_CLICK, 0, 0);
@@ -857,7 +857,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 					break;
 				}
 
-#if DEV_MODE
+#if DEBUG_MODE
 	wchar_t buf[100] = { 0 };
 	swprintf(buf, 100, L"New project name: %s", newProjectName);
 	logger(buf);
@@ -882,7 +882,7 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 
 					if (!existing)
 					{
-#if DEV_MODE
+#if DEBUG_MODE
 	logger(L"New project added");
 #endif
 						appendProjectNode(&projectsHead, newProjectName, L"C:", L"C:");
@@ -1114,13 +1114,10 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							{
 								GetWindowText(eSource, sourceFolder, MAX_LINE);
 
-								if (wcslen(sourceFolder) + wcslen(selectedRowText) + 1 > MAX_LINE)
+								if (wcslen(sourceFolder) + wcslen(selectedRowText) + 2 > MAX_LINE)
 									MessageBox(NULL, L"Path is at the limit, can't add new folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
 								else
-								{
-									wcscat(sourceFolder, L"\\");
-									wcscat(sourceFolder, selectedRowText);
-								}
+									addPath(sourceFolder, sourceFolder, selectedRowText);
 							}
 
 							SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
@@ -1181,13 +1178,10 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							{
 								GetWindowText(eDestination, destFolder, MAX_LINE);
 
-								if (wcslen(destFolder) + wcslen(selectedRowText) + 1 > MAX_LINE)
+								if (wcslen(destFolder) + wcslen(selectedRowText) + 2 > MAX_LINE)
 									MessageBox(NULL, L"Path would be over the limit, can't add new folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
 								else
-								{
-									wcscat(destFolder, L"\\");
-									wcscat(destFolder, selectedRowText);
-								}
+									addPath(destFolder, destFolder, selectedRowText);
 							}
 
 							SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);

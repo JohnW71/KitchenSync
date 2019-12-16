@@ -1,6 +1,6 @@
 #include "kitchen_sync.h"
 
-void catPath(wchar_t *path, wchar_t *folder, wchar_t *filename)
+void addPath(wchar_t *path, wchar_t *folder, wchar_t *filename)
 {
 	wcscpy_s(path, MAX_LINE, folder);
 	wcscat(path, L"\\");
@@ -96,8 +96,8 @@ bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWri
 
 bool copyFile(wchar_t *source, wchar_t *dest)
 {
-//FILE_ATTRIBUTE_HIDDEN
-//FILE_ATTRIBUTE_READONLY
+	//FILE_ATTRIBUTE_HIDDEN
+	//FILE_ATTRIBUTE_READONLY
 
 	if (CopyFile(source, dest, false))
 		return true;
@@ -143,11 +143,56 @@ bool deleteFolder(wchar_t *path)
 }
 
 // cut off last folder name from path
-void cutOffLastFolder(wchar_t *folderPath)
+void cutOffLastFolder(wchar_t *path)
 {
-	size_t len = wcslen(folderPath);
+	size_t len = wcslen(path);
 	assert(len > 0);
-	while (folderPath[len] != '\\' && len > 0)
+	while (path[len] != '\\' && len > 0)
 		--len;
-	folderPath[len] = '\0';
+	path[len] = '\0';
+}
+
+// list the folder names within the supplied folder level only, to the specified listbox
+bool listSubFolders(HWND hwnd, wchar_t *folder)
+{
+	wchar_t szDir[MAX_LINE];
+	if (wcslen(folder) >= MAX_LINE)
+	{
+		logger(L"Folder path is full, can't add \\");
+		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return false;
+	}
+	addPath(szDir, folder, L"*");
+
+	//DWORD dwError = 0;
+	WIN32_FIND_DATA ffd;
+	HANDLE hFind = INVALID_HANDLE_VALUE;
+	hFind = FindFirstFile(szDir, &ffd);
+
+	if (hFind == INVALID_HANDLE_VALUE)
+	{
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Unable to access %s", folder);
+		logger(buf);
+		displayErrorBox(TEXT("listSubFolders"));
+		return false;
+	}
+
+	int position = 0;
+	do
+	{
+		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		{
+			if (wcscmp(ffd.cFileName, L".") == 0)
+				continue;
+			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)ffd.cFileName);
+		}
+	} while (FindNextFile(hFind, &ffd) != 0);
+
+	//dwError = GetLastError();
+	if (GetLastError() != ERROR_NO_MORE_FILES)
+		displayErrorBox(TEXT("listSubFolders"));
+
+	FindClose(hFind);
+	return true;
 }

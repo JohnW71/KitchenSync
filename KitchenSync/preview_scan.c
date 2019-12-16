@@ -1,6 +1,7 @@
 #include "kitchen_sync.h"
 
-static void displayErrorBox(LPTSTR);
+#define DETAIL_MODE 0
+
 static void previewFolderPairSource(HWND, struct PairNode **, struct Project *);
 static void previewFolderPairTarget(HWND, struct PairNode **, struct Project *);
 static void listTreeContent(struct PairNode **, wchar_t *, wchar_t *);
@@ -8,7 +9,7 @@ static void listForRemoval(struct PairNode **, wchar_t *);
 DWORD CALLBACK entryPointSource(LPVOID);
 DWORD CALLBACK entryPointTarget(LPVOID);
 
-static void displayErrorBox(LPTSTR lpszFunction)
+void displayErrorBox(LPTSTR lpszFunction)
 {
 	LPVOID lpMsgBuf;
 	LPVOID lpDisplayBuf;
@@ -25,51 +26,6 @@ static void displayErrorBox(LPTSTR lpszFunction)
 		HeapFree(GetProcessHeap(), 0, lpMsgBuf);
 		HeapFree(GetProcessHeap(), 0, lpDisplayBuf);
 	}
-}
-
-// list the folder names within the supplied folder level only to the specified listbox
-int listSubFolders(HWND hwnd, wchar_t *folder)
-{
-	wchar_t szDir[MAX_LINE];
-	if (wcslen(folder) >= MAX_LINE)
-	{
-		logger(L"Folder path is full, can't add \\");
-		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
-		return 0;
-	}
-	catPath(szDir, folder, L"*");
-
-	DWORD dwError = 0;
-	WIN32_FIND_DATA ffd;
-	HANDLE hFind = INVALID_HANDLE_VALUE;
-	hFind = FindFirstFile(szDir, &ffd);
-
-	if (hFind == INVALID_HANDLE_VALUE)
-	{
-		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Unable to access %s", folder);
-		logger(buf);
-		displayErrorBox(TEXT("listSubFolders"));
-		return dwError;
-	}
-
-	int position = 0;
-	do
-	{
-		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-		{
-			if (wcscmp(ffd.cFileName, L".") == 0)
-				continue;
-			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)ffd.cFileName);
-		}
-	} while (FindNextFile(hFind, &ffd) != 0);
-
-	dwError = GetLastError();
-	if (dwError != ERROR_NO_MORE_FILES)
-		displayErrorBox(TEXT("listSubFolders"));
-
-	FindClose(hFind);
-	return dwError;
 }
 
 // find each matching folder pair under this project and send it for Preview
@@ -168,9 +124,8 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
-	catPath(szDir, source, L"*");
+	addPath(szDir, source, L"*");
 
-	DWORD dwError = 0;
 	WIN32_FIND_DATA ffd;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	hFind = FindFirstFile(szDir, &ffd);
@@ -181,7 +136,7 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 		swprintf(buf, MAX_LINE, L"Unable to access %s", source);
 		logger(buf);
 		displayErrorBox(TEXT("listTreeContent"));
-		return; //dwError;
+		return;
 	}
 
 	do
@@ -191,13 +146,13 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 
 		// combine source path \ new filename
 		wchar_t currentItem[MAX_LINE] = { 0 };
-		if (wcslen(source) + wcslen(ffd.cFileName) + 1 > MAX_LINE)
+		if (wcslen(source) + wcslen(ffd.cFileName) + 2 > MAX_LINE)
 		{
 			logger(L"Folder path is full, can't add filename");
 			MessageBox(NULL, L"Folder path is full, can't add filename", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
-		catPath(currentItem, source, ffd.cFileName);
+		addPath(currentItem, source, ffd.cFileName);
 
 		LARGE_INTEGER filesize;
 		filesize.LowPart = ffd.nFileSizeLow;
@@ -225,8 +180,7 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 				MessageBox(NULL, L"Sub-folder path is full, can't add \\ & folder name", L"Error", MB_ICONEXCLAMATION | MB_OK);
 				return;
 			}
-			wcscat(destinationSubFolder, L"\\");
-			wcscat(destinationSubFolder, ffd.cFileName);
+			addPath(destinationSubFolder, destinationSubFolder, ffd.cFileName);
 
 			wchar_t destinationSubFolderSlash[MAX_LINE] = { 0 };
 			wcscpy_s(destinationSubFolderSlash, MAX_LINE, destinationSubFolder);
@@ -245,17 +199,16 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 		{
 			// add to files list
 			wchar_t newDestination[MAX_LINE] = { 0 };
-			catPath(newDestination, destination, ffd.cFileName);
+			addPath(newDestination, destination, ffd.cFileName);
 			addPair(pairs, currentItem, newDestination, filesize.QuadPart);
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 
-	dwError = GetLastError();
-	if (dwError != ERROR_NO_MORE_FILES)
+	if (GetLastError() != ERROR_NO_MORE_FILES)
 		displayErrorBox(TEXT("listTreeContent"));
 
 	FindClose(hFind);
-	return; // dwError;
+	return;
 }
 
 // this recursively adds all the files/folders in and below the supplied folder to the pairs list for removal
@@ -268,9 +221,8 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
-	catPath(szDir, path, L"*");
+	addPath(szDir, path, L"*");
 
-	DWORD dwError = 0;
 	WIN32_FIND_DATA ffd;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	hFind = FindFirstFile(szDir, &ffd);
@@ -281,7 +233,7 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 		swprintf(buf, MAX_LINE, L"Unable to access %s", path);
 		logger(buf);
 		displayErrorBox(TEXT("listForRemoval"));
-		return; //dwError;
+		return;
 	}
 
 	do
@@ -291,13 +243,13 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 
 		// combine path \ new filename
 		wchar_t currentItem[MAX_LINE] = { 0 };
-		if (wcslen(path) + wcslen(ffd.cFileName) + 1 > MAX_LINE)
+		if (wcslen(path) + wcslen(ffd.cFileName) + 2 > MAX_LINE)
 		{
 			logger(L"Folder path is full, can't add filename");
 			MessageBox(NULL, L"Folder path is full, can't add filename", L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
-		catPath(currentItem, path, ffd.cFileName);
+		addPath(currentItem, path, ffd.cFileName);
 
 		LARGE_INTEGER filesize;
 		filesize.LowPart = ffd.nFileSizeLow;
@@ -313,12 +265,11 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 
-	dwError = GetLastError();
-	if (dwError != ERROR_NO_MORE_FILES)
+	if (GetLastError() != ERROR_NO_MORE_FILES)
 		displayErrorBox(TEXT("listForRemoval"));
 
 	FindClose(hFind);
-	return; // dwError;
+	return;
 }
 
 static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct Project *project)
@@ -330,9 +281,8 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
-	catPath(szDir, project->pair.source, L"*");
+	addPath(szDir, project->pair.source, L"*");
 
-	DWORD dwError = 0;
 	WIN32_FIND_DATA ffd;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	hFind = FindFirstFile(szDir, &ffd);
@@ -343,7 +293,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 		swprintf(buf, MAX_LINE, L"Unable to access %s", szDir);
 		logger(buf);
 		displayErrorBox(TEXT("previewFolderPairSource"));
-		return; //dwError;
+		return;
 	}
 
 	do
@@ -356,10 +306,10 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 		filesize.HighPart = ffd.nFileSizeHigh;
 
 		wchar_t source[MAX_LINE];
-		catPath(source, project->pair.source, ffd.cFileName);
+		addPath(source, project->pair.source, ffd.cFileName);
 
 		wchar_t destination[MAX_LINE] = { 0 };
-		catPath(destination, project->pair.destination, ffd.cFileName);
+		addPath(destination, project->pair.destination, ffd.cFileName);
 
 		// folder
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
@@ -369,20 +319,20 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 			{
 				struct Project destinationSubFolder = { 0 };
 				fillInProject(&destinationSubFolder, project->name, source, destination);
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = { 0 };
-//	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSource() for %s -> %s", source, destination);
-//	logger(buf);
-//#endif
+#if DETAIL_MODE
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSource() for %s -> %s", source, destination);
+	logger(buf);
+#endif
 				previewFolderPairSource(hwnd, pairs, &destinationSubFolder);
 			}
 			else // target folder does not exist
 			{
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = { 0 };
-//	swprintf(buf, MAX_LINE, L"dump entire tree with listTreeContent() for %s -> %s", source, destination);
-//	logger(buf);
-//#endif
+#if DETAIL_MODE
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"dump entire tree with listTreeContent() for %s -> %s", source, destination);
+	logger(buf);
+#endif
 				// if new, add entire folder contents to list (recursive but without comparison)
 				wchar_t sourceSlash[MAX_LINE] = { 0 };
 				wcscpy_s(sourceSlash, MAX_LINE, source);
@@ -401,7 +351,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 			// check if target file exists
 			if (fileExists(destination))
 			{
-#if DEV_MODE
+#if DETAIL_MODE
 {
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"target file exists, compare date/time and sizes");
@@ -413,7 +363,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 				// if different size, add file to list
 				if (targetSize != filesize.QuadPart)
 				{
-#if DEV_MODE
+#if DETAIL_MODE
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"target file is out of date, add %s to list", destination);
 	logger(buf);
@@ -425,7 +375,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 					// if last write time is different between source and destination, add file to list
 					if (fileDateIsDifferent(ffd.ftCreationTime, ffd.ftLastAccessTime, ffd.ftLastWriteTime, destination))
 					{
-#if DEV_MODE
+#if DETAIL_MODE
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"source & target files have different date/time, add %s to list", destination);
 	logger(buf);
@@ -437,7 +387,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 			else // destination file does not exist
 			{
 				// add to files list
-#if DEV_MODE
+#if DETAIL_MODE
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"target file does not exist, add %s to list", destination);
 	logger(buf);
@@ -447,12 +397,11 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 
-	dwError = GetLastError();
-	if (dwError != ERROR_NO_MORE_FILES)
+	if (GetLastError() != ERROR_NO_MORE_FILES)
 		displayErrorBox(TEXT("previewFolderPairSource"));
 
 	FindClose(hFind);
-	return; //dwError;
+	return;
 }
 
 // reversed folder direction
@@ -465,9 +414,8 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
-	catPath(szDir, project->pair.source, L"*");
+	addPath(szDir, project->pair.source, L"*");
 
-	DWORD dwError = 0;
 	WIN32_FIND_DATA ffd;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	hFind = FindFirstFile(szDir, &ffd);
@@ -478,7 +426,7 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 		swprintf(buf, MAX_LINE, L"Unable to access %s", szDir);
 		logger(buf);
 		displayErrorBox(TEXT("previewFolderPairTarget"));
-		return; //dwError;
+		return;
 	}
 
 	do
@@ -491,10 +439,10 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 		filesize.HighPart = ffd.nFileSizeHigh;
 
 		wchar_t source[MAX_LINE];
-		catPath(source, project->pair.source, ffd.cFileName);
+		addPath(source, project->pair.source, ffd.cFileName);
 
 		wchar_t destination[MAX_LINE] = { 0 };
-		catPath(destination, project->pair.destination, ffd.cFileName);
+		addPath(destination, project->pair.destination, ffd.cFileName);
 
 		// folder
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
@@ -505,16 +453,16 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 			{
 				struct Project destinationSubFolder = { 0 };
 				fillInProject(&destinationSubFolder, project->name, source, destination);
-//#if DEV_MODE
-//	wchar_t buf[MAX_LINE] = { 0 };
-//	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairTarget() for %s -> %s", source, destination);
-//	logger(buf);
-//#endif
+#if DETAIL_MODE
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairTarget() for %s -> %s", source, destination);
+	logger(buf);
+#endif
 				previewFolderPairTarget(hwnd, pairs, &destinationSubFolder);
 			}
 			else // target folder does not exist
 			{
-#if DEV_MODE
+#if DETAIL_MODE
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"Entire folder tree to be removed %s", source);
 	logger(buf);
@@ -533,7 +481,7 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 			if (!fileExists(destination))
 			{
 				// remove source file
-#if DEV_MODE
+#if DETAIL_MODE
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"target file does not exist, add source %s for deletion", source);
 	logger(buf);
@@ -543,10 +491,9 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 
-	dwError = GetLastError();
-	if (dwError != ERROR_NO_MORE_FILES)
+	if (GetLastError() != ERROR_NO_MORE_FILES)
 		displayErrorBox(TEXT("previewFolderPairTarget"));
 
 	FindClose(hFind);
-	return; //dwError;
+	return;
 }

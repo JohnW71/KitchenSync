@@ -3,7 +3,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define UNICODE
 #define _UNICODE
-#define DEV_MODE 1
+#define DEBUG_MODE 1
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,60 +20,63 @@
 #define WINDOW_HEIGHT 1024
 #define WINDOW_HEIGHT_MINIMUM 200
 
-#define arrayCount(array) (sizeof(array) / sizeof((array)[0]))
-
-#if DEV_MODE
+#if DEBUG_MODE
 #define assert(expression) if(!(expression)) {*(int *)0 = 0;}
 #else
 #define assert(expression)
 #endif
 
-void shutDown(HWND, struct ProjectNode **);
-void centerWindow(HWND);
-void writeSettings(HWND, char *);
-void readSettings(HWND, char *);
-void loadProjects(HWND, char *, struct ProjectNode **);
-void saveProjects(char *, struct ProjectNode **);
+void addPair(struct PairNode **, wchar_t *, wchar_t *, LONGLONG);
+void addPath(wchar_t *, wchar_t *, wchar_t *);
+void appendLoggerNode(struct LoggerNode **, wchar_t *);
 void appendPairNode(struct PairNode **, struct Pair, LONGLONG);
 void appendProjectNode(struct ProjectNode **, wchar_t *, wchar_t *, wchar_t *);
-void deleteProject(struct ProjectNode **, wchar_t *);
-void deleteFolderPair(struct ProjectNode **, wchar_t *, wchar_t *);
-void replaceFolderPair(struct ProjectNode **, wchar_t *, wchar_t *, wchar_t *, wchar_t *);
-void sortProjectNodes(struct ProjectNode **);
-void sortPairNodes(struct PairNode **);
-void fillProjectListbox(HWND, struct ProjectNode **);
-void fillSyncListbox(HWND, struct PairNode **);
-void findProjectName(HWND, LRESULT, wchar_t *);
-void reloadFolderPairs(HWND, HWND, struct ProjectNode *, wchar_t *);
-void previewProject(HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
-void previewFolderPair(HWND, HWND, struct PairNode **, struct Project *);
-void deleteFilePair(struct PairNode **, wchar_t *);
-void deletePairList(struct PairNode **);
-void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
-void addPair(struct PairNode **, wchar_t *, wchar_t *, LONGLONG);
-void catPath(wchar_t *, wchar_t *, wchar_t *);
-void startLoggingThread(void);
-void startProgressBarThread(HWND, HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t [MAX_LINE], LRESULT);
-void appendLoggerNode(struct LoggerNode **, wchar_t *);
-void deleteLoggerNode(struct LoggerNode **);
-void logger(wchar_t *);
-void cutOffLastFolder(wchar_t *);
-void renameProject(struct ProjectNode **, wchar_t *, wchar_t *);
-void fillInProject(struct Project *, wchar_t *, wchar_t *, wchar_t *);
-void synchronizeFiles(HWND, HWND, HWND, struct PairNode **);
+void centerWindow(HWND);
 bool copyFile(wchar_t *, wchar_t *);
-bool createFolder(wchar_t *);
-bool deleteFile(wchar_t *);
-bool deleteFolder(wchar_t *);
-bool isProjectName(wchar_t *, int);
-bool fileExists(wchar_t *);
-bool folderExists(wchar_t *);
-bool fileDateIsDifferent(FILETIME, FILETIME, FILETIME, wchar_t *);
 int countPairNodes(struct PairNode *);
 int countProjectNodes(struct ProjectNode *);
 int countProjectPairs(struct ProjectNode *, wchar_t *);
-int listSubFolders(HWND, wchar_t *);
+bool createFolder(wchar_t *);
+void cutOffLastFolder(wchar_t *);
+bool deleteFile(wchar_t *);
+bool deleteFolder(wchar_t *);
+void deleteFilePair(struct PairNode **, wchar_t *);
+void deleteFolderPair(struct ProjectNode **, wchar_t *, wchar_t *);
+void deleteLoggerNode(struct LoggerNode **);
+void deletePairList(struct PairNode **);
+void deleteProject(struct ProjectNode **, wchar_t *);
+void displayErrorBox(LPTSTR);
+bool fileDateIsDifferent(FILETIME, FILETIME, FILETIME, wchar_t *);
+bool fileExists(wchar_t *);
+void fillInProject(struct Project *, wchar_t *, wchar_t *, wchar_t *);
+void fillProjectListbox(HWND, struct ProjectNode **);
+void fillSyncListbox(HWND, struct PairNode **);
+void findProjectName(HWND, LRESULT, wchar_t *);
+bool folderExists(wchar_t *);
+DWORD getDrives();
 LONGLONG getFileSize(wchar_t *);
+bool hiddenFile(wchar_t *);
+bool isProjectName(wchar_t *, int);
+bool listSubFolders(HWND, wchar_t *);
+void loadProjects(HWND, char *, struct ProjectNode **);
+void logger(wchar_t *);
+void previewFolderPair(HWND, HWND, struct PairNode **, struct Project *);
+void previewProject(HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
+bool readOnly(wchar_t *);
+void readSettings(HWND, char *);
+void reloadFolderPairs(HWND, HWND, struct ProjectNode *, wchar_t *);
+void renameProject(struct ProjectNode **, wchar_t *, wchar_t *);
+void replaceFolderPair(struct ProjectNode **, wchar_t *, wchar_t *, wchar_t *, wchar_t *);
+void saveProjects(char *, struct ProjectNode **);
+bool setNormalFile(wchar_t *);
+void shutDown(HWND, struct ProjectNode **);
+void sortProjectNodes(struct ProjectNode **);
+void sortPairNodes(struct PairNode **);
+void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
+void startLoggingThread(void);
+void startProgressBarThread(HWND, HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t [MAX_LINE], LRESULT);
+void synchronizeFiles(HWND, HWND, HWND, struct PairNode **);
+void writeSettings(HWND, char *);
 
 struct Pair
 {

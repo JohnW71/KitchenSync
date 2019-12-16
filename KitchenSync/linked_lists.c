@@ -2,7 +2,6 @@
 
 static void deletePairNode(struct PairNode **, int);
 static void deleteProjectNode(struct ProjectNode **, int);
-static void deleteProjectList(struct ProjectNode **);
 
 void addPair(struct PairNode **pairs, wchar_t *source, wchar_t *destination, LONGLONG size)
 {

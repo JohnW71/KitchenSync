@@ -227,7 +227,7 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 
 		appendProjectNode(head_ref, name, source, destination);
 	}
-#if DEV_MODE
+#if DEBUG_MODE
 	wchar_t buf[100] = { 0 };
 	swprintf(buf, 100, L"Loaded %d projects", countProjectNodes(*head_ref));
 	logger(buf);
@@ -392,7 +392,7 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 		++count;
 		current = current->next;
 	}
-#if DEV_MODE
+#if DEBUG_MODE
 	wchar_t buf[100] = { 0 };
 	swprintf(buf, 100, L"Saved %d projects", count);
 	logger(buf);
