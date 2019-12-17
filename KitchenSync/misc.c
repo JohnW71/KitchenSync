@@ -528,7 +528,7 @@ void logger(wchar_t *text)
 	ReleaseSemaphore(loggerSemaphoreHandle, 1, 0);
 }
 
-void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, HWND bSync,
+void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, HWND bSync, 
 	struct ProjectNode **head_ref,
 	struct PairNode **pairs,
 	wchar_t selectedRowText[MAX_LINE],

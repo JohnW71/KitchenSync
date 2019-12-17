@@ -51,8 +51,6 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 			// delete file
 			if (wcscmp(current->pair.source, L"Delete file") == 0)
 			{
-				//swprintf(buf, MAX_LINE, L"%d: Delete file %s", i, current->pair.destination);
-				//logger(buf);
 #if DANGEROUS
 				if (deleteFile(current->pair.destination))
 					swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);
@@ -66,8 +64,6 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 			// delete folder
 			if (wcscmp(current->pair.source, L"Delete folder") == 0)
 			{
-				//swprintf(buf, MAX_LINE, L"%d: Delete folder %s", i, current->pair.destination);
-				//logger(buf);
 #if DANGEROUS
 				if (deleteFolder(current->pair.destination))
 					swprintf(buf, MAX_LINE, L"Deleted folder %s OK", current->pair.destination);
@@ -84,8 +80,6 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 			size_t lastPosition = wcslen(current->pair.destination) - 1;
 			if (current->pair.destination[lastPosition] == '\\')
 			{
-				//swprintf(buf, MAX_LINE, L"%d: Create folder %s -> %s", i, current->pair.source, current->pair.destination);
-				//logger(buf);
 #if DANGEROUS
 				if (createFolder(current->pair.destination))
 					swprintf(buf, MAX_LINE, L"Created folder %s -> %s OK", current->pair.source, current->pair.destination);
@@ -97,8 +91,6 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 			}
 			else // copy file
 			{
-				//swprintf(buf, MAX_LINE, L"%d: Copy file %s -> %s", i, current->pair.source, current->pair.destination);
-				//logger(buf);
 #if DANGEROUS
 				if (copyFile(current->pair.source, current->pair.destination))
 					swprintf(buf, MAX_LINE, L"Copied file %s -> %s OK", current->pair.source, current->pair.destination);
@@ -112,12 +104,12 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 
 		logger(buf);
 		int progressPosition = (int)(((float)++completed / actionCount) * 100.0f);
-		assert(progressPosition > 0);
 		SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
 		SendMessage(lbSyncHwnd, LB_ADDSTRING, position++, (LPARAM)buf);
 		current = current->next;
 	}
 
 	EnableWindow(bSync, false);
+	deletePairList(pairs);
 	return 0;
 }

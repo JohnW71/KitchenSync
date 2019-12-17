@@ -57,6 +57,7 @@ static void addFolderPair(void);
 
 static bool showingFolderPair = false;
 static bool showingProjectName = false;
+static bool recentlySynced = false;
 static wchar_t projectName[MAX_LINE] = { 0 };
 static wchar_t folderPair[MAX_LINE * 3] = { 0 };
 static wchar_t sourceFolder[MAX_LINE] = { 0 };
@@ -501,7 +502,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			if (LOWORD(wParam) == ID_LISTBOX_SYNC)
 			{
 				// a row was selected
-				if (HIWORD(wParam) == LBN_SELCHANGE)
+				if (!recentlySynced && HIWORD(wParam) == LBN_SELCHANGE)
 				{
 					// get row index
 					LRESULT selectedRow = SendMessage(lbSyncHwnd, LB_GETCURSEL, 0, 0);
@@ -676,6 +677,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 #if DEBUG_MODE
 	logger(L"Preview button");
 #endif
+				recentlySynced = false;
+
 				// get row index
 				LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
 				if (selectedRow != LB_ERR)
@@ -697,7 +700,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 	logger(L"Sync button");
 #endif
 				EnableWindow(bSync, false);
+				EnableWindow(bDelete, false);
 				synchronizeFiles(pbHwnd, lbSyncHwnd, bSync, &pairsHead);
+				recentlySynced = true;
 			}
 			break;
 		//case WM_SIZE:

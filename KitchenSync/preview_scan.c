@@ -1,6 +1,6 @@
 #include "kitchen_sync.h"
 
-#define DETAIL_MODE 0
+#define DETAIL_MODE 1
 
 static void previewFolderPairSource(HWND, struct PairNode **, struct Project *);
 static void previewFolderPairTarget(HWND, struct PairNode **, struct Project *);

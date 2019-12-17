@@ -96,9 +96,6 @@ bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWri
 
 bool copyFile(wchar_t *source, wchar_t *dest)
 {
-	//FILE_ATTRIBUTE_HIDDEN
-	//FILE_ATTRIBUTE_READONLY
-
 	if (CopyFile(source, dest, false))
 		return true;
 
@@ -132,7 +129,6 @@ bool deleteFile(wchar_t *path)
 
 bool deleteFolder(wchar_t *path)
 {
-	//NOTE is this function recursive?
 	if (RemoveDirectory(path))
 		return true;
 
@@ -164,7 +160,6 @@ bool listSubFolders(HWND hwnd, wchar_t *folder)
 	}
 	addPath(szDir, folder, L"*");
 
-	//DWORD dwError = 0;
 	WIN32_FIND_DATA ffd;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	hFind = FindFirstFile(szDir, &ffd);
@@ -189,7 +184,6 @@ bool listSubFolders(HWND hwnd, wchar_t *folder)
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 
-	//dwError = GetLastError();
 	if (GetLastError() != ERROR_NO_MORE_FILES)
 		displayErrorBox(TEXT("listSubFolders"));
 
