@@ -89,7 +89,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 	mainHwnd = CreateWindowEx(WS_EX_LEFT,
 		wc.lpszClassName,
-		L"KitchenSync v0.2",
+		L"KitchenSync v0.3",
 		//WS_OVERLAPPEDWINDOW,
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
 		CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH, WINDOW_HEIGHT,
@@ -263,6 +263,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(lbProjectsHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+							SendMessage(pbHwnd, PBM_SETPOS, 0, 0);
 
 							deletePairList(&pairsHead);
 							fillProjectListbox(lbProjectsHwnd, &projectsHead);
@@ -302,8 +303,11 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 							// if a project name is detected load the pairs
 							if (wcslen(projectName) > 0)
+							{
+								SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
+								SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
 								reloadFolderPairs(lbSourceHwnd, lbDestHwnd, projectsHead, projectName);
-
+							}
 							break;
 						}
 						case 2: // sync
@@ -689,7 +693,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					if (textLen > 0)
 					{
 						SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
-						startProgressBarThread(pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, &projectsHead, &pairsHead, selectedRowText, selectedRow);
+						EnableWindow(tabHwnd, false);
+						startProgressBarThread(pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, tabHwnd, &projectsHead, &pairsHead, selectedRowText, selectedRow);
 					}
 				}
 			}
@@ -701,7 +706,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 #endif
 				EnableWindow(bSync, false);
 				EnableWindow(bDelete, false);
-				synchronizeFiles(pbHwnd, lbSyncHwnd, bSync, &pairsHead);
+				EnableWindow(tabHwnd, false);
+				synchronizeFiles(pbHwnd, lbSyncHwnd, bSync, tabHwnd, &pairsHead);
 				recentlySynced = true;
 			}
 			break;

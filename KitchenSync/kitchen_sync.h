@@ -70,8 +70,8 @@ void sortProjectNodes(struct ProjectNode **);
 void sortPairNodes(struct PairNode **);
 void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
 void startLoggingThread(void);
-void startProgressBarThread(HWND, HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t [MAX_LINE], LRESULT);
-void synchronizeFiles(HWND, HWND, HWND, struct PairNode **);
+void startProgressBarThread(HWND, HWND, HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t [MAX_LINE], LRESULT);
+void synchronizeFiles(HWND, HWND, HWND, HWND, struct PairNode **);
 void writeSettings(HWND, char *);
 
 struct Pair
@@ -118,6 +118,7 @@ struct ProgressArguments
 	HWND lbSyncHwnd;
 	HWND lbProjectsHwnd;
 	HWND bSync;
+	HWND tabHwnd;
 	struct ProjectNode **project;
 	struct PairNode **pairs;
 	LRESULT selectedRow;
@@ -129,5 +130,6 @@ struct SyncArguments
 	HWND pbHwnd;
 	HWND lbSyncHwnd;
 	HWND bSync;
+	HWND tabHwnd;
 	struct PairNode **pairs;
 };

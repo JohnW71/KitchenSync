@@ -4,12 +4,12 @@
 
 DWORD CALLBACK entryPointSync(LPVOID);
 
-void synchronizeFiles(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, struct PairNode **pairs)
+void synchronizeFiles(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, HWND tabHwnd, struct PairNode **pairs)
 {
 	HANDLE threads[1];
 	DWORD threadIDs[1];
 
-	struct SyncArguments syncArgs = { pbHwnd, lbSyncHwnd, bSync, pairs };
+	struct SyncArguments syncArgs = { pbHwnd, lbSyncHwnd, bSync, tabHwnd, pairs };
 
 	threads[0] = CreateThread(NULL, 0, entryPointSync, &syncArgs, 0, &threadIDs[0]);
 	if (threads[0] == NULL)
@@ -26,12 +26,14 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 	HWND pbHwnd = args->pbHwnd;
 	HWND lbSyncHwnd = args->lbSyncHwnd;
 	HWND bSync = args->bSync;
+	HWND tabHwnd = args->tabHwnd;
 	struct PairNode **pairs = args->pairs;
 	struct PairNode *current = *pairs;
 
 	if (current == NULL)
 	{
 		logger(L"Can't sync, list is empty");
+		MessageBox(NULL, L"Can't sync, list is empty", L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return 0;
 	}
 
@@ -110,6 +112,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 	}
 
 	EnableWindow(bSync, false);
+	EnableWindow(tabHwnd, true);
 	deletePairList(pairs);
 	return 0;
 }

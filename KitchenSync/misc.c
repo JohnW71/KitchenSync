@@ -528,7 +528,7 @@ void logger(wchar_t *text)
 	ReleaseSemaphore(loggerSemaphoreHandle, 1, 0);
 }
 
-void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, HWND bSync, 
+void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, HWND bSync, HWND tabHwnd,
 	struct ProjectNode **head_ref,
 	struct PairNode **pairs,
 	wchar_t selectedRowText[MAX_LINE],
@@ -537,7 +537,7 @@ void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, H
 	HANDLE threads[1];
 	DWORD threadIDs[1];
 
-	struct ProgressArguments args = { pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, head_ref, pairs, selectedRow };
+	struct ProgressArguments args = { pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, tabHwnd, head_ref, pairs, selectedRow };
 	wcscpy_s(args.selectedRowText, MAX_LINE, selectedRowText);
 	threads[0] = CreateThread(NULL, 0, entryPointProgressBar, &args, 0, &threadIDs[0]);
 
@@ -556,6 +556,7 @@ static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
 	HWND lbSyncHwnd = args->lbSyncHwnd;
 	HWND lbProjectsHwnd = args->lbProjectsHwnd;
 	HWND bSync = args->bSync;
+	HWND tabHwnd = args->tabHwnd;
 	struct ProjectNode **project = args->project;
 	struct PairNode **pairs = args->pairs;
 	LRESULT selectedRow = args->selectedRow;
@@ -582,6 +583,8 @@ static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
 		fillSyncListbox(lbSyncHwnd, pairs);
 		SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
 	}
+
+	EnableWindow(tabHwnd, true);
 
 	if (countPairNodes(*pairs) > 0)
 		EnableWindow(bSync, true);
