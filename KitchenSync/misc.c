@@ -325,7 +325,7 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 
 static void sizeFormatted(LONGLONG size, wchar_t *buf)
 {
-	#define LIMIT 256
+#define LIMIT 256
 
 	// convert size to string
 	wchar_t text[LIMIT] = { 0 };

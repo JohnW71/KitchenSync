@@ -19,6 +19,18 @@ bool folderExists(wchar_t *path)
 	return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
+bool readOnly(wchar_t *path)
+{
+	DWORD dwAttrib = GetFileAttributes(path);
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_READONLY));
+}
+
+bool hiddenFile(wchar_t *path)
+{
+	DWORD dwAttrib = GetFileAttributes(path);
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_HIDDEN));
+}
+
 LONGLONG getFileSize(wchar_t *path)
 {
 	WIN32_FILE_ATTRIBUTE_DATA info = { 0 };
@@ -99,9 +111,14 @@ bool copyFile(wchar_t *source, wchar_t *dest)
 	if (CopyFile(source, dest, false))
 		return true;
 
-	logger(L"Error copying file!");
-	logger(source);
-	MessageBox(NULL, L"Error copying file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+	if ((readOnly(dest) || hiddenFile(dest)) && setNormalFile(dest) && CopyFile(source, dest, false))
+		return true;
+
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"Error copying file %s", source);
+	logger(buf);
+	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+	displayErrorBox(TEXT("CopyFile"));
 	return false;
 }
 
@@ -110,31 +127,59 @@ bool createFolder(wchar_t *path)
 	if (CreateDirectory(path, NULL))
 		return true;
 
-	logger(L"Error creating folder!");
-	logger(path);
-	MessageBox(NULL, L"Error creating folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"Error creating folder %s", path);
+	logger(buf);
+	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+	displayErrorBox(TEXT("CreateDirectory"));
 	return false;
 }
 
 bool deleteFile(wchar_t *path)
 {
-	if (DeleteFileW(path))
+	if (DeleteFile(path))
 		return true;
 
-	logger(L"Error deleting file!");
-	logger(path);
-	MessageBox(NULL, L"Error deleting file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+	if ((readOnly(path) || hiddenFile(path)) && setNormalFile(path) && DeleteFile(path))
+		return true;
+
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"Error deleting file %s", path);
+	logger(buf);
+	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+	displayErrorBox(TEXT("DeleteFile"));
 	return false;
 }
 
 bool deleteFolder(wchar_t *path)
 {
+	// folder must be empty
 	if (RemoveDirectory(path))
 		return true;
 
-	logger(L"Error deleting folder!");
-	logger(path);
-	MessageBox(NULL, L"Error deleting folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"Error deleting folder %s", path);
+	logger(buf);
+	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+	displayErrorBox(TEXT("RemoveDirectory"));
+	return false;
+}
+
+bool setNormalFile(wchar_t *path)
+{
+	if (SetFileAttributes(path, FILE_ATTRIBUTE_NORMAL))
+	{
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Removed read-only/hidden attribute for %s", path);
+		logger(buf);
+		return true;
+	}
+
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"Error setting normal attributes for %s", path);
+	logger(buf);
+	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+	displayErrorBox(TEXT("SetFileAttributes"));
 	return false;
 }
 
