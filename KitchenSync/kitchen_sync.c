@@ -158,8 +158,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			if (tabHwnd == NULL)
 			{
-				logger(L"Failed to create tab control");
-				MessageBox(NULL, L"Failed to create tab control", L"Error", MB_ICONEXCLAMATION | MB_OK);
+				wchar_t buf[MAX_LINE] = L"Failed to create tab control";
+				logger(buf);
+				MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 				break;
 			}
 
@@ -883,8 +884,9 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 					{
 						if (wcscmp(node->project.name, newProjectName) == 0)
 						{
-							MessageBox(NULL, L"Project name already exists", L"Error", MB_ICONEXCLAMATION | MB_OK);
-							logger(L"Pre-existing name used");
+							wchar_t buff[MAX_LINE] = L"Project name already exists";
+							logger(buff);
+							MessageBox(NULL, buff, L"Error", MB_ICONEXCLAMATION | MB_OK);
 							existing = true;
 							break;
 						}

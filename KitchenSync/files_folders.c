@@ -37,8 +37,10 @@ LONGLONG getFileSize(wchar_t *path)
 
 	if (!GetFileAttributesEx(path, GetFileExInfoStandard, &info))
 	{
-		logger(L"Error reading file attributes!");
-		MessageBox(NULL, L"Error reading file attributes", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Error reading file attributes for %s", path);
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return 0;
 	}
 
@@ -199,8 +201,9 @@ bool listSubFolders(HWND hwnd, wchar_t *folder)
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(folder) >= MAX_LINE)
 	{
-		logger(L"Folder path is full, can't add \\");
-		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = L"Folder path is full, can't add \\";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return false;
 	}
 	addPath(szDir, folder, L"*");

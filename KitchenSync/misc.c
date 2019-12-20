@@ -37,8 +37,9 @@ void writeSettings(HWND hwnd, char *filename)
 	FILE *f = fopen(filename, "w");
 	if (f == NULL)
 	{
-		logger(L"Error saving settings!");
-		MessageBox(NULL, L"Error saving settings", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = L"Error saving settings!";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 
@@ -72,8 +73,9 @@ void readSettings(HWND hwnd, char *filename)
 
 	if (!line)
 	{
-		logger(L"Failed to allocate memory for line from settings file");
-		MessageBox(NULL, L"Failed to allocate memory for line from settings file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for line from settings file";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		fclose(f);
 		return;
 	}
@@ -86,8 +88,9 @@ void readSettings(HWND hwnd, char *filename)
 		char *setting = (char *)calloc(MAX_LINE, sizeof(char));
 		if (!setting)
 		{
-			logger(L"Failed to allocate memory for setting from settings file");
-			MessageBox(NULL, L"Failed to allocate memory for setting from settings file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for setting from settings file";
+			logger(buf);
+			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
 		}
@@ -95,8 +98,9 @@ void readSettings(HWND hwnd, char *filename)
 		char *value = (char *)calloc(MAX_LINE, sizeof(char));
 		if (!value)
 		{
-			logger(L"Failed to allocate memory for value from settings file");
-			MessageBox(NULL, L"Failed to allocate memory for value from settings file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for value from settings file";
+			logger(buf);
+			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
 		}
@@ -153,8 +157,9 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 	wchar_t *line = (wchar_t *)malloc(MAX_LINE * 4);
 	if (!line)
 	{
-		logger(L"Failed to allocate memory for line from projects file");
-		MessageBox(NULL, L"Failed to allocate memory for line from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for line from projects file";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		fclose(f);
 		return;
 	}
@@ -167,8 +172,9 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 		wchar_t *name = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 		if (!name)
 		{
-			logger(L"Failed to allocate memory for name from projects file");
-			MessageBox(NULL, L"Failed to allocate memory for name from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for name from projects file";
+			logger(buf);
+			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
 		}
@@ -176,8 +182,9 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 		wchar_t *source = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 		if (!source)
 		{
-			logger(L"Failed to allocate memory for source from projects file");
-			MessageBox(NULL, L"Failed to allocate memory for source from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for source from projects file";
+			logger(buf);
+			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
 		}
@@ -185,8 +192,9 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 		wchar_t *destination = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 		if (!destination)
 		{
-			logger(L"Failed to allocate memory for destination from projects file");
-			MessageBox(NULL, L"Failed to allocate memory for destination from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for destination from projects file";
+			logger(buf);
+			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
 		}
@@ -216,8 +224,9 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 		wchar_t *buf = (wchar_t *)calloc(MAX_LINE * 4, sizeof(wchar_t));
 		if (!buf)
 		{
-			logger(L"Failed to allocate memory for logging buf");
-			MessageBox(NULL, L"Failed to allocate memory for logging buf", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			wchar_t buff[MAX_LINE] = L"Failed to allocate memory for logging buf";
+			logger(buff);
+			MessageBox(NULL, buff, L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
 			return;
 		}
@@ -244,8 +253,9 @@ void fillProjectListbox(HWND hwnd, struct ProjectNode **head_ref)
 	wchar_t *currentProjectName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 	if (!currentProjectName)
 	{
-		logger(L"Failed to allocate memory for currentProjectName from projects file");
-		MessageBox(NULL, L"Failed to allocate memory for currentProjectName from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for currentProjectName from projects file";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 
@@ -267,8 +277,9 @@ void fillProjectListbox(HWND hwnd, struct ProjectNode **head_ref)
 		wchar_t *buffer = (wchar_t *)calloc(MAX_LINE * 4, sizeof(wchar_t));
 		if (!buffer)
 		{
-			logger(L"Failed to allocate memory for folder pair buffer from projects file");
-			MessageBox(NULL, L"Failed to allocate memory for folder pair buffer from projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for folder pair buffer from projects file";
+			logger(buf);
+			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
 
@@ -287,8 +298,9 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 	wchar_t *currentPairName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
 	if (!currentPairName)
 	{
-		logger(L"Failed to allocate memory for currentPairName from preview list");
-		MessageBox(NULL, L"Failed to allocate memory for currentPairName from preview list", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for currentPairName from preview list";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 
@@ -301,8 +313,9 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 		wchar_t *buffer = (wchar_t *)calloc(MAX_LINE * 3, sizeof(wchar_t));
 		if (!buffer)
 		{
-			logger(L"Failed to allocate memory for file pair buffer from preview list");
-			MessageBox(NULL, L"Failed to allocate memory for file pair buffer from preview list", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for file pair buffer from preview list";
+			logger(buf);
+			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
 
@@ -374,8 +387,9 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 		wchar_t *buf = (wchar_t *)calloc(MAX_LINE * 4, sizeof(wchar_t));
 		if (!buf)
 		{
-			logger(L"Failed to allocate memory for buf for projects file");
-			MessageBox(NULL, L"Failed to allocate memory for buf for projects file", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			wchar_t buff[MAX_LINE] = L"Failed to allocate memory for buf for projects file";
+			logger(buff);
+			MessageBox(NULL, buff, L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
 

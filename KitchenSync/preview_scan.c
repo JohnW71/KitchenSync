@@ -120,8 +120,9 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(source) >= MAX_LINE)
 	{
-		logger(L"Folder path is full, can't add \\");
-		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = L"Folder path is full, can't add \\";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 	addPath(szDir, source, L"*");
@@ -148,8 +149,9 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 		wchar_t currentItem[MAX_LINE] = { 0 };
 		if (wcslen(source) + wcslen(ffd.cFileName) + 2 > MAX_LINE)
 		{
-			logger(L"Folder path is full, can't add filename");
-			MessageBox(NULL, L"Folder path is full, can't add filename", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			wchar_t buf[MAX_LINE] = L"Folder path is full, can't add filename";
+			logger(buf);
+			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
 		addPath(currentItem, source, ffd.cFileName);
@@ -165,8 +167,9 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 			wcscpy_s(currentItemSlash, MAX_LINE, currentItem);
 			if (wcslen(currentItemSlash) + 2 >= MAX_LINE)
 			{
-				logger(L"Sub-folder path is full, can't add \\");
-				MessageBox(NULL, L"Sub-folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+				wchar_t buf[MAX_LINE] = L"Sub-folder path is full, can't add \\";
+				logger(buf);
+				MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 				return;
 			}
 			wcscat(currentItemSlash, L"\\");
@@ -176,8 +179,9 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 			wcscpy_s(destinationSubFolder, MAX_LINE, destination);
 			if ((wcslen(destinationSubFolder) + wcslen(currentItem) + 2) >= MAX_LINE)
 			{
-				logger(L"Sub-folder path is full, can't add \\ & folder name");
-				MessageBox(NULL, L"Sub-folder path is full, can't add \\ & folder name", L"Error", MB_ICONEXCLAMATION | MB_OK);
+				wchar_t buf[MAX_LINE] = L"Sub-folder path is full, can't add \\ & folder name";
+				logger(buf);
+				MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 				return;
 			}
 			addPath(destinationSubFolder, destinationSubFolder, ffd.cFileName);
@@ -186,8 +190,9 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 			wcscpy_s(destinationSubFolderSlash, MAX_LINE, destinationSubFolder);
 			if (wcslen(destinationSubFolderSlash) + 2 >= MAX_LINE)
 			{
-				logger(L"Sub-folder path is full, can't add \\");
-				MessageBox(NULL, L"Sub-folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+				wchar_t buf[MAX_LINE] = L"Sub-folder path is full, can't add \\";
+				logger(buf);
+				MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 				return;
 			}
 			wcscat(destinationSubFolderSlash, L"\\");
@@ -217,8 +222,9 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(path) >= MAX_LINE)
 	{
-		logger(L"Folder path is full, can't add \\");
-		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = L"Folder path is full, can't add \\";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 	addPath(szDir, path, L"*");
@@ -245,8 +251,9 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 		wchar_t currentItem[MAX_LINE] = { 0 };
 		if (wcslen(path) + wcslen(ffd.cFileName) + 2 > MAX_LINE)
 		{
-			logger(L"Folder path is full, can't add filename");
-			MessageBox(NULL, L"Folder path is full, can't add filename", L"Error", MB_ICONEXCLAMATION | MB_OK);
+			wchar_t buf[MAX_LINE] = L"Folder path is full, can't add filename";
+			logger(buf);
+			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 			return;
 		}
 		addPath(currentItem, path, ffd.cFileName);
@@ -277,8 +284,9 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(project->pair.source) >= MAX_LINE)
 	{
-		logger(L"Folder path is full, can't add \\");
-		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = L"Folder path is full, can't add \\";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 	addPath(szDir, project->pair.source, L"*");
@@ -410,8 +418,9 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(project->pair.source) >= MAX_LINE)
 	{
-		logger(L"Folder path is full, can't add \\");
-		MessageBox(NULL, L"Folder path is full, can't add \\", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = L"Folder path is full, can't add \\";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 	addPath(szDir, project->pair.source, L"*");

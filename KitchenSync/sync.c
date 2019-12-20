@@ -32,8 +32,9 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 
 	if (current == NULL)
 	{
-		logger(L"Can't sync, list is empty");
-		MessageBox(NULL, L"Can't sync, list is empty", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = L"Can't sync, list is empty";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return 0;
 	}
 

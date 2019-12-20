@@ -17,8 +17,9 @@ void appendPairNode(struct PairNode **head_ref, struct Pair pair, LONGLONG files
 
 	if (!newPairNode)
 	{
-		logger(L"Failed to allocate memory for new pair");
-		MessageBox(NULL, L"Failed to allocate memory for new pair", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for new pair";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 
@@ -64,8 +65,9 @@ void appendProjectNode(struct ProjectNode **head_ref, wchar_t *projectName, wcha
 
 	if (!newProjectNode)
 	{
-		logger(L"Failed to allocate memory for new project");
-		MessageBox(NULL, L"Failed to allocate memory for new project", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for new project";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
 
