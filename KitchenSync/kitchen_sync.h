@@ -64,6 +64,7 @@ void previewFolderPair(HWND, HWND, struct PairNode **, struct Project *);
 void previewProject(HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
 bool readOnly(wchar_t *);
 void readSettings(HWND, char *);
+bool recursiveRemoveDirectory(wchar_t *);
 void reloadFolderPairs(HWND, HWND, struct ProjectNode *, wchar_t *);
 void renameProject(struct ProjectNode **, wchar_t *, wchar_t *);
 void replaceFolderPair(struct ProjectNode **, wchar_t *, wchar_t *, wchar_t *, wchar_t *);
