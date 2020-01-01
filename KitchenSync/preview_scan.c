@@ -297,13 +297,14 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		wchar_t buf[MAX_LINE] = { 0 };
+		wchar_t buf[MAX_LINE];
 		swprintf(buf, MAX_LINE, L"Unable to access %s", szDir);
 		logger(buf);
 		displayErrorBox(TEXT("previewFolderPairSource"));
 		return;
 	}
 
+	wchar_t buf[MAX_LINE];
 	do
 	{
 		if (wcscmp(ffd.cFileName, L".") == 0 || wcscmp(ffd.cFileName, L"..") == 0)
@@ -328,7 +329,6 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 				struct Project destinationSubFolder = { 0 };
 				fillInProject(&destinationSubFolder, project->name, source, destination);
 #if DETAIL_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSource() for %s -> %s", source, destination);
 	logger(buf);
 #endif
@@ -337,7 +337,6 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 			else // target folder does not exist
 			{
 #if DETAIL_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"dump entire tree with listTreeContent() for %s -> %s", source, destination);
 	logger(buf);
 #endif
@@ -361,7 +360,6 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 			{
 #if DETAIL_MODE
 {
-	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"target file exists, compare date/time and sizes");
 	logger(buf);
 }
@@ -372,7 +370,6 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 				if (targetSize != filesize.QuadPart)
 				{
 #if DETAIL_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"target file is out of date, add %s to list", destination);
 	logger(buf);
 #endif
@@ -384,7 +381,6 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 					if (fileDateIsDifferent(ffd.ftCreationTime, ffd.ftLastAccessTime, ffd.ftLastWriteTime, destination))
 					{
 #if DETAIL_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"source & target files have different date/time, add %s to list", destination);
 	logger(buf);
 #endif
@@ -396,7 +392,6 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 			{
 				// add to files list
 #if DETAIL_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"target file does not exist, add %s to list", destination);
 	logger(buf);
 #endif

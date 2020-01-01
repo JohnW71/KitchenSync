@@ -306,6 +306,11 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 
 	LONGLONG totalSize = 0;
 	int position = 0;
+	if (!head_ref)
+	{
+		free(currentPairName);
+		return;
+	}
 	struct PairNode *current = *head_ref;
 
 	while (current != NULL)
