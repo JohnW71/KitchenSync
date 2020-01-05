@@ -264,7 +264,14 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 
 		// recursive folder reading
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		{
+			wchar_t currentItemSlash[MAX_LINE] = { 0 };
+			wcscpy_s(currentItemSlash, MAX_LINE, currentItem);
+			wcscat(currentItemSlash, L"\\");
+
+			addPair(pairs, L"Delete folder", currentItemSlash, filesize.QuadPart);
 			listForRemoval(pairs, currentItem);
+		}
 		else
 		{
 			// add to files list
