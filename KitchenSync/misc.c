@@ -2,7 +2,6 @@
 
 static void sizeFormatted(LONGLONG, wchar_t *);
 static DWORD CALLBACK entryPointLogger(LPVOID);
-static DWORD CALLBACK entryPointProgressBar(LPVOID);
 
 static struct LoggerNode *loggerHead = NULL;
 static HANDLE loggerSemaphoreHandle;
@@ -545,70 +544,4 @@ void logger(wchar_t *text)
 {
 	appendLoggerNode(&loggerHead, text);
 	ReleaseSemaphore(loggerSemaphoreHandle, 1, 0);
-}
-
-void startProgressBarThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, HWND bSync, HWND tabHwnd,
-	struct ProjectNode **head_ref,
-	struct PairNode **pairs,
-	wchar_t selectedRowText[MAX_LINE],
-	LRESULT selectedRow)
-{
-	HANDLE threads[1];
-	DWORD threadIDs[1];
-
-	struct ProgressArguments args = { pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, tabHwnd, head_ref, pairs, selectedRow };
-	wcscpy_s(args.selectedRowText, MAX_LINE, selectedRowText);
-	threads[0] = CreateThread(NULL, 0, entryPointProgressBar, &args, 0, &threadIDs[0]);
-
-	if (threads[0] == NULL)
-	{
-		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Failed to create progress bar thread");
-		logger(buf);
-	}
-}
-
-static DWORD CALLBACK entryPointProgressBar(LPVOID arguments)
-{
-	struct ProgressArguments *args = (struct ProgressArguments *)arguments;
-	HWND pbHwnd = args->pbHwnd;
-	HWND lbSyncHwnd = args->lbSyncHwnd;
-	HWND lbProjectsHwnd = args->lbProjectsHwnd;
-	HWND bSync = args->bSync;
-	HWND tabHwnd = args->tabHwnd;
-	struct ProjectNode **project = args->project;
-	struct PairNode **pairs = args->pairs;
-	LRESULT selectedRow = args->selectedRow;
-	wchar_t selectedRowText[MAX_LINE];
-	wcscpy_s(selectedRowText, MAX_LINE, args->selectedRowText);
-	int textLen = (int)wcslen(selectedRowText);
-
-	assert(textLen > 0);
-
-	if (isProjectName(selectedRowText, textLen))
-	{
-		// preview whole project
-		previewProject(pbHwnd, lbSyncHwnd, project, pairs, selectedRowText);
-	}
-	else
-	{
-		// preview folder pair
-		struct Project sourceProject = { 0 };
-		splitPair(selectedRowText, sourceProject.pair.source, sourceProject.pair.destination, textLen);
-		findProjectName(lbProjectsHwnd, selectedRow, sourceProject.name);
-		previewFolderPair(pbHwnd, lbSyncHwnd, pairs, &sourceProject);
-		SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
-		sortPairNodes(pairs);
-		fillSyncListbox(lbSyncHwnd, pairs);
-		SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
-	}
-
-	EnableWindow(tabHwnd, true);
-
-	if (countPairNodes(*pairs) > 0)
-		EnableWindow(bSync, true);
-	else
-		EnableWindow(bSync, false);
-
-	return 0;
 }

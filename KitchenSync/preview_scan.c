@@ -6,8 +6,9 @@ static void previewFolderPairSource(HWND, struct PairNode **, struct Project *);
 static void previewFolderPairTarget(HWND, struct PairNode **, struct Project *);
 static void listTreeContent(struct PairNode **, wchar_t *, wchar_t *);
 static void listForRemoval(struct PairNode **, wchar_t *);
-DWORD CALLBACK entryPointSource(LPVOID);
-DWORD CALLBACK entryPointTarget(LPVOID);
+static DWORD CALLBACK entryPointPreviewScan(LPVOID);
+static DWORD CALLBACK entryPointSource(LPVOID);
+static DWORD CALLBACK entryPointTarget(LPVOID);
 
 void displayErrorBox(LPTSTR lpszFunction)
 {
@@ -26,6 +27,72 @@ void displayErrorBox(LPTSTR lpszFunction)
 		HeapFree(GetProcessHeap(), 0, lpMsgBuf);
 		HeapFree(GetProcessHeap(), 0, lpDisplayBuf);
 	}
+}
+
+void startPreviewScanThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, HWND bSync, HWND tabHwnd,
+	struct ProjectNode **head_ref,
+	struct PairNode **pairs,
+	wchar_t selectedRowText[MAX_LINE],
+	LRESULT selectedRow)
+{
+	HANDLE threads[1];
+	DWORD threadIDs[1];
+
+	struct PreviewScanArguments args = { pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, tabHwnd, head_ref, pairs, selectedRow };
+	wcscpy_s(args.selectedRowText, MAX_LINE, selectedRowText);
+	threads[0] = CreateThread(NULL, 0, entryPointPreviewScan, &args, 0, &threadIDs[0]);
+
+	if (threads[0] == NULL)
+	{
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"Failed to create preview scan thread");
+		logger(buf);
+	}
+}
+
+static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
+{
+	struct PreviewScanArguments *args = (struct PreviewScanArguments *)arguments;
+	HWND pbHwnd = args->pbHwnd;
+	HWND lbSyncHwnd = args->lbSyncHwnd;
+	HWND lbProjectsHwnd = args->lbProjectsHwnd;
+	HWND bSync = args->bSync;
+	HWND tabHwnd = args->tabHwnd;
+	struct ProjectNode **project = args->project;
+	struct PairNode **pairs = args->pairs;
+	LRESULT selectedRow = args->selectedRow;
+	wchar_t selectedRowText[MAX_LINE];
+	wcscpy_s(selectedRowText, MAX_LINE, args->selectedRowText);
+	int textLen = (int)wcslen(selectedRowText);
+
+	assert(textLen > 0);
+
+	if (isProjectName(selectedRowText, textLen))
+	{
+		// preview whole project
+		previewProject(pbHwnd, lbSyncHwnd, project, pairs, selectedRowText);
+	}
+	else
+	{
+		// preview folder pair
+		struct Project sourceProject = { 0 };
+		splitPair(selectedRowText, sourceProject.pair.source, sourceProject.pair.destination, textLen);
+		findProjectName(lbProjectsHwnd, selectedRow, sourceProject.name);
+		previewFolderPair(pbHwnd, lbSyncHwnd, pairs, &sourceProject);
+		SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+		sortPairNodes(pairs);
+		fillSyncListbox(lbSyncHwnd, pairs);
+		SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
+	}
+
+	EnableWindow(tabHwnd, true);
+
+	if (countPairNodes(*pairs) > 0)
+		EnableWindow(bSync, true);
+	else
+		EnableWindow(bSync, false);
+
+	return 0;
 }
 
 // find each matching folder pair under this project and send it for Preview
@@ -66,7 +133,7 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 	HANDLE threads[2];
 	DWORD threadIDs[2];
 
-	struct PreviewArguments sourceArgs = { lbSyncHwnd, pairs, project };
+	struct PreviewFolderArguments sourceArgs = { lbSyncHwnd, pairs, project };
 
 	threads[0] = CreateThread(NULL, 0, entryPointSource, &sourceArgs, 0, &threadIDs[0]);
 	if (threads[0] == NULL)
@@ -77,7 +144,7 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 		return;
 	}
 
-	struct PreviewArguments targetArgs = { lbSyncHwnd, pairs, &reversed };
+	struct PreviewFolderArguments targetArgs = { lbSyncHwnd, pairs, &reversed };
 
 	threads[1] = CreateThread(NULL, 0, entryPointTarget, &targetArgs, 0, &threadIDs[1]);
 	if (threads[1] == NULL)
@@ -94,7 +161,7 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 
 DWORD CALLBACK entryPointSource(LPVOID arguments)
 {
-	struct PreviewArguments *args = (struct PreviewArguments *)arguments;
+	struct PreviewFolderArguments *args = (struct PreviewFolderArguments *)arguments;
 	HWND hwnd = args->hwnd;
 	struct PairNode **pairs = args->pairs;
 	struct Project *project = args->project;
@@ -105,7 +172,7 @@ DWORD CALLBACK entryPointSource(LPVOID arguments)
 
 DWORD CALLBACK entryPointTarget(LPVOID arguments)
 {
-	struct PreviewArguments *args = (struct PreviewArguments *)arguments;
+	struct PreviewFolderArguments *args = (struct PreviewFolderArguments *)arguments;
 	HWND hwnd = args->hwnd;
 	struct PairNode **pairs = args->pairs;
 	struct Project *project = args->project;

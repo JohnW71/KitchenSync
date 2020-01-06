@@ -173,8 +173,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			TabCtrl_InsertItem(tabHwnd, 1, &tie);
 			tie.pszText = L"Sync";
 			TabCtrl_InsertItem(tabHwnd, 2, &tie);
-			tie.pszText = L"Settings";
-			TabCtrl_InsertItem(tabHwnd, 3, &tie);
+			//tie.pszText = L"Settings";
+			//TabCtrl_InsertItem(tabHwnd, 3, &tie);
 
 		// projects
 
@@ -332,21 +332,21 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(pbHwnd, SW_SHOW);
 							break;
 						}
-						case 3: // settings
-						{
-							ShowWindow(lbProjectsHwnd, SW_HIDE);
-							ShowWindow(lbSyncHwnd, SW_HIDE);
-							ShowWindow(lbSourceHwnd, SW_HIDE);
-							ShowWindow(lbDestHwnd, SW_HIDE);
-							ShowWindow(bAddProject, SW_HIDE);
-							ShowWindow(bAddFolders, SW_HIDE);
-							ShowWindow(bAddPair, SW_HIDE);
-							ShowWindow(bPreview, SW_HIDE);
-							ShowWindow(bSync, SW_HIDE);
-							ShowWindow(bDelete, SW_HIDE);
-							ShowWindow(pbHwnd, SW_HIDE);
-							break;
-						}
+						//case 3: // settings
+						//{
+							//ShowWindow(lbProjectsHwnd, SW_HIDE);
+							//ShowWindow(lbSyncHwnd, SW_HIDE);
+							//ShowWindow(lbSourceHwnd, SW_HIDE);
+							//ShowWindow(lbDestHwnd, SW_HIDE);
+							//ShowWindow(bAddProject, SW_HIDE);
+							//ShowWindow(bAddFolders, SW_HIDE);
+							//ShowWindow(bAddPair, SW_HIDE);
+							//ShowWindow(bPreview, SW_HIDE);
+							//ShowWindow(bSync, SW_HIDE);
+							//ShowWindow(bDelete, SW_HIDE);
+							//ShowWindow(pbHwnd, SW_HIDE);
+							//break;
+						//}
 					}
 				}
 			}
@@ -695,7 +695,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
 						EnableWindow(tabHwnd, false);
-						startProgressBarThread(pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, tabHwnd, &projectsHead, &pairsHead, selectedRowText, selectedRow);
+						startPreviewScanThread(pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, tabHwnd, &projectsHead, &pairsHead, selectedRowText, selectedRow);
 					}
 				}
 			}
@@ -1139,6 +1139,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							else
 							{
 								//TODO handle errors properly
+								//TODO what happens if folder is read-only? hidden? no access?
 								// if error, redisplay folder contents
 								SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
 								listSubFolders(lbPairSourceHwnd, currentFolder);
@@ -1203,6 +1204,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							else
 							{
 								//TODO handle errors properly
+								//TODO what happens if folder is read-only? hidden? no access?
 								// if error, redisplay folder contents
 								SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
 								listSubFolders(lbPairDestHwnd, currentFolder);

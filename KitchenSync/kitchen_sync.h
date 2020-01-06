@@ -53,7 +53,6 @@ void fillProjectListbox(HWND, struct ProjectNode **);
 void fillSyncListbox(HWND, struct PairNode **);
 void findProjectName(HWND, LRESULT, wchar_t *);
 bool folderExists(wchar_t *);
-DWORD getDrives();
 LONGLONG getFileSize(wchar_t *);
 bool hiddenFile(wchar_t *);
 bool isProjectName(wchar_t *, int);
@@ -64,7 +63,6 @@ void previewFolderPair(HWND, HWND, struct PairNode **, struct Project *);
 void previewProject(HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
 bool readOnly(wchar_t *);
 void readSettings(HWND, char *);
-bool recursiveRemoveDirectory(wchar_t *);
 void reloadFolderPairs(HWND, HWND, struct ProjectNode *, wchar_t *);
 void renameProject(struct ProjectNode **, wchar_t *, wchar_t *);
 void replaceFolderPair(struct ProjectNode **, wchar_t *, wchar_t *, wchar_t *, wchar_t *);
@@ -75,7 +73,7 @@ void sortProjectNodes(struct ProjectNode **);
 void sortPairNodes(struct PairNode **);
 void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
 void startLoggingThread(void);
-void startProgressBarThread(HWND, HWND, HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t [MAX_LINE], LRESULT);
+void startPreviewScanThread(HWND, HWND, HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t [MAX_LINE], LRESULT);
 void synchronizeFiles(HWND, HWND, HWND, HWND, struct PairNode **);
 void writeSettings(HWND, char *);
 
@@ -89,6 +87,7 @@ struct Pair
 struct PairNode
 {
 	struct Pair pair;
+	struct PairNode *previous;
 	struct PairNode *next;
 };
 
@@ -110,14 +109,7 @@ struct LoggerNode
 	struct LoggerNode *next;
 };
 
-struct PreviewArguments
-{
-	HWND hwnd;
-	struct PairNode **pairs;
-	struct Project *project;
-};
-
-struct ProgressArguments
+struct PreviewScanArguments
 {
 	HWND pbHwnd;
 	HWND lbSyncHwnd;
@@ -128,6 +120,13 @@ struct ProgressArguments
 	struct PairNode **pairs;
 	LRESULT selectedRow;
 	wchar_t selectedRowText[MAX_LINE];
+};
+
+struct PreviewFolderArguments
+{
+	HWND hwnd;
+	struct PairNode **pairs;
+	struct Project *project;
 };
 
 struct SyncArguments
