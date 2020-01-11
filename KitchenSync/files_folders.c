@@ -159,9 +159,6 @@ bool deleteFolder(wchar_t *path)
 	if (RemoveDirectory(path))
 		return true;
 
-	if (recursiveRemoveDirectory(path))
-		return true;
-
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"Error deleting folder %s", path);
 	logger(buf);
@@ -237,56 +234,6 @@ bool listSubFolders(HWND hwnd, wchar_t *path)
 
 	if (GetLastError() != ERROR_NO_MORE_FILES)
 		displayErrorBox(TEXT("listSubFolders"));
-
-	FindClose(hFind);
-	return true;
-}
-
-bool recursiveRemoveDirectory(wchar_t *path)
-{
-	wchar_t szDir[MAX_LINE];
-	if (wcslen(path) >= MAX_LINE)
-	{
-		wchar_t buf[MAX_LINE] = L"Folder path is full, can't add \\";
-		logger(buf);
-		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-		return false;
-	}
-	addPath(szDir, path, L"*");
-
-	WIN32_FIND_DATA ffd;
-	HANDLE hFind = INVALID_HANDLE_VALUE;
-	hFind = FindFirstFile(szDir, &ffd);
-
-	if (hFind == INVALID_HANDLE_VALUE)
-	{
-		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Unable to access %s", path);
-		logger(buf);
-		displayErrorBox(TEXT("recursiveRemoveDirectory"));
-		return false;
-	}
-
-	do
-	{
-		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-		{
-			if (wcscmp(ffd.cFileName, L".") == 0 || wcscmp(ffd.cFileName, L"..") == 0)
-				continue;
-
-			wchar_t subFolder[MAX_LINE];
-			wcscpy_s(subFolder, MAX_LINE, path);
-			wcscat(subFolder, ffd.cFileName);
-
-			if (deleteFolder(subFolder) && deleteFolder(path))
-				return true;
-			else
-				recursiveRemoveDirectory(subFolder);
-		}
-	} while (FindNextFile(hFind, &ffd) != 0);
-
-	if (GetLastError() != ERROR_NO_MORE_FILES)
-		displayErrorBox(TEXT("recursiveRemoveDirectory"));
 
 	FindClose(hFind);
 	return true;

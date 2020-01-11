@@ -535,8 +535,6 @@ static DWORD CALLBACK entryPointLogger(LPVOID arguments)
 		}
 		WaitForSingleObjectEx(loggerSemaphoreHandle, INFINITE, FALSE);
 	}
-
-	return 0;
 }
 
 // add text to next node for later writing

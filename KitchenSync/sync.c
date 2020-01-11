@@ -49,33 +49,20 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 
 	for (int i = 0; i < actionCount; ++i)
 	{
-		if (wcscmp(current->pair.source, L"Delete file") == 0 || wcscmp(current->pair.source, L"Delete folder") == 0)
+		if (wcscmp(current->pair.source, L"Delete folder") == 0)
+			continue;
+
+		if (wcscmp(current->pair.source, L"Delete file") == 0)
 		{
 			// delete file
-			if (wcscmp(current->pair.source, L"Delete file") == 0)
-			{
 #if DANGEROUS
-				if (deleteFile(current->pair.destination))
-					swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);
-				else
-					swprintf(buf, MAX_LINE, L"Failed deleting file %s OK", current->pair.destination);
+			if (deleteFile(current->pair.destination))
+				swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);
+			else
+				swprintf(buf, MAX_LINE, L"Failed deleting file %s OK", current->pair.destination);
 #else
 	swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);
 #endif
-			}
-
-			// delete folder
-			if (wcscmp(current->pair.source, L"Delete folder") == 0)
-			{
-#if DANGEROUS
-				if (deleteFolder(current->pair.destination))
-					swprintf(buf, MAX_LINE, L"Deleted folder %s OK", current->pair.destination);
-				else
-					swprintf(buf, MAX_LINE, L"Failed deleting folder %s", current->pair.destination);
-#else
-	swprintf(buf, MAX_LINE, L"Deleted folder %s OK", current->pair.destination);
-#endif
-			}
 		}
 		else
 		{
@@ -110,6 +97,42 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 		SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
 		SendMessage(lbSyncHwnd, LB_ADDSTRING, position++, (LPARAM)buf);
 		current = current->next;
+	}
+
+	// set current to last pair
+	current = *pairs;
+	for (int i = 0; i < actionCount; ++i)
+	{
+#if DEBUG_MODE
+	swprintf(buf, MAX_LINE, L"Action: %s -> %s", current->pair.source, current->pair.destination);
+	logger(buf);
+#endif
+		if (current->next != NULL)
+			current = current->next;
+	}
+
+	// search backwards for folder deletions
+	while (wcscmp(current->pair.source, L"Delete folder") == 0)
+	{
+		// delete folder
+#if DANGEROUS
+		if (deleteFolder(current->pair.destination))
+			swprintf(buf, MAX_LINE, L"Deleted folder %s OK", current->pair.destination);
+		else
+			swprintf(buf, MAX_LINE, L"Failed deleting folder %s", current->pair.destination);
+#else
+	swprintf(buf, MAX_LINE, L"Deleted folder %s OK", current->pair.destination);
+#endif
+
+		logger(buf);
+		int progressPosition = (int)(((float)++completed / actionCount) * 100.0f);
+		SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
+		SendMessage(lbSyncHwnd, LB_ADDSTRING, position++, (LPARAM)buf);
+
+		if (current->previous != NULL)
+			current = current->previous;
+		else
+			break;
 	}
 
 	EnableWindow(bSync, false);

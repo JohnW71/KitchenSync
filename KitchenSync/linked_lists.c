@@ -40,6 +40,7 @@ void appendPairNode(struct PairNode **head_ref, struct Pair pair, LONGLONG files
 	}
 
 	newPairNode->pair.filesize = filesize;
+	newPairNode->previous = NULL;
 	newPairNode->next = NULL;
 
 	// if list is empty set newPairNode as head
@@ -54,6 +55,7 @@ void appendPairNode(struct PairNode **head_ref, struct Pair pair, LONGLONG files
 	while (last->next != NULL)
 		last = last->next;
 	last->next = newPairNode;
+	newPairNode->previous = last;
 }
 
 void appendProjectNode(struct ProjectNode **head_ref, wchar_t *projectName, wchar_t *sourceFolder, wchar_t *destFolder)
@@ -453,9 +455,9 @@ void sortPairNodes(struct PairNode **head_ref)
 		return;
 	}
 
-	struct PairNode *head = *head_ref;
+	struct PairNode *current = *head_ref;
 
-	if (head->next == NULL)
+	if (current->next == NULL)
 	{
 		logger(L"Can't sort only 1 entry");
 		return;
@@ -465,28 +467,8 @@ void sortPairNodes(struct PairNode **head_ref)
 
 	do
 	{
+		current = *head_ref;
 		changed = false;
-
-		// swap head & second nodes
-		if (wcscmp(head->pair.source, head->next->pair.source) > 0)
-		{
-			struct PairNode *temp = head->next;
-
-			head->next = head->next->next;
-			temp->next = head;
-			*head_ref = temp;
-			head = *head_ref;
-			changed = true;
-		}
-
-		struct PairNode *previous = head;
-		struct PairNode *current = head->next;
-
-		if (current->next == NULL)
-		{
-			logger(L"Can't sort more, only 2 entries");
-			return;
-		}
 
 		// swap folder pairs
 		while (current != NULL && current->next != NULL)
@@ -495,21 +477,23 @@ void sortPairNodes(struct PairNode **head_ref)
 				(wcscmp(current->pair.source, current->next->pair.source) == 0 &&
 					wcscmp(current->pair.destination, current->next->pair.destination) > 0))
 			{
-				struct PairNode *temp = current->next;
+				struct PairNode temp = { 0 };
 
-				if (current->next->next != NULL)
-					current->next = current->next->next;
-				else
-					current->next = NULL;
-				temp->next = current;
-				previous->next = temp;
+				wcscpy_s(temp.pair.source, MAX_LINE, current->pair.source);
+				wcscpy_s(temp.pair.destination, MAX_LINE, current->pair.destination);
+				temp.pair.filesize = current->pair.filesize;
+
+				wcscpy_s(current->pair.source, MAX_LINE, current->next->pair.source);
+				wcscpy_s(current->pair.destination, MAX_LINE, current->next->pair.destination);
+				current->pair.filesize = current->next->pair.filesize;
+
+				wcscpy_s(current->next->pair.source, MAX_LINE, temp.pair.source);
+				wcscpy_s(current->next->pair.destination, MAX_LINE, temp.pair.destination);
+				current->next->pair.filesize = temp.pair.filesize;
 
 				changed = true;
 			}
-			else
-				current = current->next;
-
-			previous = previous->next;
+			current = current->next;
 		}
 	} while (changed);
 }
