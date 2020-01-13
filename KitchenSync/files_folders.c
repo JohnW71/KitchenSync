@@ -222,6 +222,29 @@ bool listSubFolders(HWND hwnd, wchar_t *path)
 	}
 
 	int position = 0;
+
+	// insert drive names into the list before adding the folders underneath
+	wchar_t driveList[MAX_LINE] = { 0 };
+	DWORD drivesLength = getDriveStrings(MAX_LINE, driveList);
+
+	for (size_t i = 0; i < drivesLength - 1; ++i)
+		if (driveList[i] == '\0')
+			driveList[i] = '\n';
+
+	size_t i = 0;
+	do
+	{
+		wchar_t name[MAX_LINE] = { 0 };
+		size_t j = 0;
+
+		while(driveList[i] != '\n' && driveList[i] != '\0')
+			name[j++] = driveList[i++];
+
+		SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)name);
+		++i;
+	} while (driveList[i] != '\0');
+
+	// add folders to list
 	do
 	{
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
@@ -237,4 +260,17 @@ bool listSubFolders(HWND hwnd, wchar_t *path)
 
 	FindClose(hFind);
 	return true;
+}
+
+DWORD getDriveStrings(DWORD length, wchar_t *buffer)
+{
+	DWORD result = GetLogicalDriveStrings(length, buffer);
+
+	if (result == 0)
+		logger(L"GetLogicalDriveStrings() failed");
+
+	if (result > length)
+		logger(L"GetLogicalDriveStrings() buffer too small");
+
+	return result;
 }

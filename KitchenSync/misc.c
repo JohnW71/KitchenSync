@@ -504,11 +504,7 @@ void startLoggingThread()
 	threads[0] = CreateThread(NULL, 0, entryPointLogger, NULL, 0, &threadIDs[0]);
 
 	if (threads[0] == NULL)
-	{
-		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Failed to create logger thread");
-		logger(buf);
-	}
+		MessageBox(NULL, L"Failed to create logger thread", L"Error", MB_ICONEXCLAMATION | MB_OK);
 }
 
 static DWORD CALLBACK entryPointLogger(LPVOID arguments)

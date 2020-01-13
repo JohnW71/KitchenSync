@@ -53,6 +53,7 @@ void fillProjectListbox(HWND, struct ProjectNode **);
 void fillSyncListbox(HWND, struct PairNode **);
 void findProjectName(HWND, LRESULT, wchar_t *);
 bool folderExists(wchar_t *);
+DWORD getDriveStrings(DWORD, wchar_t *);
 LONGLONG getFileSize(wchar_t *);
 bool hiddenFile(wchar_t *);
 bool isProjectName(wchar_t *, int);

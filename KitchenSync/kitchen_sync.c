@@ -1127,10 +1127,16 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							{
 								GetWindowText(eSource, sourceFolder, MAX_LINE);
 
-								if (wcslen(sourceFolder) + wcslen(selectedRowText) + 2 > MAX_LINE)
-									MessageBox(NULL, L"Path is at the limit, can't add new folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
+								// handle drive change
+								if (selectedRowText[1] == ':' && selectedRowText[2] == '\\')
+									wcscpy_s(sourceFolder, MAX_LINE, selectedRowText);
 								else
-									addPath(sourceFolder, sourceFolder, selectedRowText);
+								{
+									if (wcslen(sourceFolder) + wcslen(selectedRowText) + 2 > MAX_LINE)
+										MessageBox(NULL, L"Path is at the limit, can't add new folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
+									else
+										addPath(sourceFolder, sourceFolder, selectedRowText);
+								}
 							}
 
 							SendMessage(lbPairSourceHwnd, LB_RESETCONTENT, 0, 0);
@@ -1192,10 +1198,16 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 							{
 								GetWindowText(eDestination, destFolder, MAX_LINE);
 
-								if (wcslen(destFolder) + wcslen(selectedRowText) + 2 > MAX_LINE)
-									MessageBox(NULL, L"Path would be over the limit, can't add new folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
+								// handle drive change
+								if (selectedRowText[1] == ':' && selectedRowText[2] == '\\')
+									wcscpy_s(destFolder, MAX_LINE, selectedRowText);
 								else
-									addPath(destFolder, destFolder, selectedRowText);
+								{
+									if (wcslen(destFolder) + wcslen(selectedRowText) + 2 > MAX_LINE)
+										MessageBox(NULL, L"Path would be over the limit, can't add new folder", L"Error", MB_ICONEXCLAMATION | MB_OK);
+									else
+										addPath(destFolder, destFolder, selectedRowText);
+								}
 							}
 
 							SendMessage(lbPairDestHwnd, LB_RESETCONTENT, 0, 0);
