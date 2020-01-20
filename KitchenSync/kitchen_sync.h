@@ -11,6 +11,7 @@
 #include <windows.h>
 #include <CommCtrl.h>
 #include <wchar.h>
+#include "logger.h"
 
 #define LOG_FILE "KitchenSync.log"
 #define INI_FILE "KitchenSync.ini"
@@ -28,7 +29,6 @@
 
 void addPair(struct PairNode **, wchar_t *, wchar_t *, LONGLONG);
 void addPath(wchar_t *, wchar_t *, wchar_t *);
-void appendLoggerNode(struct LoggerNode **, wchar_t *);
 void appendPairNode(struct PairNode **, struct Pair, LONGLONG);
 void appendProjectNode(struct ProjectNode **, wchar_t *, wchar_t *, wchar_t *);
 void centerWindow(HWND);
@@ -42,7 +42,6 @@ bool deleteFile(wchar_t *);
 bool deleteFolder(wchar_t *);
 void deleteFilePair(struct PairNode **, wchar_t *);
 void deleteFolderPair(struct ProjectNode **, wchar_t *, wchar_t *);
-void deleteLoggerNode(struct LoggerNode **);
 void deletePairList(struct PairNode **);
 void deleteProject(struct ProjectNode **, wchar_t *);
 void displayErrorBox(LPTSTR);
@@ -59,7 +58,6 @@ bool hiddenFile(wchar_t *);
 bool isProjectName(wchar_t *, int);
 bool listSubFolders(HWND, wchar_t *);
 void loadProjects(HWND, char *, struct ProjectNode **);
-void logger(wchar_t *);
 void previewFolderPair(HWND, HWND, struct PairNode **, struct Project *);
 void previewProject(HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
 bool readOnly(wchar_t *);
@@ -73,7 +71,6 @@ void shutDown(HWND, struct ProjectNode **);
 void sortProjectNodes(struct ProjectNode **);
 void sortPairNodes(struct PairNode **);
 void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
-void startLoggingThread(void);
 void startPreviewScanThread(HWND, HWND, HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t [MAX_LINE], LRESULT);
 void synchronizeFiles(HWND, HWND, HWND, HWND, struct PairNode **);
 void writeSettings(HWND, char *);
@@ -102,12 +99,6 @@ struct ProjectNode
 {
 	struct Project project;
 	struct ProjectNode *next;
-};
-
-struct LoggerNode
-{
-	wchar_t text[MAX_LINE];
-	struct LoggerNode *next;
 };
 
 struct PreviewScanArguments

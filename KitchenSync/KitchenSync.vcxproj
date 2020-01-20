@@ -133,12 +133,14 @@
     <ClCompile Include="files_folders.c" />
     <ClCompile Include="kitchen_sync.c" />
     <ClCompile Include="linked_lists.c" />
+    <ClCompile Include="logger.c" />
     <ClCompile Include="misc.c" />
     <ClCompile Include="preview_scan.c" />
     <ClCompile Include="sync.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="kitchen_sync.h" />
+    <ClInclude Include="logger.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

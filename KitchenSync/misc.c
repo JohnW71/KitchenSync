@@ -1,17 +1,11 @@
 #include "kitchen_sync.h"
 
 static void sizeFormatted(LONGLONG, wchar_t *);
-static DWORD CALLBACK entryPointLogger(LPVOID);
-
-static struct LoggerNode *loggerHead = NULL;
-static HANDLE loggerSemaphoreHandle;
 
 void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 {
-	while (loggerHead != NULL)
-	{
+	while (!loggingFinished())
 		MessageBox(NULL, L"Logging still in progress", L"Error", MB_ICONEXCLAMATION | MB_OK);
-	}
 	writeSettings(hwnd, INI_FILE);
 	saveProjects(PRJ_FILE, head_ref);
 	PostQuitMessage(0);
@@ -492,50 +486,4 @@ void fillInProject(struct Project *project, wchar_t *name, wchar_t *source, wcha
 	wcscpy_s(project->name, MAX_LINE, name);
 	wcscpy_s(project->pair.source, MAX_LINE, source);
 	wcscpy_s(project->pair.destination, MAX_LINE, destination);
-}
-
-void startLoggingThread()
-{
-	HANDLE threads[1];
-	DWORD threadIDs[1];
-	int initialCount = 0;
-	int threadCount = 1;
-	loggerSemaphoreHandle = CreateSemaphoreEx(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);
-	threads[0] = CreateThread(NULL, 0, entryPointLogger, NULL, 0, &threadIDs[0]);
-
-	if (threads[0] == NULL)
-		MessageBox(NULL, L"Failed to create logger thread", L"Error", MB_ICONEXCLAMATION | MB_OK);
-}
-
-static DWORD CALLBACK entryPointLogger(LPVOID arguments)
-{
-	FILE *f;
-
-	for (;;)
-	{
-		if (loggerHead != NULL)
-		{
-			f = fopen(LOG_FILE, "at, ccs=UNICODE");
-			if (f == NULL)
-			{
-				MessageBox(NULL, L"Can't open file", L"Error", MB_ICONEXCLAMATION | MB_OK);
-				return 0;
-			}
-
-			while (loggerHead != NULL)
-			{
-				fwprintf(f, L"%s\n", loggerHead->text);
-				deleteLoggerNode(&loggerHead);
-			}
-			fclose(f);
-		}
-		WaitForSingleObjectEx(loggerSemaphoreHandle, INFINITE, FALSE);
-	}
-}
-
-// add text to next node for later writing
-void logger(wchar_t *text)
-{
-	appendLoggerNode(&loggerHead, text);
-	ReleaseSemaphore(loggerSemaphoreHandle, 1, 0);
 }
