@@ -638,6 +638,15 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 						if (textLen > 0)
 						{
+							// when selecting Project name there is no folder pair selected so create it from selected rows
+							if (wcslen(folderPair) == 0)
+							{
+								wcscpy_s(folderPair, MAX_LINE, selectedRowText);
+								wcscat(folderPair, L" -> ");
+								SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)destFolder);
+								wcscat(folderPair, destFolder);
+							}
+
 							// delete folder pair and reload listboxes
 							deleteFolderPair(&projectsHead, folderPair, projectName);
 							SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
