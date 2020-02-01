@@ -1138,7 +1138,10 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 
 								// handle drive change
 								if (selectedRowText[1] == ':' && selectedRowText[2] == '\\')
+								{
 									wcscpy_s(sourceFolder, MAX_LINE, selectedRowText);
+									sourceFolder[2] = '\0'; // prevent double slash
+								}
 								else
 								{
 									if (wcslen(sourceFolder) + wcslen(selectedRowText) + 2 > MAX_LINE)
@@ -1209,7 +1212,10 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 
 								// handle drive change
 								if (selectedRowText[1] == ':' && selectedRowText[2] == '\\')
+								{
 									wcscpy_s(destFolder, MAX_LINE, selectedRowText);
+									destFolder[2] = '\0'; // prevent double slash
+								}
 								else
 								{
 									if (wcslen(destFolder) + wcslen(selectedRowText) + 2 > MAX_LINE)
