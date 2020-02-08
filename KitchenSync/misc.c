@@ -1,6 +1,7 @@
 #include "kitchen_sync.h"
 
 static void sizeFormatted(LONGLONG, wchar_t *);
+static void clampWindowPosition(int *, int *, int *);
 
 void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 {
@@ -120,22 +121,39 @@ void readSettings(HWND hwnd, char *filename)
 
 	fclose(f);
 
-	if (windowHeight == 0)
-		windowHeight = WINDOW_HEIGHT;
+	clampWindowPosition(&windowCol, &windowRow, &windowHeight);
+	SetWindowPos(hwnd, HWND_TOP, windowCol, windowRow, WINDOW_WIDTH, windowHeight, SWP_SHOWWINDOW);
+}
 
-	if (windowRow == 0)
+static void clampWindowPosition(int *windowCol, int *windowRow, int *windowHeight)
+{
+	if (*windowHeight == 0)
+		*windowHeight = WINDOW_HEIGHT;
+
+	if (*windowRow == 0) // center by default
 	{
 		int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-		windowRow = (screenHeight - windowHeight) / 2;
+		*windowRow = (screenHeight - *windowHeight) / 2;
 	}
 
-	if (windowCol == 0)
+	if (*windowCol == 0) // center by default
 	{
 		int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-		windowCol = (screenWidth - WINDOW_WIDTH) / 2;
+		*windowCol = (screenWidth - WINDOW_WIDTH) / 2;
+		return;
 	}
 
-	SetWindowPos(hwnd, HWND_TOP, windowCol, windowRow, WINDOW_WIDTH, windowHeight, SWP_SHOWWINDOW);
+	//int monitorCount = GetSystemMetrics(SM_CMONITORS);
+	int displayWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+	int oneDisplay = GetSystemMetrics(SM_CXSCREEN);
+	int leftEdge = GetSystemMetrics(SM_XVIRTUALSCREEN);
+	int rightEdge = displayWidth - abs(leftEdge);
+
+	if (*windowCol < leftEdge)
+		*windowCol = (oneDisplay - abs(*windowCol));
+
+	if (*windowCol > rightEdge)
+		*windowCol = *windowCol % oneDisplay;
 }
 
 void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
