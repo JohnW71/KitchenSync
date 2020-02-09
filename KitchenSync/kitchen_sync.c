@@ -101,16 +101,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 		return 0;
 	}
 
-	// reset log file
-	FILE *lf = fopen(LOG_FILE, "wt, ccs=UNICODE");
-	if (lf == NULL)
-		MessageBox(NULL, L"Can't open log file", L"Error", MB_ICONEXCLAMATION | MB_OK);
-	else
-	{
-		fwprintf(lf, L"%s\n", L"Log file reset");
-		fclose(lf);
-	}
-
 	startLoggingThread();
 	ShowWindow(mainHwnd, nCmdShow);
 	readSettings(mainHwnd, INI_FILE);
@@ -132,6 +122,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 	static INITCOMMONCONTROLSEX icex = { 0 };
 	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, tabHwnd, lbSyncHwnd;
 	static bool listboxClicked = false;
+
+	HFONT hFont = CreateFont(16, 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS,
+		CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_MODERN, L"Arial");
 
 	enum Tabs
 	{
@@ -183,6 +176,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER,
 				10, 80, rc.right-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_PROJECTS, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbProjectsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
+			SendMessage(lbProjectsHwnd, WM_SETFONT, (WPARAM)hFont, 0);
 
 			bAddProject = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add Project",
 				WS_VISIBLE | WS_CHILD | WS_TABSTOP,
@@ -207,12 +201,14 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER,
 				10, 80, (rc.right / 2)-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_PAIRS_SOURCE, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbSourceHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
+			SendMessage(lbSourceHwnd, WM_SETFONT, (WPARAM)hFont, 0);
 
 			// destination listbox
 			lbDestHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER,
 				(rc.right / 2)+5, 80, (rc.right / 2)-20, rc.bottom-90, hwnd, (HMENU)ID_LISTBOX_PAIRS_DEST, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbDestHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
+			SendMessage(lbDestHwnd, WM_SETFONT, (WPARAM)hFont, 0);
 
 			bAddPair = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add Pair",
 				WS_CHILD | WS_TABSTOP,
@@ -225,6 +221,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER,// | LBS_EXTENDEDSEL,
 				10, 80, rc.right-20, rc.bottom-110, hwnd, (HMENU)ID_LISTBOX_SYNC, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbSyncHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
+			SendMessage(lbSyncHwnd, WM_SETFONT, (WPARAM)hFont, 0);
 
 			bSync = CreateWindowEx(WS_EX_LEFT, L"Button", L"Sync",
 				WS_CHILD | WS_TABSTOP | WS_DISABLED,

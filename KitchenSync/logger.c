@@ -11,8 +11,7 @@ static struct LoggerNode *loggerHead = NULL;
 void startLoggingThread()
 {
 	// reset log file
-//TODO what happens if file is not available?
-	FILE *f = fopen(LOG_FILE, "w");
+	FILE *f = fopen(LOG_FILE, "wt, ccs=UNICODE");
 	if (f == NULL)
 	{
 		MessageBox(NULL, L"Can't open log file", L"Error", MB_ICONEXCLAMATION | MB_OK);
