@@ -6,7 +6,10 @@ static void clampWindowPosition(int *, int *, int *);
 void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 {
 	while (!loggingFinished())
-		MessageBox(NULL, L"Logging still in progress", L"Error", MB_ICONEXCLAMATION | MB_OK);
+	{
+		if (MessageBox(NULL, L"Logging still in progress, close application?", L"Error", MB_ICONEXCLAMATION | MB_YESNO) == IDYES)
+			break;
+	}
 	writeSettings(hwnd, INI_FILE);
 	saveProjects(PRJ_FILE, head_ref);
 	PostQuitMessage(0);
@@ -315,15 +318,17 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 		return;
 	}
 
-	LONGLONG totalSize = 0;
-	int position = 0;
 	if (!head_ref)
 	{
 		free(currentPairName);
 		return;
 	}
+
+	LONGLONG requiredSpace[26] = { 0 };
+	int position = 0;
 	struct PairNode *current = *head_ref;
 
+	// Add every pair to listbox
 	while (current != NULL)
 	{
 		wchar_t *buffer = (wchar_t *)calloc(MAX_LINE * 3, sizeof(wchar_t));
@@ -336,7 +341,13 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 		}
 
 		LONGLONG size = current->pair.filesize;
-		totalSize += size;
+		int drivePosition = ((int)(toupper(current->pair.destination[0])) - 65);
+
+		if (drivePosition >= 0 && drivePosition <= 25)
+			requiredSpace[drivePosition] += size;
+		else
+			logger(L"drivePosition outside expected limits");
+
 		wchar_t formatted[MAX_LINE] = { 0 };
 		sizeFormatted(size, formatted);
 		swprintf(buffer, MAX_LINE * 3, L"%s -> %s  (%s)", current->pair.source, current->pair.destination, formatted);
@@ -344,12 +355,29 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 		current = current->next;
 	}
 
-	wchar_t buf[MAX_LINE] = { 0 };
-	wchar_t formatted[MAX_LINE] = { 0 };
-	sizeFormatted(totalSize, formatted);
-	swprintf(buf, MAX_LINE, L"Total size to copy: %s", formatted);
 	SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)L"");
-	SendMessage(hwnd, LB_ADDSTRING, position, (LPARAM)buf);
+
+	// Display every drive's summary
+	for (int i = 0; i < 26; ++i)
+		if (requiredSpace[i] > 0)
+		{
+			wchar_t required[MAX_LINE] = { 0 };
+			sizeFormatted(requiredSpace[i], required);
+
+			wchar_t available[MAX_LINE] = { 0 };
+			LONGLONG availableSpace = getDriveSpace(i);
+			sizeFormatted(availableSpace, available);
+
+			wchar_t result[MAX_LINE] = { 0 };
+			if (availableSpace > requiredSpace[i])
+				wcscpy_s(result, MAX_LINE, L"OK");
+			else
+				wcscpy_s(result, MAX_LINE, L"Not enough space!");
+
+			wchar_t buf[MAX_LINE] = { 0 };
+			swprintf(buf, MAX_LINE, L"%c: space required %s, available %s... %s", (char)(i + 65), required, available, result);
+			SendMessage(hwnd, LB_ADDSTRING, position, (LPARAM)buf);
+		}
 }
 
 static void sizeFormatted(LONGLONG size, wchar_t *buf)

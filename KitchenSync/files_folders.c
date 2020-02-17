@@ -274,3 +274,36 @@ DWORD getDriveStrings(DWORD length, wchar_t *buffer)
 
 	return result;
 }
+
+LONGLONG getDriveSpace(int driveIndex)
+{
+	ULARGE_INTEGER size;
+	wchar_t driveLetter = toupper((wchar_t)(driveIndex + 65));
+	if (driveLetter < 65 || driveLetter > 95)
+		return 0;
+
+	wchar_t drivePath[3];
+	swprintf(drivePath, 3, L"%c:", driveLetter);
+
+	//NOTE c:\\ or c:\ or c:
+	if (GetDiskFreeSpaceEx(drivePath, NULL, NULL, &size))
+	{
+		wchar_t buf[MAX_LINE] = { 0 };
+		swprintf(buf, MAX_LINE, L"total free bytes = %lld", size.QuadPart);
+		logger(buf);
+		swprintf(buf, MAX_LINE, L"total free KB 1024 = %lld", size.QuadPart /1024);
+		logger(buf);
+		swprintf(buf, MAX_LINE, L"total free MB 1024 / 1024 = %lld", size.QuadPart /1024/1024);
+		logger(buf);
+		swprintf(buf, MAX_LINE, L"total free GB 1024 / 1024 / 1024 = %lld", size.QuadPart /1024/1024/1024);
+		logger(buf);
+		return size.QuadPart;
+	}
+
+	wchar_t buf[MAX_LINE] = { 0 };
+	wcscpy_s(buf, MAX_LINE, L"Error getting drive space");
+	logger(buf);
+	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+	displayErrorBox(TEXT("GetDiskFreeSpaceEX"));
+	return 0;
+}
