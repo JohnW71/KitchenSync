@@ -89,7 +89,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 	mainHwnd = CreateWindowEx(WS_EX_LEFT,
 		wc.lpszClassName,
-		L"KitchenSync v0.3",
+		L"KitchenSync v0.4",
 		//WS_OVERLAPPEDWINDOW,
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
 		CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH, WINDOW_HEIGHT,
@@ -649,6 +649,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
 							reloadFolderPairs(lbSourceHwnd, lbDestHwnd, projectsHead, projectName);
+							memset(folderPair, '\0', MAX_LINE);
 						}
 					}
 				}
