@@ -2,9 +2,7 @@
 
 void addPath(wchar_t *path, wchar_t *folder, wchar_t *filename)
 {
-	wcscpy_s(path, MAX_LINE, folder);
-	wcscat(path, L"\\");
-	wcscat(path, filename);
+	swprintf(path, MAX_LINE, L"%s\\%s", folder, filename);
 }
 
 bool fileExists(wchar_t *path)

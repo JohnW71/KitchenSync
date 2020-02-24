@@ -448,9 +448,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						{
 							// edit folder pair
 							SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)destFolder);
-							wcscpy_s(folderPair, MAX_LINE, selectedRowText);
-							wcscat(folderPair, L" -> ");
-							wcscat(folderPair, destFolder);
+							swprintf(folderPair, MAX_LINE, L"%s -> %s", selectedRowText, destFolder);
 							addFolderPair();
 						}
 					}
@@ -492,9 +490,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						{
 							// edit folder pair
 							SendMessage(lbSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)sourceFolder);
-							wcscpy_s(folderPair, MAX_LINE, sourceFolder);
-							wcscat(folderPair, L" -> ");
-							wcscat(folderPair, selectedRowText);
+							swprintf(folderPair, MAX_LINE, L"%s -> %s", sourceFolder, selectedRowText);
 							addFolderPair();
 						}
 					}
@@ -638,10 +634,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							// when selecting Project name there is no folder pair selected so create it from selected rows
 							if (wcslen(folderPair) == 0)
 							{
-								wcscpy_s(folderPair, MAX_LINE, selectedRowText);
-								wcscat(folderPair, L" -> ");
 								SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)destFolder);
-								wcscat(folderPair, destFolder);
+								swprintf(folderPair, MAX_LINE, L"%s -> %s", selectedRowText, destFolder);
 							}
 
 							// delete folder pair and reload listboxes
