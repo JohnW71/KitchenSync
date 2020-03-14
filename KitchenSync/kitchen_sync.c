@@ -51,6 +51,7 @@ static HWND bProjectNameOK;
 static HWND bDelete;
 static HWND pbHwnd;
 static HINSTANCE instance;
+static HFONT hFont;
 
 static void getProjectName(void);
 static void addFolderPair(void);
@@ -66,6 +67,9 @@ static wchar_t destFolder[MAX_LINE] = { 0 };
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PWSTR pCmdLine, _In_ int nCmdShow)
 {
 	instance = hInstance;
+
+	hFont = CreateFont(16, 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS,
+		CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_MODERN, L"Arial");
 
 	WNDCLASSEX wc = { 0 };
 	wc.cbSize = sizeof(WNDCLASSEX);
@@ -122,9 +126,6 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 	static INITCOMMONCONTROLSEX icex = { 0 };
 	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, tabHwnd, lbSyncHwnd;
 	static bool listboxClicked = false;
-
-	HFONT hFont = CreateFont(16, 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS,
-		CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_MODERN, L"Arial");
 
 	enum Tabs
 	{
