@@ -60,7 +60,7 @@ static bool showingFolderPair = false;
 static bool showingProjectName = false;
 static bool recentlySynced = false;
 static wchar_t projectName[MAX_LINE] = { 0 };
-static wchar_t folderPair[MAX_LINE * 3] = { 0 };
+static wchar_t folderPair[FOLDER_PAIR_SIZE] = { 0 };
 static wchar_t sourceFolder[MAX_LINE] = { 0 };
 static wchar_t destFolder[MAX_LINE] = { 0 };
 
@@ -254,7 +254,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						case 0: // projects
 						{
 							memset(projectName, '\0', MAX_LINE);
-							memset(folderPair, '\0', MAX_LINE);
+							memset(folderPair, '\0', FOLDER_PAIR_SIZE);
 							memset(sourceFolder, '\0', MAX_LINE);
 							memset(destFolder, '\0', MAX_LINE);
 
@@ -379,7 +379,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							}
 							else
 							{
-								wcscpy_s(folderPair, MAX_LINE, selectedRowText);
+								wcscpy_s(folderPair, FOLDER_PAIR_SIZE, selectedRowText);
 								findProjectName(lbProjectsHwnd, selectedRow, projectName);
 							}
 						}
@@ -405,7 +405,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							}
 							else
 							{
-								wcscpy_s(folderPair, MAX_LINE, selectedRowText);
+								wcscpy_s(folderPair, FOLDER_PAIR_SIZE, selectedRowText);
 								findProjectName(lbProjectsHwnd, selectedRow, projectName);
 								SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_PAIRS, 0);
 								addFolderPair();
@@ -449,7 +449,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						{
 							// edit folder pair
 							SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)destFolder);
-							swprintf(folderPair, MAX_LINE, L"%s -> %s", selectedRowText, destFolder);
+							swprintf(folderPair, FOLDER_PAIR_SIZE, L"%s -> %s", selectedRowText, destFolder);
 							addFolderPair();
 						}
 					}
@@ -491,7 +491,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						{
 							// edit folder pair
 							SendMessage(lbSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)sourceFolder);
-							swprintf(folderPair, MAX_LINE, L"%s -> %s", sourceFolder, selectedRowText);
+							swprintf(folderPair, FOLDER_PAIR_SIZE, L"%s -> %s", sourceFolder, selectedRowText);
 							addFolderPair();
 						}
 					}
@@ -559,7 +559,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 	logger(buf);
 #endif
 						// change to folder pair tab and populate listboxes
-						wcscpy_s(folderPair, MAX_LINE, L"C: -> C:");
+						wcscpy_s(folderPair, FOLDER_PAIR_SIZE, L"C: -> C:");
 						SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_PAIRS, 0);
 						addFolderPair();
 					}
@@ -571,7 +571,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 #if DEBUG_MODE
 	logger(L"Add pair button");
 #endif
-				wcscpy_s(folderPair, MAX_LINE, L"C: -> C:");
+				wcscpy_s(folderPair, FOLDER_PAIR_SIZE, L"C: -> C:");
 				addFolderPair();
 			}
 
@@ -604,7 +604,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							else
 							{
 								// delete folder pair
-								wcscpy_s(folderPair, MAX_LINE, selectedRowText);
+								wcscpy_s(folderPair, FOLDER_PAIR_SIZE, selectedRowText);
 								findProjectName(lbProjectsHwnd, selectedRow, projectName);
 								deleteFolderPair(&projectsHead, folderPair, projectName);
 							}
@@ -636,7 +636,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							if (wcslen(folderPair) == 0)
 							{
 								SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)destFolder);
-								swprintf(folderPair, MAX_LINE, L"%s -> %s", selectedRowText, destFolder);
+								swprintf(folderPair, FOLDER_PAIR_SIZE, L"%s -> %s", selectedRowText, destFolder);
 							}
 
 							// delete folder pair and reload listboxes
@@ -644,7 +644,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							SendMessage(lbSourceHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(lbDestHwnd, LB_RESETCONTENT, 0, 0);
 							reloadFolderPairs(lbSourceHwnd, lbDestHwnd, projectsHead, projectName);
-							memset(folderPair, '\0', MAX_LINE);
+							memset(folderPair, '\0', FOLDER_PAIR_SIZE);
 						}
 					}
 				}
@@ -1016,7 +1016,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 {
 	static HWND bFolderPairAdd, bFolderPairCancel, lSource, lDestination, eSource, eDestination;
 	static bool editingFolderPair;
-	static wchar_t previousFolderPair[MAX_LINE];
+	static wchar_t previousFolderPair[FOLDER_PAIR_SIZE];
 
 	switch (msg)
 	{
@@ -1064,8 +1064,8 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 			centerWindow(hwnd);
 
 			// store folderPair in case pair is being edited
-			memset(previousFolderPair, '\0', MAX_LINE);
-			wcscpy_s(previousFolderPair, MAX_LINE, folderPair);
+			memset(previousFolderPair, '\0', FOLDER_PAIR_SIZE);
+			wcscpy_s(previousFolderPair, FOLDER_PAIR_SIZE, folderPair);
 
 			// load current folder pair into listboxes
 			size_t length = wcslen(folderPair);

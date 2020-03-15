@@ -17,6 +17,7 @@
 #define INI_FILE "KitchenSync.ini"
 #define PRJ_FILE "KitchenSync.prj"
 #define MAX_LINE 512
+#define FOLDER_PAIR_SIZE MAX_LINE*3
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 1024
 #define WINDOW_HEIGHT_MINIMUM 200
