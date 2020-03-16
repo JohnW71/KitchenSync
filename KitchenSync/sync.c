@@ -27,12 +27,21 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 	HWND lbSyncHwnd = args->lbSyncHwnd;
 	HWND bSync = args->bSync;
 	HWND tabHwnd = args->tabHwnd;
+
+	if (args->pairs == NULL)
+	{
+		wchar_t buf[MAX_LINE] = L"Can't sync, pairs list is empty";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return 0;
+	}
+
 	struct PairNode **pairs = args->pairs;
 	struct PairNode *current = *pairs;
 
 	if (current == NULL)
 	{
-		wchar_t buf[MAX_LINE] = L"Can't sync, list is empty";
+		wchar_t buf[MAX_LINE] = L"Can't sync, current pointer in pairs list is empty";
 		logger(buf);
 		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return 0;
