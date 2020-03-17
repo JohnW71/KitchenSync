@@ -146,8 +146,8 @@ bool deleteFile(wchar_t *path)
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"Error deleting file %s", path);
 	logger(buf);
-	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-	displayErrorBox(TEXT("DeleteFile"));
+	//MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+	//displayErrorBox(TEXT("DeleteFile"));
 	return false;
 }
 
@@ -160,8 +160,8 @@ bool deleteFolder(wchar_t *path)
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"Error deleting folder %s", path);
 	logger(buf);
-	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-	displayErrorBox(TEXT("RemoveDirectory"));
+	//MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+	//displayErrorBox(TEXT("RemoveDirectory"));
 	return false;
 }
 
