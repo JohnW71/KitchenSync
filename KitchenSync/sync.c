@@ -56,6 +56,8 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 	SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 	SendMessage(pbHwnd, PBM_SETPOS, 0, 0);
 
+	startCount();
+
 	for (int i = 0; i < actionCount; ++i)
 	{
 		if (wcscmp(current->pair.source, L"Delete folder") == 0)
@@ -144,6 +146,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 			break;
 	}
 
+	endCount(L"Sync");
 	EnableWindow(bSync, false);
 	EnableWindow(tabHwnd, true);
 	deletePairList(pairs);

@@ -3,6 +3,25 @@
 static void sizeFormatted(LONGLONG, wchar_t *);
 static void clampWindowPosition(int *, int *, int *);
 
+void startCount()
+{
+#if DEBUG_MODE
+	beginCycleCount = __rdtsc();
+#endif
+}
+
+void endCount(wchar_t *text)
+{
+#if DEBUG_MODE
+	endCycleCount = __rdtsc();
+	uint64_t cyclesElapsed = endCycleCount - beginCycleCount;
+
+	wchar_t buf[256];
+	swprintf(buf, 256, L"%s: %lld cycles elapsed", text, cyclesElapsed);
+	logger(buf);
+#endif
+}
+
 void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 {
 	while (!loggingFinished())

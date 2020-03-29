@@ -6,6 +6,7 @@
 #define DEBUG_MODE 1
 
 #include <stdio.h>
+#include <stdint.h> // int64_t
 #include <stdlib.h>
 #include <stdbool.h>
 #include <windows.h>
@@ -21,6 +22,9 @@
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 1024
 #define WINDOW_HEIGHT_MINIMUM 200
+
+uint64_t beginCycleCount;
+uint64_t endCycleCount;
 
 #if DEBUG_MODE
 #define assert(expression) if(!(expression)) {*(int *)0 = 0;}
@@ -46,6 +50,7 @@ void deleteFolderPair(struct ProjectNode **, wchar_t *, wchar_t *);
 void deletePairList(struct PairNode **);
 void deleteProject(struct ProjectNode **, wchar_t *);
 void displayErrorBox(LPTSTR);
+void endCount(wchar_t *);
 bool fileDateIsDifferent(FILETIME, FILETIME, FILETIME, wchar_t *);
 bool fileExists(wchar_t *);
 void fillInProject(struct Project *, wchar_t *, wchar_t *, wchar_t *);
@@ -73,6 +78,7 @@ void shutDown(HWND, struct ProjectNode **);
 void sortProjectNodes(struct ProjectNode **);
 void sortPairNodes(struct PairNode **);
 void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
+void startCount(void);
 void startPreviewScanThread(HWND, HWND, HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t [MAX_LINE], LRESULT);
 void synchronizeFiles(HWND, HWND, HWND, HWND, struct PairNode **);
 void writeSettings(HWND, char *);

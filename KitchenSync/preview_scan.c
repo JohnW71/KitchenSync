@@ -67,6 +67,8 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 
 	assert(textLen > 0);
 
+	startCount();
+
 	if (isProjectName(selectedRowText, textLen))
 	{
 		// preview whole project
@@ -85,6 +87,7 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 		SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
 	}
 
+	endCount(L"Preview");
 	EnableWindow(tabHwnd, true);
 
 	if (countPairNodes(*pairs) > 0)
