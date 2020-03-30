@@ -17,7 +17,7 @@ void endCount(wchar_t *text)
 	uint64_t cyclesElapsed = endCycleCount - beginCycleCount;
 
 	wchar_t buf[256];
-	swprintf(buf, 256, L"%s: %lld cycles elapsed", text, cyclesElapsed);
+	swprintf(buf, 256, L"%s: %llu cycles elapsed", text, cyclesElapsed);
 	logger(buf);
 #endif
 }
@@ -264,7 +264,12 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 			return;
 		}
 
-		swprintf(buf, MAX_LINE * 4, L"Name: %s, source: %s, dest: %s", name, source, destination);
+		wcscpy_s(buf, MAX_LINE * 4, L"Name: ");
+		wcscat(buf, name);
+		wcscat(buf, L", source: ");
+		wcscat(buf, source);
+		wcscat(buf, L", dest: ");
+		wcscat(buf, destination);
 		logger(buf);
 
 		appendProjectNode(head_ref, name, source, destination);
@@ -307,7 +312,7 @@ void fillProjectListbox(HWND hwnd, struct ProjectNode **head_ref)
 			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)current->project.name);
 		}
 
-		wchar_t *buffer = (wchar_t *)calloc(MAX_LINE * 4, sizeof(wchar_t));
+		wchar_t *buffer = (wchar_t *)calloc(FOLDER_PAIR_SIZE, sizeof(wchar_t));
 		if (!buffer)
 		{
 			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for folder pair buffer from projects file";
@@ -316,7 +321,9 @@ void fillProjectListbox(HWND hwnd, struct ProjectNode **head_ref)
 			return;
 		}
 
-		swprintf(buffer, MAX_LINE * 4, L"%s -> %s", current->project.pair.source, current->project.pair.destination);
+		wcscpy_s(buffer, FOLDER_PAIR_SIZE, current->project.pair.source);
+		wcscat(buffer, L" -> ");
+		wcscat(buffer, current->project.pair.destination);
 		SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)buffer);
 		wcscpy_s(currentProjectName, MAX_LINE, current->project.name);
 		current = current->next;
@@ -350,7 +357,7 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 	// Add every pair to listbox
 	while (current != NULL)
 	{
-		wchar_t *buffer = (wchar_t *)calloc(MAX_LINE * 3, sizeof(wchar_t));
+		wchar_t *buffer = (wchar_t *)calloc(FOLDER_PAIR_SIZE, sizeof(wchar_t));
 		if (!buffer)
 		{
 			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for file pair buffer from preview list";
@@ -369,7 +376,12 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 
 		wchar_t formatted[MAX_LINE] = { 0 };
 		sizeFormatted(size, formatted);
-		swprintf(buffer, MAX_LINE * 3, L"%s -> %s  (%s)", current->pair.source, current->pair.destination, formatted);
+		wcscpy_s(buffer, FOLDER_PAIR_SIZE, current->pair.source);
+		wcscat(buffer, L" -> ");
+		wcscat(buffer, current->pair.destination);
+		wcscat(buffer, L"  (");
+		wcscat(buffer, formatted);
+		wcscat(buffer, L")");
 		SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)buffer);
 		current = current->next;
 	}
@@ -394,7 +406,13 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 				wcscpy_s(result, MAX_LINE, L"Not enough space!");
 
 			wchar_t buf[MAX_LINE] = { 0 };
-			swprintf(buf, MAX_LINE, L"%c: space required %s, available %s... %s", (char)(i + 65), required, available, result);
+			buf[0] = (wchar_t)(i + 65);
+			wcscat(buf, L": space required ");
+			wcscat(buf, required);
+			wcscat(buf, L", available ");
+			wcscat(buf, available);
+			wcscat(buf, L"... ");
+			wcscat(buf, result);
 			SendMessage(hwnd, LB_ADDSTRING, position, (LPARAM)buf);
 		}
 }
@@ -459,11 +477,20 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 		// don't save project with no pairs
 		if (wcslen(current->project.pair.source) > 0 && wcslen(current->project.pair.destination) > 0)
 		{
-			swprintf(buf, MAX_LINE * 4, L"%s,%s,%s", current->project.name, current->project.pair.source, current->project.pair.destination);
+			wcscpy_s(buf, MAX_LINE * 4, current->project.name);
+			wcscat(buf, L",");
+			wcscat(buf, current->project.pair.source);
+			wcscat(buf, L",");
+			wcscat(buf, current->project.pair.destination);
 			fwprintf(f, L"%s\n", buf);
 		}
 
-		swprintf(buf, MAX_LINE * 4, L"Name: %s, source: %s, dest: %s", current->project.name, current->project.pair.source, current->project.pair.destination);
+		wcscpy_s(buf, MAX_LINE * 4, L"Name: ");
+		wcscat(buf, current->project.name);
+		wcscat(buf, L", source: ");
+		wcscat(buf, current->project.pair.source);
+		wcscat(buf, L", dest: ");
+		wcscat(buf, current->project.pair.destination);
 		logger(buf);
 
 		++count;

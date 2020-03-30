@@ -2,7 +2,9 @@
 
 void addPath(wchar_t *path, wchar_t *folder, wchar_t *filename)
 {
-	swprintf(path, MAX_LINE, L"%s\\%s", folder, filename);
+	wcscpy_s(path, MAX_LINE, folder);
+	wcscat(path, L"\\");
+	wcscat(path, filename);
 }
 
 bool fileExists(wchar_t *path)
@@ -36,7 +38,8 @@ LONGLONG getFileSize(wchar_t *path)
 	if (!GetFileAttributesEx(path, GetFileExInfoStandard, &info))
 	{
 		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Error reading file attributes for %s", path);
+		wcscpy_s(buf, MAX_LINE, L"Error reading file attributes for ");
+		wcscat(buf, path);
 		logger(buf);
 		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return 0;
@@ -85,7 +88,8 @@ bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWri
 	if (!GetFileTime(dst, &dstCreate, &dstAccess, &dstWrite))
 	{
 		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Failed to get file time for destination %s", dstPath);
+		wcscpy_s(buf, MAX_LINE, L"Failed to get file time for destination ");
+		wcscat(buf, dstPath);
 		logger(buf);
 		return false;
 	}
@@ -115,7 +119,8 @@ bool copyFile(wchar_t *source, wchar_t *dest)
 		return true;
 
 	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"Error copying file %s", source);
+	wcscpy_s(buf, MAX_LINE, L"Error copying file ");
+	wcscat(buf, source);
 	logger(buf);
 	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 	displayErrorBox(TEXT("CopyFile"));
@@ -128,7 +133,8 @@ bool createFolder(wchar_t *path)
 		return true;
 
 	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"Error creating folder %s", path);
+	wcscpy_s(buf, MAX_LINE, L"Error creating folder ");
+	wcscat(buf, path);
 	logger(buf);
 	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 	displayErrorBox(TEXT("CreateDirectory"));
@@ -144,7 +150,8 @@ bool deleteFile(wchar_t *path)
 		return true;
 
 	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"Error deleting file %s", path);
+	wcscpy_s(buf, MAX_LINE, L"Error deleting file ");
+	wcscat(buf, path);
 	logger(buf);
 	//MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 	//displayErrorBox(TEXT("DeleteFile"));
@@ -158,7 +165,8 @@ bool deleteFolder(wchar_t *path)
 		return true;
 
 	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"Error deleting folder %s", path);
+	wcscpy_s(buf, MAX_LINE, L"Error deleting folder ");
+	wcscat(buf, path);
 	logger(buf);
 	//MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 	//displayErrorBox(TEXT("RemoveDirectory"));
@@ -170,13 +178,15 @@ bool setNormalFile(wchar_t *path)
 	if (SetFileAttributes(path, FILE_ATTRIBUTE_NORMAL))
 	{
 		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Removed read-only/hidden attribute for %s", path);
+		wcscpy_s(buf, MAX_LINE, L"Removed read-only/hidden attribute for ");
+		wcscat(buf, path);
 		logger(buf);
 		return true;
 	}
 
 	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"Error setting normal attributes for %s", path);
+	wcscpy_s(buf, MAX_LINE, L"Error setting normal attributes for ");
+	wcscat(buf, path);
 	logger(buf);
 	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 	displayErrorBox(TEXT("SetFileAttributes"));
@@ -213,7 +223,8 @@ bool listSubFolders(HWND hwnd, wchar_t *path)
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
 		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Unable to access %s", path);
+		wcscpy_s(buf, MAX_LINE, L"Unable to access ");
+		wcscat(buf, path);
 		logger(buf);
 		displayErrorBox(TEXT("listSubFolders"));
 		return false;
@@ -280,8 +291,9 @@ LONGLONG getDriveSpace(int driveIndex)
 	if (driveLetter < 65 || driveLetter > 95)
 		return 0;
 
-	wchar_t drivePath[3];
-	swprintf(drivePath, 3, L"%c:", driveLetter);
+	wchar_t drivePath[3] = { 0 };
+	drivePath[0] = driveLetter;
+	drivePath[1] = ':';
 
 	//NOTE c:\\ or c:\ or c:
 	if (GetDiskFreeSpaceEx(drivePath, NULL, NULL, &size))

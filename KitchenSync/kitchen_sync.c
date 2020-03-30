@@ -454,7 +454,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						{
 							// edit folder pair
 							SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)destFolder);
-							swprintf(folderPair, FOLDER_PAIR_SIZE, L"%s -> %s", selectedRowText, destFolder);
+							wcscpy_s(folderPair, FOLDER_PAIR_SIZE, selectedRowText);
+							wcscat(folderPair, L" -> ");
+							wcscat(folderPair, destFolder);
 							editingFolderPair = true;
 							addFolderPair();
 						}
@@ -497,7 +499,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						{
 							// edit folder pair
 							SendMessage(lbSourceHwnd, LB_GETTEXT, selectedRow, (LPARAM)sourceFolder);
-							swprintf(folderPair, FOLDER_PAIR_SIZE, L"%s -> %s", sourceFolder, selectedRowText);
+							wcscpy_s(folderPair, FOLDER_PAIR_SIZE, sourceFolder);
+							wcscat(folderPair, L" -> ");
+							wcscat(folderPair, selectedRowText);
 							editingFolderPair = true;
 							addFolderPair();
 						}
@@ -645,7 +649,9 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							if (wcslen(folderPair) == 0)
 							{
 								SendMessage(lbDestHwnd, LB_GETTEXT, selectedRow, (LPARAM)destFolder);
-								swprintf(folderPair, FOLDER_PAIR_SIZE, L"%s -> %s", selectedRowText, destFolder);
+								wcscpy_s(folderPair, FOLDER_PAIR_SIZE, selectedRowText);
+								wcscat(folderPair, L" -> ");
+								wcscat(folderPair, destFolder);
 							}
 
 							// delete folder pair and reload listboxes

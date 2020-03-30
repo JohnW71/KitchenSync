@@ -44,8 +44,7 @@ void startPreviewScanThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, H
 
 	if (threads[0] == NULL)
 	{
-		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Failed to create preview scan thread");
+		wchar_t buf[MAX_LINE] = L"Failed to create preview scan thread";
 		logger(buf);
 	}
 }
@@ -141,8 +140,7 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 	threads[0] = CreateThread(NULL, 0, entryPointSource, &sourceArgs, 0, &threadIDs[0]);
 	if (threads[0] == NULL)
 	{
-		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Failed to create source->destination thread");
+		wchar_t buf[MAX_LINE] = L"Failed to create source->destination thread";
 		logger(buf);
 		return;
 	}
@@ -152,8 +150,7 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 	threads[1] = CreateThread(NULL, 0, entryPointTarget, &targetArgs, 0, &threadIDs[1]);
 	if (threads[1] == NULL)
 	{
-		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Failed to create destination->source thread");
+		wchar_t buf[MAX_LINE] = L"Failed to create destination->source thread";
 		logger(buf);
 		return;
 	}
@@ -204,7 +201,8 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
 		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Unable to access %s", source);
+		wcscpy_s(buf, MAX_LINE, L"Unable to access ");
+		wcscat(buf, source);
 		logger(buf);
 		displayErrorBox(TEXT("listTreeContent"));
 		return;
@@ -306,7 +304,8 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
 		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Unable to access %s", path);
+		wcscpy_s(buf, MAX_LINE, L"Unable to access ");
+		wcscat(buf, path);
 		logger(buf);
 		displayErrorBox(TEXT("listForRemoval"));
 		return;
@@ -375,7 +374,8 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
 		wchar_t buf[MAX_LINE];
-		swprintf(buf, MAX_LINE, L"Unable to access %s", szDir);
+		wcscpy_s(buf, MAX_LINE, L"Unable to access ");
+		wcscat(buf, szDir);
 		logger(buf);
 		displayErrorBox(TEXT("previewFolderPairSource"));
 		return;
@@ -504,7 +504,8 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
 		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Unable to access %s", szDir);
+		wcscpy_s(buf, MAX_LINE, L"Unable to access ");
+		wcscat(buf, szDir);
 		logger(buf);
 		displayErrorBox(TEXT("previewFolderPairTarget"));
 		return;

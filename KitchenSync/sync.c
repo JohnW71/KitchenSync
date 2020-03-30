@@ -14,8 +14,7 @@ void synchronizeFiles(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, HWND tabHwnd, st
 	threads[0] = CreateThread(NULL, 0, entryPointSync, &syncArgs, 0, &threadIDs[0]);
 	if (threads[0] == NULL)
 	{
-		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"Failed to create sync thread");
+		wchar_t buf[MAX_LINE] = L"Failed to create sync thread";
 		logger(buf);
 	}
 }
@@ -30,7 +29,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 
 	if (args->pairs == NULL)
 	{
-		wchar_t buf[MAX_LINE] = L"Can't sync, pairs list is empty";
+		wchar_t buf[MAX_LINE] = L"Can't sync, args->pairs list is empty";
 		logger(buf);
 		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return 0;
@@ -41,7 +40,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 
 	if (current == NULL)
 	{
-		wchar_t buf[MAX_LINE] = L"Can't sync, current pointer in pairs list is empty";
+		wchar_t buf[MAX_LINE] = L"Can't sync, current pointer to pairs list is null";
 		logger(buf);
 		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return 0;
@@ -68,11 +67,24 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 			// delete file
 #if DANGEROUS
 			if (deleteFile(current->pair.destination))
-				swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);
+			{
+				//swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);
+				wcscpy_s(buf, MAX_LINE, L"Deleted file ");
+				wcscat(buf, current->pair.destination);
+				wcscat(buf, " OK", );
+			}
 			else
-				swprintf(buf, MAX_LINE, L"Failed deleting file %s OK", current->pair.destination);
+			{
+				//swprintf(buf, MAX_LINE, L"Failed deleting file %s OK", current->pair.destination);
+				wcscpy_s(buf, MAX_LINE, L"Failed deleting file ");
+				wcscat(buf, current->pair.destination);
+				wcscat(buf, L" OK");
+			}
 #else
-	swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);
+	//swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);
+	wcscpy_s(buf, MAX_LINE, L"Deleted file ");
+	wcscat(buf, current->pair.destination);
+	wcscat(buf, L" OK");
 #endif
 		}
 		else
@@ -83,22 +95,58 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 			{
 #if DANGEROUS
 				if (createFolder(current->pair.destination))
-					swprintf(buf, MAX_LINE, L"Created folder %s -> %s OK", current->pair.source, current->pair.destination);
+				{
+					//swprintf(buf, MAX_LINE, L"Created folder %s -> %s OK", current->pair.source, current->pair.destination);
+					wcscpy_s(buf, MAX_LINE, L"Created folder ");
+					wcscat(buf, current->pair.source);
+					wcscat(buf, L" -> ");
+					wcscat(buf, current->pair.destination);
+					wcscat(buf, L" OK");
+				}
 				else
-					swprintf(buf, MAX_LINE, L"Failed creating folder %s -> %s", current->pair.source, current->pair.destination);
+				{
+					//swprintf(buf, MAX_LINE, L"Failed creating folder %s -> %s", current->pair.source, current->pair.destination);
+					wcscpy_s(buf, MAX_LINE, L"Failed creating folder ");
+					wcscat(buf, current->pair.source);
+					wcscat(buf, L" -> ");
+					wcscat(buf, current->pair.destination);
+				}
 #else
-	swprintf(buf, MAX_LINE, L"Created folder %s -> %s OK", current->pair.source, current->pair.destination);
+	//swprintf(buf, MAX_LINE, L"Created folder %s -> %s OK", current->pair.source, current->pair.destination);
+	wcscpy_s(buf, MAX_LINE, L"Created folder ");
+	wcscat(buf, current->pair.source);
+	wcscat(buf, L" -> ");
+	wcscat(buf, current->pair.destination);
+	wcscat(buf, L" OK");
 #endif
 			}
 			else // copy file
 			{
 #if DANGEROUS
 				if (copyFile(current->pair.source, current->pair.destination))
-					swprintf(buf, MAX_LINE, L"Copied file %s -> %s OK", current->pair.source, current->pair.destination);
+				{
+					//swprintf(buf, MAX_LINE, L"Copied file %s -> %s OK", current->pair.source, current->pair.destination);
+					wcscpy_s(buf, MAX_LINE, L"Copied file ");
+					wcscat(buf, current->pair.source);
+					wcscat(buf, L" -> ");
+					wcscat(buf, current->pair.destination);
+					wcscat(buf, L" OK");
+				}
 				else
-					swprintf(buf, MAX_LINE, L"Failed copying file %s -> %s", current->pair.source, current->pair.destination);
+				{
+					//swprintf(buf, MAX_LINE, L"Failed copying file %s -> %s", current->pair.source, current->pair.destination);
+					wcscpy_s(buf, MAX_LINE, L"Failed copying file ");
+					wcscat(buf, current->pair.source);
+					wcscat(buf, L" -> ");
+					wcscat(buf, current->pair.destination);
+			}
 #else
-	swprintf(buf, MAX_LINE, L"Copied file %s -> %s OK", current->pair.source, current->pair.destination);
+	//swprintf(buf, MAX_LINE, L"Copied file %s -> %s OK", current->pair.source, current->pair.destination);
+	wcscpy_s(buf, MAX_LINE, L"Copied file ");
+	wcscat(buf, current->pair.source);
+	wcscat(buf, L" -> ");
+	wcscat(buf, current->pair.destination);
+	wcscat(buf, L" OK");
 #endif
 			}
 		}
@@ -128,11 +176,23 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 		// delete folder
 #if DANGEROUS
 		if (deleteFolder(current->pair.destination))
-			swprintf(buf, MAX_LINE, L"Deleted folder %s OK", current->pair.destination);
+		{
+			//swprintf(buf, MAX_LINE, L"Deleted folder %s OK", current->pair.destination);
+			wcscpy_s(buf, MAX_LINE, L"Deleted folder ");
+			wcscat(buf, current->pair.destination);
+			wcscat(buf, L" OK");
+		}
 		else
-			swprintf(buf, MAX_LINE, L"Failed deleting folder %s", current->pair.destination);
+		{
+			//swprintf(buf, MAX_LINE, L"Failed deleting folder %s", current->pair.destination);
+			wcscpy_s(buf, MAX_LINE, L"Failed deleting folder ");
+			wcscat(buf, current->pair.destination);
+		}
 #else
-	swprintf(buf, MAX_LINE, L"Deleted folder %s OK", current->pair.destination);
+	//swprintf(buf, MAX_LINE, L"Deleted folder %s OK", current->pair.destination);
+	wcscpy_s(buf, MAX_LINE, L"Deleted folder ");
+	wcscat(buf, current->pair.destination);
+	wcscat(buf, L" OK");
 #endif
 
 		logger(buf);
