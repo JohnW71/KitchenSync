@@ -75,7 +75,7 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 	}
 	else
 	{
-		// preview folder pair
+		// preview one folder pair
 		struct Project sourceProject = { 0 };
 		splitPair(selectedRowText, sourceProject.pair.source, sourceProject.pair.destination, textLen);
 		findProjectName(lbProjectsHwnd, selectedRow, sourceProject.name);
@@ -124,7 +124,7 @@ void previewProject(HWND pbHwnd, HWND lbSyncHwnd, struct ProjectNode **head_ref,
 // send one specific folder pair for Preview in both directions
 void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, struct Project *project)
 {
-	// reverse source & destination
+	// get reversed source & destination
 	struct Project reversed = { 0 };
 	fillInProject(&reversed, project->name, project->pair.destination, project->pair.source);
 
@@ -181,7 +181,7 @@ DWORD CALLBACK entryPointTarget(LPVOID arguments)
 	return 0;
 }
 
-// this recursively adds all the files/folders in and below the supplied folders to the pairs list
+// this recursively adds all the files/folders in and below the supplied folder to the pairs list
 static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *destination)
 {
 	wchar_t szDir[MAX_LINE];
@@ -268,9 +268,8 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 			addPair(pairs, currentItemSlash, destinationSubFolderSlash, filesize.QuadPart);
 			listTreeContent(pairs, currentItem, destinationSubFolder);
 		}
-		else
+		else // item is a file
 		{
-			// add to files list
 			wchar_t newDestination[MAX_LINE] = { 0 };
 			addPath(newDestination, destination, ffd.cFileName);
 			addPair(pairs, currentItem, newDestination, filesize.QuadPart);
@@ -341,9 +340,8 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 			addPair(pairs, L"Delete folder", currentItemSlash, filesize.QuadPart);
 			listForRemoval(pairs, currentItem);
 		}
-		else
+		else // item is a file
 		{
-			// add to files list
 			addPair(pairs, L"Delete file", currentItem, filesize.QuadPart);
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
@@ -390,11 +388,11 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 		LARGE_INTEGER filesize;
 		filesize.LowPart = ffd.nFileSizeLow;
 		filesize.HighPart = ffd.nFileSizeHigh;
-
+		
 		wchar_t source[MAX_LINE];
 		addPath(source, project->pair.source, ffd.cFileName);
 
-		wchar_t destination[MAX_LINE] = { 0 };
+		wchar_t destination[MAX_LINE];
 		addPath(destination, project->pair.destination, ffd.cFileName);
 
 		// folder
@@ -429,51 +427,47 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 				addPair(pairs, sourceSlash, destinationSlash, filesize.QuadPart);
 				listTreeContent(pairs, source, destination);
 			}
+			continue;
 		}
-		else // item is a file
+
+		// item is a file
+		if (!fileExists(destination))
 		{
-			// check if target file exists
-			if (fileExists(destination))
-			{
+#if DETAIL_MODE
+	swprintf(buf, MAX_LINE, L"target file does not exist, add %s to list", destination);
+	logger(buf);
+#endif
+			addPair(pairs, source, destination, filesize.QuadPart);
+			continue;
+		}
 #if DETAIL_MODE
 {
 	swprintf(buf, MAX_LINE, L"target file exists, compare date/time and sizes");
 	logger(buf);
 }
 #endif
-				LONGLONG targetSize = getFileSize(destination);
+		LONGLONG targetSize = getFileSize(destination);
 
-				// if different size, add file to list
-				if (targetSize != filesize.QuadPart)
-				{
+		// if different size, add file to list
+		if (targetSize != filesize.QuadPart)
+		{
 #if DETAIL_MODE
 	swprintf(buf, MAX_LINE, L"target file is out of date, add %s to list", destination);
 	logger(buf);
 #endif
-					addPair(pairs, source, destination, filesize.QuadPart);
-				}
-				else // size is the same so test date/time
-				{
-					// if last write time is different between source and destination, add file to list
-					if (fileDateIsDifferent(ffd.ftCreationTime, ffd.ftLastAccessTime, ffd.ftLastWriteTime, destination))
-					{
+			addPair(pairs, source, destination, filesize.QuadPart);
+			continue;
+		}
+
+		// size is the same so test date/time
+		// if last write time is different between source and destination, add file to list
+		if (fileDateIsDifferent(ffd.ftCreationTime, ffd.ftLastAccessTime, ffd.ftLastWriteTime, destination))
+		{
 #if DETAIL_MODE
 	swprintf(buf, MAX_LINE, L"source & target files have different date/time, add %s to list", destination);
 	logger(buf);
 #endif
-						addPair(pairs, source, destination, filesize.QuadPart);
-					}
-				}
-			}
-			else // destination file does not exist
-			{
-				// add to files list
-#if DETAIL_MODE
-	swprintf(buf, MAX_LINE, L"target file does not exist, add %s to list", destination);
-	logger(buf);
-#endif
-				addPair(pairs, source, destination, filesize.QuadPart);
-			}
+			addPair(pairs, source, destination, filesize.QuadPart);
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 
@@ -523,14 +517,13 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 		wchar_t source[MAX_LINE];
 		addPath(source, project->pair.source, ffd.cFileName);
 
-		wchar_t destination[MAX_LINE] = { 0 };
+		wchar_t destination[MAX_LINE];
 		addPath(destination, project->pair.destination, ffd.cFileName);
 
 		// folder
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
-			// check if target folder exists
-			// if exists do recursive search in folder
+			// if target folder exists do recursive search in folder
 			if (folderExists(destination))
 			{
 				struct Project destinationSubFolder = { 0 };
@@ -556,20 +549,19 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 				addPair(pairs, L"Delete folder", sourceSlash, filesize.QuadPart);
 				listForRemoval(pairs, source);
 			}
+			continue;
 		}
-		else // item is a file
+
+		// item is a file
+		if (!fileExists(destination))
 		{
-			// check if target file exists
-			if (!fileExists(destination))
-			{
-				// remove source file
+			// delete source file
 #if DETAIL_MODE
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"target file does not exist, add source %s for deletion", source);
 	logger(buf);
 #endif
-				addPair(pairs, L"Delete file", source, filesize.QuadPart);
-			}
+			addPair(pairs, L"Delete file", source, filesize.QuadPart);
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 

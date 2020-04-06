@@ -71,14 +71,13 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 				//swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);
 				wcscpy_s(buf, MAX_LINE, L"Deleted file ");
 				wcscat(buf, current->pair.destination);
-				wcscat(buf, " OK", );
+				wcscat(buf, L" OK");
 			}
 			else
 			{
 				//swprintf(buf, MAX_LINE, L"Failed deleting file %s OK", current->pair.destination);
 				wcscpy_s(buf, MAX_LINE, L"Failed deleting file ");
 				wcscat(buf, current->pair.destination);
-				wcscat(buf, L" OK");
 			}
 #else
 	//swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);

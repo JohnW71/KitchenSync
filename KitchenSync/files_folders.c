@@ -107,6 +107,7 @@ bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWri
 	if (srcInfo.wMinute != dstInfo.wMinute) return true;
 	if (srcInfo.wSecond != dstInfo.wSecond) return true;
 
+	CloseHandle(dst);
 	return false;
 }
 
@@ -122,7 +123,6 @@ bool copyFile(wchar_t *source, wchar_t *dest)
 	wcscpy_s(buf, MAX_LINE, L"Error copying file ");
 	wcscat(buf, source);
 	logger(buf);
-	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 	displayErrorBox(TEXT("CopyFile"));
 	return false;
 }
@@ -136,7 +136,6 @@ bool createFolder(wchar_t *path)
 	wcscpy_s(buf, MAX_LINE, L"Error creating folder ");
 	wcscat(buf, path);
 	logger(buf);
-	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 	displayErrorBox(TEXT("CreateDirectory"));
 	return false;
 }
@@ -153,8 +152,7 @@ bool deleteFile(wchar_t *path)
 	wcscpy_s(buf, MAX_LINE, L"Error deleting file ");
 	wcscat(buf, path);
 	logger(buf);
-	//MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-	//displayErrorBox(TEXT("DeleteFile"));
+	displayErrorBox(TEXT("DeleteFile"));
 	return false;
 }
 
@@ -168,8 +166,7 @@ bool deleteFolder(wchar_t *path)
 	wcscpy_s(buf, MAX_LINE, L"Error deleting folder ");
 	wcscat(buf, path);
 	logger(buf);
-	//MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-	//displayErrorBox(TEXT("RemoveDirectory"));
+	displayErrorBox(TEXT("RemoveDirectory"));
 	return false;
 }
 
@@ -188,7 +185,6 @@ bool setNormalFile(wchar_t *path)
 	wcscpy_s(buf, MAX_LINE, L"Error setting normal attributes for ");
 	wcscat(buf, path);
 	logger(buf);
-	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 	displayErrorBox(TEXT("SetFileAttributes"));
 	return false;
 }
@@ -310,10 +306,7 @@ LONGLONG getDriveSpace(int driveIndex)
 		return size.QuadPart;
 	}
 
-	wchar_t buf[MAX_LINE] = { 0 };
-	wcscpy_s(buf, MAX_LINE, L"Error getting drive space");
-	logger(buf);
-	MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+	logger(L"Error getting drive space");
 	displayErrorBox(TEXT("GetDiskFreeSpaceEX"));
 	return 0;
 }

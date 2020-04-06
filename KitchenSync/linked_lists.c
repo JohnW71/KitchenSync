@@ -332,7 +332,7 @@ int countPairNodes(struct PairNode *head)
 	while (current != NULL)
 	{
 		++count;
-		current = current->next;
+		current = current->next; //FIX occasionally *head is completely missing/corrupted
 	}
 	return count;
 }
