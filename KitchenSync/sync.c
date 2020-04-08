@@ -52,6 +52,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 	assert(actionCount > 0);
 	wchar_t buf[MAX_LINE] = { 0 };
 
+	SetWindowText(bSync, L"Working...");
 	SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 	SendMessage(pbHwnd, PBM_SETPOS, 0, 0);
 
@@ -206,6 +207,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 	}
 
 	endCount(L"Sync");
+	SetWindowText(bSync, L"Sync");
 	EnableWindow(bSync, false);
 	EnableWindow(tabHwnd, true);
 	deletePairList(pairs);

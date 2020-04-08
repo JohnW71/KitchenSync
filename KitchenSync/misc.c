@@ -17,7 +17,7 @@ void endCount(wchar_t *text)
 	uint64_t cyclesElapsed = endCycleCount - beginCycleCount;
 
 	wchar_t buf[256];
-	swprintf(buf, 256, L"%s: %llu cycles elapsed", text, cyclesElapsed);
+	swprintf(buf, 256, L"%-25s: %14llu cycles", text, cyclesElapsed);
 	logger(buf);
 #endif
 }
@@ -409,7 +409,7 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 			buf[0] = (wchar_t)(i + 65);
 			wcscat(buf, L": space required ");
 			wcscat(buf, required);
-			wcscat(buf, L", available ");
+			wcscat(buf, L" available ");
 			wcscat(buf, available);
 			wcscat(buf, L"... ");
 			wcscat(buf, result);
@@ -518,7 +518,6 @@ bool isProjectName(wchar_t *text, int len)
 void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *projectName)
 {
 	wchar_t selectedRowText[MAX_LINE] = { 0 };
-	bool found = false;
 
 	do
 	{
@@ -526,10 +525,10 @@ void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *projectName)
 		if (isProjectName(selectedRowText, textLen))
 		{
 			wcscpy_s(projectName, MAX_LINE, selectedRowText);
-			found = true;
+			return;
 		}
 	}
-	while (!found && selectedRow >= 0);
+	while (selectedRow >= 0);
 }
 
 // reload source & destination folder pair listboxes

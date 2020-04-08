@@ -94,6 +94,8 @@ bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWri
 		return false;
 	}
 
+	CloseHandle(dst);
+
 	FileTimeToSystemTime(&srcWrite, &srcInfo);
 	SystemTimeToTzSpecificLocalTime(NULL, &srcInfo, &srcLocal);
 
@@ -107,7 +109,6 @@ bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWri
 	if (srcInfo.wMinute != dstInfo.wMinute) return true;
 	if (srcInfo.wSecond != dstInfo.wSecond) return true;
 
-	CloseHandle(dst);
 	return false;
 }
 
@@ -294,15 +295,17 @@ LONGLONG getDriveSpace(int driveIndex)
 	//NOTE c:\\ or c:\ or c:
 	if (GetDiskFreeSpaceEx(drivePath, NULL, NULL, &size))
 	{
-		wchar_t buf[MAX_LINE] = { 0 };
-		swprintf(buf, MAX_LINE, L"total free bytes = %lld", size.QuadPart);
-		logger(buf);
-		swprintf(buf, MAX_LINE, L"total free KB 1024 = %lld", size.QuadPart /1024);
-		logger(buf);
-		swprintf(buf, MAX_LINE, L"total free MB 1024 / 1024 = %lld", size.QuadPart /1024/1024);
-		logger(buf);
-		swprintf(buf, MAX_LINE, L"total free GB 1024 / 1024 / 1024 = %lld", size.QuadPart /1024/1024/1024);
-		logger(buf);
+#if DEBUG_MODE
+	wchar_t buf[MAX_LINE] = { 0 };
+	swprintf(buf, MAX_LINE, L"total free bytes = %lld", size.QuadPart);
+	logger(buf);
+	swprintf(buf, MAX_LINE, L"total free KB 1024 = %lld", size.QuadPart /1024);
+	logger(buf);
+	swprintf(buf, MAX_LINE, L"total free MB 1024 / 1024 = %lld", size.QuadPart /1024/1024);
+	logger(buf);
+	swprintf(buf, MAX_LINE, L"total free GB 1024 / 1024 / 1024 = %lld", size.QuadPart /1024/1024/1024);
+	logger(buf);
+#endif
 		return size.QuadPart;
 	}
 

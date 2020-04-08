@@ -58,6 +58,7 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 	HWND bSync = args->bSync;
 	HWND tabHwnd = args->tabHwnd;
 	struct ProjectNode **project = args->project;
+	SetWindowText(bSync, L"Working...");
 	struct PairNode **pairs = args->pairs;
 	LRESULT selectedRow = args->selectedRow;
 	wchar_t selectedRowText[MAX_LINE];
@@ -88,6 +89,7 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 
 	endCount(L"Preview");
 	EnableWindow(tabHwnd, true);
+	SetWindowText(bSync, L"Sync");
 
 	if (countPairNodes(*pairs) > 0)
 		EnableWindow(bSync, true);
@@ -379,7 +381,9 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 		return;
 	}
 
+#if DETAIL_MODE
 	wchar_t buf[MAX_LINE];
+#endif
 	do
 	{
 		if (wcscmp(ffd.cFileName, L".") == 0 || wcscmp(ffd.cFileName, L"..") == 0)
