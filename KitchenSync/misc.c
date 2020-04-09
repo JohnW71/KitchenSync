@@ -350,9 +350,14 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 		return;
 	}
 
-	LONGLONG requiredSpace[26] = { 0 };
 	int position = 0;
 	struct PairNode *current = *head_ref;
+	struct DriveSpace
+	{
+		LONGLONG requiredSpace;
+		bool used;
+	};
+	struct DriveSpace driveSpace[26] = { 0 };
 
 	// Add every pair to listbox
 	while (current != NULL)
@@ -370,7 +375,10 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 		int drivePosition = ((int)(toupper(current->pair.destination[0])) - 65);
 
 		if (drivePosition >= 0 && drivePosition <= 25)
-			requiredSpace[drivePosition] += size;
+		{
+			driveSpace[drivePosition].requiredSpace += size;
+			driveSpace[drivePosition].used = true;
+		}
 		else
 			logger(L"drivePosition outside expected limits");
 
@@ -390,17 +398,17 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 
 	// Display every drive's summary
 	for (int i = 0; i < 26; ++i)
-		if (requiredSpace[i] > 0)
+		if (driveSpace[i].used)
 		{
 			wchar_t required[MAX_LINE] = { 0 };
-			sizeFormatted(requiredSpace[i], required);
+			sizeFormatted(driveSpace[i].requiredSpace, required);
 
 			wchar_t available[MAX_LINE] = { 0 };
 			LONGLONG availableSpace = getDriveSpace(i);
 			sizeFormatted(availableSpace, available);
 
 			wchar_t result[MAX_LINE] = { 0 };
-			if (availableSpace > requiredSpace[i])
+			if (availableSpace > driveSpace[i].requiredSpace)
 				wcscpy_s(result, MAX_LINE, L"OK");
 			else
 				wcscpy_s(result, MAX_LINE, L"Not enough space!");
@@ -436,7 +444,7 @@ static void sizeFormatted(LONGLONG size, wchar_t *buf)
 	{
 		*r++ = *t--;
 
-		if (++count == 3 && length > 0)
+		if (++count == 3 && length > 0 && *t != '-')
 		{
 			*r++ = ',';
 			count = 0;

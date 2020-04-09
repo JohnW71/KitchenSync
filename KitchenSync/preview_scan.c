@@ -339,12 +339,12 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 			wcscpy_s(currentItemSlash, MAX_LINE, currentItem);
 			wcscat(currentItemSlash, L"\\");
 
-			addPair(pairs, L"Delete folder", currentItemSlash, filesize.QuadPart);
+			addPair(pairs, L"Delete folder", currentItemSlash, -filesize.QuadPart);
 			listForRemoval(pairs, currentItem);
 		}
 		else // item is a file
 		{
-			addPair(pairs, L"Delete file", currentItem, filesize.QuadPart);
+			addPair(pairs, L"Delete file", currentItem, -filesize.QuadPart);
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 
@@ -550,7 +550,7 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 				wcscpy_s(sourceSlash, MAX_LINE, source);
 				wcscat(sourceSlash, L"\\");
 
-				addPair(pairs, L"Delete folder", sourceSlash, filesize.QuadPart);
+				addPair(pairs, L"Delete folder", sourceSlash, -filesize.QuadPart);
 				listForRemoval(pairs, source);
 			}
 			continue;
@@ -565,7 +565,7 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 	swprintf(buf, MAX_LINE, L"target file does not exist, add source %s for deletion", source);
 	logger(buf);
 #endif
-			addPair(pairs, L"Delete file", source, filesize.QuadPart);
+			addPair(pairs, L"Delete file", source, -filesize.QuadPart);
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 
