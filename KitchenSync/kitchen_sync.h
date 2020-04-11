@@ -23,8 +23,12 @@
 #define WINDOW_HEIGHT 1024
 #define WINDOW_HEIGHT_MINIMUM 200
 
+uint64_t firstCount;
 uint64_t beginCycleCount;
 uint64_t endCycleCount;
+
+uint64_t results[10000];
+int resultCount;
 
 #if DEBUG_MODE
 #define assert(expression) if(!(expression)) {*(int *)0 = 0;}
@@ -66,7 +70,7 @@ bool isProjectName(wchar_t *, int);
 bool listSubFolders(HWND, wchar_t *);
 void loadProjects(HWND, char *, struct ProjectNode **);
 void previewFolderPair(HWND, HWND, struct PairNode **, struct Project *);
-void previewProject(HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
+void previewProject(HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
 bool readOnly(wchar_t *);
 void readSettings(HWND, char *);
 void reloadFolderPairs(HWND, HWND, struct ProjectNode *, wchar_t *);

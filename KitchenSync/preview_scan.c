@@ -58,7 +58,6 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 	HWND bSync = args->bSync;
 	HWND tabHwnd = args->tabHwnd;
 	struct ProjectNode **project = args->project;
-	SetWindowText(bSync, L"Working...");
 	struct PairNode **pairs = args->pairs;
 	LRESULT selectedRow = args->selectedRow;
 	wchar_t selectedRowText[MAX_LINE];
@@ -72,7 +71,7 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 	if (isProjectName(selectedRowText, textLen))
 	{
 		// preview whole project
-		previewProject(pbHwnd, lbSyncHwnd, project, pairs, selectedRowText);
+		previewProject(pbHwnd, lbSyncHwnd, bSync, project, pairs, selectedRowText);
 	}
 	else
 	{
@@ -80,9 +79,15 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 		struct Project sourceProject = { 0 };
 		splitPair(selectedRowText, sourceProject.pair.source, sourceProject.pair.destination, textLen);
 		findProjectName(lbProjectsHwnd, selectedRow, sourceProject.name);
+		SetWindowText(bSync, L"Scanning...");
+		SendMessage(pbHwnd, PBM_SETPOS, 25, 0);
 		previewFolderPair(pbHwnd, lbSyncHwnd, pairs, &sourceProject);
 		SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+		SetWindowText(bSync, L"Sorting...");
+		SendMessage(pbHwnd, PBM_SETPOS, 50, 0);
 		sortPairNodes(pairs);
+		SetWindowText(bSync, L"Loading...");
+		SendMessage(pbHwnd, PBM_SETPOS, 75, 0);
 		fillSyncListbox(lbSyncHwnd, pairs);
 		SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
 	}
@@ -100,27 +105,35 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 }
 
 // find each matching folder pair under this project and send it for Preview
-void previewProject(HWND pbHwnd, HWND lbSyncHwnd, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *projectName)
+void previewProject(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *projectName)
 {
 	struct ProjectNode *current = *head_ref;
-	int completed = 0;
 	int pairCount = countProjectPairs(*head_ref, projectName);
-	SendMessage(pbHwnd, PBM_SETPOS, 0, 0);
+
+	SetWindowText(bSync, L"Scanning...");
+	SendMessage(pbHwnd, PBM_SETPOS, 25, 0);
 	do
 	{
 		if (wcscmp(current->project.name, projectName) == 0)
 		{
 			struct Project project = { 0 };
 			fillInProject(&project, projectName, current->project.pair.source, current->project.pair.destination);
-			int progressPosition = ((100 / pairCount) * ++completed) + 1;
 			previewFolderPair(pbHwnd, lbSyncHwnd, pairs, &project);
-			sortPairNodes(pairs);
-			SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
-			fillSyncListbox(lbSyncHwnd, pairs);
-			SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
 		}
 		current = current->next;
 	} while (*head_ref != NULL && current != NULL);
+
+	SetWindowText(bSync, L"Sorting...");
+	SendMessage(pbHwnd, PBM_SETPOS, 50, 0);
+	sortPairNodes(pairs);
+
+	SetWindowText(bSync, L"Loading...");
+	SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
+	SendMessage(pbHwnd, PBM_SETPOS, 75, 0);
+	fillSyncListbox(lbSyncHwnd, pairs);
+
+	SetWindowText(bSync, L"Sync");
+	SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
 }
 
 // send one specific folder pair for Preview in both directions

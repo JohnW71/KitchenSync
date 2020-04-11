@@ -16,6 +16,8 @@ void endCount(wchar_t *text)
 	endCycleCount = __rdtsc();
 	uint64_t cyclesElapsed = endCycleCount - beginCycleCount;
 
+	results[resultCount++] = cyclesElapsed;
+
 	wchar_t buf[256];
 	swprintf(buf, 256, L"%-25s: %14llu cycles", text, cyclesElapsed);
 	logger(buf);
