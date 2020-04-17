@@ -398,6 +398,11 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 
 	SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)L"");
 
+	current = *head_ref;
+	int pc = countPairNodes(current);
+	wchar_t pairCount[MAX_LINE] = { 0 };
+	sizeFormatted(pc, pairCount);
+
 	// Display every drive's summary
 	for (int i = 0; i < 26; ++i)
 		if (driveSpace[i].used)
@@ -419,8 +424,10 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 			buf[0] = (wchar_t)(i + 65);
 			wcscat(buf, L": space required ");
 			wcscat(buf, required);
-			wcscat(buf, L" available ");
+			wcscat(buf, L", available ");
 			wcscat(buf, available);
+			wcscat(buf, L", pair count ");
+			wcscat(buf, pairCount);
 			wcscat(buf, L"... ");
 			wcscat(buf, result);
 			SendMessage(hwnd, LB_ADDSTRING, position, (LPARAM)buf);
