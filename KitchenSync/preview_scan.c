@@ -108,8 +108,6 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 void previewProject(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *projectName)
 {
 	struct ProjectNode *current = *head_ref;
-	int pairCount = countProjectPairs(*head_ref, projectName);
-
 	SetWindowText(bSync, L"Scanning...");
 	SendMessage(pbHwnd, PBM_SETPOS, 25, 0);
 	do
@@ -139,6 +137,41 @@ void previewProject(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, struct ProjectNode
 // send one specific folder pair for Preview in both directions
 void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, struct Project *project)
 {
+	// abort if source or destination drive is missing
+	wchar_t driveList[MAX_LINE] = { 0 };
+	DWORD drivesLength = getDriveStrings(MAX_LINE, driveList);
+	wchar_t srcDrive = project->pair.source[0];
+	wchar_t dstDrive = project->pair.destination[0];
+	bool foundSrc = false;
+	bool foundDst = false;
+
+	for (size_t i = 0; i < drivesLength; ++i)
+	{
+		if (driveList[i] == srcDrive)
+			foundSrc = true;
+		if (driveList[i] == dstDrive)
+			foundDst = true;
+		if (foundSrc && foundDst)
+			break;
+	}
+
+	if (!foundSrc)
+	{
+		wchar_t buf[MAX_LINE];
+		swprintf(buf, MAX_LINE, L"Can't find source drive %c:", srcDrive);
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return;
+	}
+	if (!foundDst)
+	{
+		wchar_t buf[MAX_LINE];
+		swprintf(buf, MAX_LINE, L"Can't find destination drive %c:", dstDrive);
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return;
+	}
+
 	// get reversed source & destination
 	struct Project reversed = { 0 };
 	fillInProject(&reversed, project->name, project->pair.destination, project->pair.source);
