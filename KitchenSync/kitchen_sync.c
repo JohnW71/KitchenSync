@@ -25,8 +25,8 @@
 #include "kitchen_sync.h"
 #pragma comment(lib, "comctl32.lib")
 
-static struct PairNode *pairsHead = NULL;
 static struct ProjectNode *projectsHead = NULL;
+static struct Pair *pairIndex[MAX_PAIRS];
 
 static LRESULT CALLBACK mainWndProc(HWND, UINT, WPARAM, LPARAM);
 static LRESULT CALLBACK customListboxProc(HWND, UINT, WPARAM, LPARAM);
@@ -94,7 +94,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 	mainHwnd = CreateWindowEx(WS_EX_LEFT,
 		wc.lpszClassName,
-		L"KitchenSync v0.8",
+		L"KitchenSync v0.9",
 		//WS_OVERLAPPEDWINDOW,
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
 		CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH, WINDOW_HEIGHT,
@@ -106,6 +106,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 		return 0;
 	}
 
+	pairCount = 0;
 	startLoggingThread();
 	ShowWindow(mainHwnd, nCmdShow);
 	readSettings(mainHwnd, INI_FILE);
@@ -265,7 +266,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 							SendMessage(pbHwnd, PBM_SETPOS, 0, 0);
 
-							deletePairList(&pairsHead);
+							deleteAllPairs(pairIndex);
 							fillProjectListbox(lbProjectsHwnd, &projectsHead);
 
 							EnableWindow(bAddFolders, false);
@@ -285,7 +286,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(pbHwnd, SW_HIDE);
 							break;
 						}
-						case 1: // add folders
+						case 1: // folder pairs
 						{
 							EnableWindow(bDelete, false);
 
@@ -315,7 +316,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						}
 						case 2: // sync
 						{
-							if (countPairNodes(pairsHead) > 0)
+							if (pairCount > 0)
 								EnableWindow(bSync, true);
 							else
 								EnableWindow(bSync, false);
@@ -681,11 +682,11 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 						if (textLen > 0)
 						{
 							// delete folder pair from list and listbox
-							deleteFilePair(&pairsHead, selectedRowText);
+							deleteFilePair(pairIndex, selectedRowText);
 							SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
-							fillSyncListbox(lbSyncHwnd, &pairsHead);
+							fillSyncListbox(lbSyncHwnd, pairIndex);
 
-							if (countPairNodes(pairsHead) > 0)
+							if (pairCount > 0)
 								EnableWindow(bSync, true);
 							else
 								EnableWindow(bSync, false);
@@ -700,6 +701,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 	logger(L"Preview button");
 #endif
 				recentlySynced = false;
+				deleteAllPairs(pairIndex);
 
 				// get row index
 				LRESULT selectedRow = SendMessage(lbProjectsHwnd, LB_GETCURSEL, 0, 0);
@@ -712,7 +714,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 					{
 						SendMessage(tabHwnd, TCM_SETCURFOCUS, TAB_SYNC, 0);
 						EnableWindow(tabHwnd, false);
-						startPreviewScanThread(pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, tabHwnd, &projectsHead, &pairsHead, selectedRowText, selectedRow);
+						startPreviewScanThread(pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, tabHwnd, &projectsHead, pairIndex, selectedRowText, selectedRow);
 					}
 				}
 			}
@@ -725,7 +727,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				EnableWindow(bSync, false);
 				EnableWindow(bDelete, false);
 				EnableWindow(tabHwnd, false);
-				synchronizeFiles(pbHwnd, lbSyncHwnd, bSync, tabHwnd, &pairsHead);
+				synchronizeFiles(pbHwnd, lbSyncHwnd, bSync, tabHwnd, pairIndex);
 				recentlySynced = true;
 			}
 			break;
@@ -1253,7 +1255,7 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 
 				if (editingFolderPair)
 				{
-					replaceFolderPair(&projectsHead, projectName, previousFolderPair, sourceFolder, destFolder);
+					replaceFolderPair(&projectsHead, previousFolderPair, projectName, sourceFolder, destFolder);
 					editingFolderPair = false;
 				}
 				else

@@ -18,6 +18,8 @@
 #define INI_FILE "KitchenSync.ini"
 #define PRJ_FILE "KitchenSync.prj"
 #define MAX_LINE 512
+// 0.75MB for pairs index array
+#define MAX_PAIRS 100000
 #define FOLDER_PAIR_SIZE MAX_LINE*3
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 1024
@@ -29,6 +31,7 @@ uint64_t endCycleCount;
 
 uint64_t results[10000];
 int resultCount;
+int pairCount;
 
 #if DEBUG_MODE
 #define assert(expression) if(!(expression)) {*(int *)0 = 0;}
@@ -36,22 +39,20 @@ int resultCount;
 #define assert(expression)
 #endif
 
-void addPair(struct PairNode **, wchar_t *, wchar_t *, LONGLONG);
+void addPair(struct Pair **, wchar_t *, wchar_t *, LONGLONG);
 void addPath(wchar_t *, wchar_t *, wchar_t *);
-void appendPairNode(struct PairNode **, struct Pair, LONGLONG);
 void appendProjectNode(struct ProjectNode **, wchar_t *, wchar_t *, wchar_t *);
 void centerWindow(HWND);
 bool copyFile(wchar_t *, wchar_t *);
-int countPairNodes(struct PairNode *);
 int countProjectNodes(struct ProjectNode *);
 int countProjectPairs(struct ProjectNode *, wchar_t *);
 bool createFolder(wchar_t *);
 void cutOffLastFolder(wchar_t *);
+void deleteAllPairs(struct Pair **);
 bool deleteFile(wchar_t *);
 bool deleteFolder(wchar_t *);
-void deleteFilePair(struct PairNode **, wchar_t *);
+void deleteFilePair(struct Pair **, wchar_t *);
 void deleteFolderPair(struct ProjectNode **, wchar_t *, wchar_t *);
-void deletePairList(struct PairNode **);
 void deleteProject(struct ProjectNode **, wchar_t *);
 void displayErrorBox(LPTSTR);
 void endCount(wchar_t *);
@@ -59,7 +60,8 @@ bool fileDateIsDifferent(FILETIME, FILETIME, FILETIME, wchar_t *);
 bool fileExists(wchar_t *);
 void fillInProject(struct Project *, wchar_t *, wchar_t *, wchar_t *);
 void fillProjectListbox(HWND, struct ProjectNode **);
-void fillSyncListbox(HWND, struct PairNode **);
+void fillSyncListbox(HWND, struct Pair **);
+int findPair(struct Pair **, wchar_t *, wchar_t *);
 void findProjectName(HWND, LRESULT, wchar_t *);
 bool folderExists(wchar_t *);
 LONGLONG getDriveSpace(int);
@@ -69,8 +71,8 @@ bool hiddenFile(wchar_t *);
 bool isProjectName(wchar_t *, int);
 bool listSubFolders(HWND, wchar_t *);
 void loadProjects(HWND, char *, struct ProjectNode **);
-void previewFolderPair(HWND, HWND, struct PairNode **, struct Project *);
-void previewProject(HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t *);
+void previewFolderPair(HWND, HWND, struct Pair **, struct Project *);
+void previewProject(HWND, HWND, HWND, struct ProjectNode **, struct Pair **, wchar_t *);
 bool readOnly(wchar_t *);
 void readSettings(HWND, char *);
 void reloadFolderPairs(HWND, HWND, struct ProjectNode *, wchar_t *);
@@ -80,11 +82,11 @@ void saveProjects(char *, struct ProjectNode **);
 bool setNormalFile(wchar_t *);
 void shutDown(HWND, struct ProjectNode **);
 void sortProjectNodes(struct ProjectNode **);
-void sortPairNodes(struct PairNode **);
+void sortPairs(struct Pair **);
 void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
 void startCount(void);
-void startPreviewScanThread(HWND, HWND, HWND, HWND, HWND, struct ProjectNode **, struct PairNode **, wchar_t [MAX_LINE], LRESULT);
-void synchronizeFiles(HWND, HWND, HWND, HWND, struct PairNode **);
+void startPreviewScanThread(HWND, HWND, HWND, HWND, HWND, struct ProjectNode **, struct Pair **, wchar_t [MAX_LINE], LRESULT);
+void synchronizeFiles(HWND, HWND, HWND, HWND, struct Pair **);
 void writeSettings(HWND, char *);
 
 struct Pair
@@ -92,13 +94,6 @@ struct Pair
 	wchar_t source[MAX_LINE];
 	wchar_t destination[MAX_LINE];
 	LONGLONG filesize; // __int64
-};
-
-struct PairNode
-{
-	struct Pair pair;
-	struct PairNode *previous;
-	struct PairNode *next;
 };
 
 struct Project
@@ -121,7 +116,7 @@ struct PreviewScanArguments
 	HWND bSync;
 	HWND tabHwnd;
 	struct ProjectNode **project;
-	struct PairNode **pairs;
+	struct Pair **pairIndex;
 	LRESULT selectedRow;
 	wchar_t selectedRowText[MAX_LINE];
 };
@@ -129,7 +124,7 @@ struct PreviewScanArguments
 struct PreviewFolderArguments
 {
 	HWND hwnd;
-	struct PairNode **pairs;
+	struct Pair **pairIndex;
 	struct Project *project;
 };
 
@@ -139,5 +134,5 @@ struct SyncArguments
 	HWND lbSyncHwnd;
 	HWND bSync;
 	HWND tabHwnd;
-	struct PairNode **pairs;
+	struct Pair **pairIndex;
 };

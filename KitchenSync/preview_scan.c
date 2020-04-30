@@ -2,10 +2,10 @@
 
 #define DETAIL_MODE 1
 
-static void previewFolderPairSource(HWND, struct PairNode **, struct Project *);
-static void previewFolderPairTarget(HWND, struct PairNode **, struct Project *);
-static void listTreeContent(struct PairNode **, wchar_t *, wchar_t *);
-static void listForRemoval(struct PairNode **, wchar_t *);
+static void previewFolderPairSource(HWND, struct Pair **, struct Project *);
+static void previewFolderPairTarget(HWND, struct Pair **, struct Project *);
+static void listTreeContent(struct Pair **, wchar_t *, wchar_t *);
+static void listForRemoval(struct Pair **, wchar_t *);
 static DWORD CALLBACK entryPointPreviewScan(LPVOID);
 static DWORD CALLBACK entryPointSource(LPVOID);
 static DWORD CALLBACK entryPointTarget(LPVOID);
@@ -31,15 +31,24 @@ void displayErrorBox(LPTSTR lpszFunction)
 
 void startPreviewScanThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, HWND bSync, HWND tabHwnd,
 	struct ProjectNode **head_ref,
-	struct PairNode **pairs,
+	struct Pair **pairIndex,
 	wchar_t selectedRowText[MAX_LINE],
 	LRESULT selectedRow)
 {
 	HANDLE threads[1];
 	DWORD threadIDs[1];
 
-	struct PreviewScanArguments args = { pbHwnd, lbSyncHwnd, lbProjectsHwnd, bSync, tabHwnd, head_ref, pairs, selectedRow };
+	static struct PreviewScanArguments args;
+	args.pbHwnd = pbHwnd;
+	args.lbSyncHwnd = lbSyncHwnd;
+	args.lbProjectsHwnd = lbProjectsHwnd;
+	args.bSync = bSync;
+	args.tabHwnd = tabHwnd;
+	args.project = head_ref;
+	args.selectedRow = selectedRow;
+	args.pairIndex = pairIndex;
 	wcscpy_s(args.selectedRowText, MAX_LINE, selectedRowText);
+
 	threads[0] = CreateThread(NULL, 0, entryPointPreviewScan, &args, 0, &threadIDs[0]);
 
 	if (threads[0] == NULL)
@@ -54,24 +63,29 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 	struct PreviewScanArguments *args = (struct PreviewScanArguments *)arguments;
 	HWND pbHwnd = args->pbHwnd;
 	HWND lbSyncHwnd = args->lbSyncHwnd;
-	HWND lbProjectsHwnd = args->lbProjectsHwnd;
 	HWND bSync = args->bSync;
 	HWND tabHwnd = args->tabHwnd;
+	HWND lbProjectsHwnd = args->lbProjectsHwnd;
 	struct ProjectNode **project = args->project;
-	struct PairNode **pairs = args->pairs;
+	struct Pair **pairIndex = args->pairIndex;
 	LRESULT selectedRow = args->selectedRow;
 	wchar_t selectedRowText[MAX_LINE];
 	wcscpy_s(selectedRowText, MAX_LINE, args->selectedRowText);
-	int textLen = (int)wcslen(selectedRowText);
 
+	int textLen = (int)wcslen(selectedRowText);
 	assert(textLen > 0);
+	if (textLen <= 0)
+	{
+		MessageBox(NULL, L"Blank row text", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return 0;
+	}
 
 	startCount();
 
 	if (isProjectName(selectedRowText, textLen))
 	{
 		// preview whole project
-		previewProject(pbHwnd, lbSyncHwnd, bSync, project, pairs, selectedRowText);
+		previewProject(pbHwnd, lbSyncHwnd, bSync, project, pairIndex, selectedRowText);
 	}
 	else
 	{
@@ -81,14 +95,14 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 		findProjectName(lbProjectsHwnd, selectedRow, sourceProject.name);
 		SetWindowText(bSync, L"Scanning...");
 		SendMessage(pbHwnd, PBM_SETPOS, 25, 0);
-		previewFolderPair(pbHwnd, lbSyncHwnd, pairs, &sourceProject);
+		previewFolderPair(pbHwnd, lbSyncHwnd, pairIndex, &sourceProject);
 		SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 		SetWindowText(bSync, L"Sorting...");
 		SendMessage(pbHwnd, PBM_SETPOS, 50, 0);
-		sortPairNodes(pairs);
+		sortPairs(pairIndex);
 		SetWindowText(bSync, L"Loading...");
 		SendMessage(pbHwnd, PBM_SETPOS, 75, 0);
-		fillSyncListbox(lbSyncHwnd, pairs);
+		fillSyncListbox(lbSyncHwnd, pairIndex);
 		SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
 	}
 
@@ -96,7 +110,7 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 	EnableWindow(tabHwnd, true);
 	SetWindowText(bSync, L"Sync");
 
-	if (countPairNodes(*pairs) > 0)
+	if (pairCount > 0)
 		EnableWindow(bSync, true);
 	else
 		EnableWindow(bSync, false);
@@ -105,9 +119,15 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 }
 
 // find each matching folder pair under this project and send it for Preview
-void previewProject(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, struct ProjectNode **head_ref, struct PairNode **pairs, wchar_t *projectName)
+void previewProject(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, struct ProjectNode **head_ref, struct Pair **pairIndex, wchar_t *projectName)
 {
 	struct ProjectNode *current = *head_ref;
+	if (current == NULL)
+	{
+		MessageBox(NULL, L"Null head_ref", L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return;
+	}
+
 	SetWindowText(bSync, L"Scanning...");
 	SendMessage(pbHwnd, PBM_SETPOS, 25, 0);
 	do
@@ -116,26 +136,26 @@ void previewProject(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, struct ProjectNode
 		{
 			struct Project project = { 0 };
 			fillInProject(&project, projectName, current->project.pair.source, current->project.pair.destination);
-			previewFolderPair(pbHwnd, lbSyncHwnd, pairs, &project);
+			previewFolderPair(pbHwnd, lbSyncHwnd, pairIndex, &project);
 		}
 		current = current->next;
 	} while (*head_ref != NULL && current != NULL);
 
 	SetWindowText(bSync, L"Sorting...");
 	SendMessage(pbHwnd, PBM_SETPOS, 50, 0);
-	sortPairNodes(pairs);
+	sortPairs(pairIndex);
 
 	SetWindowText(bSync, L"Loading...");
 	SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 	SendMessage(pbHwnd, PBM_SETPOS, 75, 0);
-	fillSyncListbox(lbSyncHwnd, pairs);
+	fillSyncListbox(lbSyncHwnd, pairIndex);
 
 	SetWindowText(bSync, L"Sync");
 	SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
 }
 
 // send one specific folder pair for Preview in both directions
-void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, struct Project *project)
+void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct Pair **pairIndex, struct Project *project)
 {
 	// abort if source or destination drive is missing
 	wchar_t driveList[MAX_LINE] = { 0 };
@@ -177,13 +197,13 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 	fillInProject(&reversed, project->name, project->pair.destination, project->pair.source);
 
 #if 0
-	previewFolderPairSource(lbSyncHwnd, pairs, project);
-	previewFolderPairTarget(lbSyncHwnd, pairs, &reversed);
+	previewFolderPairSource(lbSyncHwnd, pairIndex, project);
+	previewFolderPairTarget(lbSyncHwnd, pairIndex, &reversed);
 #else
 	HANDLE threads[2];
 	DWORD threadIDs[2];
 
-	struct PreviewFolderArguments sourceArgs = { lbSyncHwnd, pairs, project };
+	struct PreviewFolderArguments sourceArgs = { lbSyncHwnd, pairIndex, project };
 
 	threads[0] = CreateThread(NULL, 0, entryPointSource, &sourceArgs, 0, &threadIDs[0]);
 	if (threads[0] == NULL)
@@ -193,7 +213,7 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct PairNode **pairs, st
 		return;
 	}
 
-	struct PreviewFolderArguments targetArgs = { lbSyncHwnd, pairs, &reversed };
+	struct PreviewFolderArguments targetArgs = { lbSyncHwnd, pairIndex, &reversed };
 
 	threads[1] = CreateThread(NULL, 0, entryPointTarget, &targetArgs, 0, &threadIDs[1]);
 	if (threads[1] == NULL)
@@ -211,10 +231,10 @@ DWORD CALLBACK entryPointSource(LPVOID arguments)
 {
 	struct PreviewFolderArguments *args = (struct PreviewFolderArguments *)arguments;
 	HWND hwnd = args->hwnd;
-	struct PairNode **pairs = args->pairs;
+	struct Pair **pairIndex = args->pairIndex;
 	struct Project *project = args->project;
 
-	previewFolderPairSource(hwnd, pairs, project);
+	previewFolderPairSource(hwnd, pairIndex, project);
 	return 0;
 }
 
@@ -222,15 +242,15 @@ DWORD CALLBACK entryPointTarget(LPVOID arguments)
 {
 	struct PreviewFolderArguments *args = (struct PreviewFolderArguments *)arguments;
 	HWND hwnd = args->hwnd;
-	struct PairNode **pairs = args->pairs;
+	struct Pair **pairIndex = args->pairIndex;
 	struct Project *project = args->project;
 
-	previewFolderPairTarget(hwnd, pairs, project);
+	previewFolderPairTarget(hwnd, pairIndex, project);
 	return 0;
 }
 
 // this recursively adds all the files/folders in and below the supplied folder to the pairs list
-static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *destination)
+static void listTreeContent(struct Pair **pairIndex, wchar_t *source, wchar_t *destination)
 {
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(source) >= MAX_LINE)
@@ -313,14 +333,14 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 			}
 			wcscat(destinationSubFolderSlash, L"\\");
 
-			addPair(pairs, currentItemSlash, destinationSubFolderSlash, filesize.QuadPart);
-			listTreeContent(pairs, currentItem, destinationSubFolder);
+			addPair(pairIndex, currentItemSlash, destinationSubFolderSlash, filesize.QuadPart);
+			listTreeContent(pairIndex, currentItem, destinationSubFolder);
 		}
 		else // item is a file
 		{
 			wchar_t newDestination[MAX_LINE] = { 0 };
 			addPath(newDestination, destination, ffd.cFileName);
-			addPair(pairs, currentItem, newDestination, filesize.QuadPart);
+			addPair(pairIndex, currentItem, newDestination, filesize.QuadPart);
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 
@@ -332,7 +352,7 @@ static void listTreeContent(struct PairNode **pairs, wchar_t *source, wchar_t *d
 }
 
 // this recursively adds all the files/folders in and below the supplied folder to the pairs list for removal
-void listForRemoval(struct PairNode **pairs, wchar_t *path)
+void listForRemoval(struct Pair **pairIndex, wchar_t *path)
 {
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(path) >= MAX_LINE)
@@ -385,12 +405,12 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 			wcscpy_s(currentItemSlash, MAX_LINE, currentItem);
 			wcscat(currentItemSlash, L"\\");
 
-			addPair(pairs, L"Delete folder", currentItemSlash, -filesize.QuadPart);
-			listForRemoval(pairs, currentItem);
+			addPair(pairIndex, L"Delete folder", currentItemSlash, -filesize.QuadPart);
+			listForRemoval(pairIndex, currentItem);
 		}
 		else // item is a file
 		{
-			addPair(pairs, L"Delete file", currentItem, -filesize.QuadPart);
+			addPair(pairIndex, L"Delete file", currentItem, -filesize.QuadPart);
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 
@@ -401,7 +421,7 @@ void listForRemoval(struct PairNode **pairs, wchar_t *path)
 	return;
 }
 
-static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct Project *project)
+static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct Project *project)
 {
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(project->pair.source) >= MAX_LINE)
@@ -417,6 +437,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	hFind = FindFirstFile(szDir, &ffd);
 
+	//NOTE invalid Documents links are caught here
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
 		wchar_t buf[MAX_LINE];
@@ -438,7 +459,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 		LARGE_INTEGER filesize;
 		filesize.LowPart = ffd.nFileSizeLow;
 		filesize.HighPart = ffd.nFileSizeHigh;
-		
+
 		wchar_t source[MAX_LINE];
 		addPath(source, project->pair.source, ffd.cFileName);
 
@@ -457,7 +478,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSource() for %s -> %s", source, destination);
 	logger(buf);
 #endif
-				previewFolderPairSource(hwnd, pairs, &destinationSubFolder);
+				previewFolderPairSource(hwnd, pairIndex, &destinationSubFolder);
 			}
 			else // target folder does not exist
 			{
@@ -474,8 +495,8 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 				wcscpy_s(destinationSlash, MAX_LINE, destination);
 				wcscat(destinationSlash, L"\\");
 
-				addPair(pairs, sourceSlash, destinationSlash, filesize.QuadPart);
-				listTreeContent(pairs, source, destination);
+				addPair(pairIndex, sourceSlash, destinationSlash, filesize.QuadPart);
+				listTreeContent(pairIndex, source, destination);
 			}
 			continue;
 		}
@@ -487,7 +508,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 	swprintf(buf, MAX_LINE, L"target file does not exist, add %s to list", destination);
 	logger(buf);
 #endif
-			addPair(pairs, source, destination, filesize.QuadPart);
+			addPair(pairIndex, source, destination, filesize.QuadPart);
 			continue;
 		}
 #if DETAIL_MODE
@@ -505,7 +526,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 	swprintf(buf, MAX_LINE, L"target file is out of date, add %s to list", destination);
 	logger(buf);
 #endif
-			addPair(pairs, source, destination, filesize.QuadPart);
+			addPair(pairIndex, source, destination, filesize.QuadPart);
 			continue;
 		}
 
@@ -517,7 +538,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 	swprintf(buf, MAX_LINE, L"source & target files have different date/time, add %s to list", destination);
 	logger(buf);
 #endif
-			addPair(pairs, source, destination, filesize.QuadPart);
+			addPair(pairIndex, source, destination, filesize.QuadPart);
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 
@@ -529,7 +550,7 @@ static void previewFolderPairSource(HWND hwnd, struct PairNode **pairs, struct P
 }
 
 // reversed folder direction
-static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct Project *project)
+static void previewFolderPairTarget(HWND hwnd, struct Pair **pairIndex, struct Project *project)
 {
 	wchar_t szDir[MAX_LINE];
 	if (wcslen(project->pair.source) >= MAX_LINE)
@@ -583,7 +604,7 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairTarget() for %s -> %s", source, destination);
 	logger(buf);
 #endif
-				previewFolderPairTarget(hwnd, pairs, &destinationSubFolder);
+				previewFolderPairTarget(hwnd, pairIndex, &destinationSubFolder);
 			}
 			else // target folder does not exist
 			{
@@ -596,8 +617,8 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 				wcscpy_s(sourceSlash, MAX_LINE, source);
 				wcscat(sourceSlash, L"\\");
 
-				addPair(pairs, L"Delete folder", sourceSlash, -filesize.QuadPart);
-				listForRemoval(pairs, source);
+				addPair(pairIndex, L"Delete folder", sourceSlash, -filesize.QuadPart);
+				listForRemoval(pairIndex, source);
 			}
 			continue;
 		}
@@ -611,7 +632,7 @@ static void previewFolderPairTarget(HWND hwnd, struct PairNode **pairs, struct P
 	swprintf(buf, MAX_LINE, L"target file does not exist, add source %s for deletion", source);
 	logger(buf);
 #endif
-			addPair(pairs, L"Delete file", source, -filesize.QuadPart);
+			addPair(pairIndex, L"Delete file", source, -filesize.QuadPart);
 		}
 	} while (FindNextFile(hFind, &ffd) != 0);
 

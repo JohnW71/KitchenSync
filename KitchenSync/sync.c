@@ -1,17 +1,23 @@
 #include "kitchen_sync.h"
 
-#define DANGEROUS 0
+#define LIVE_UPDATE 1
 
 DWORD CALLBACK entryPointSync(LPVOID);
 
-void synchronizeFiles(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, HWND tabHwnd, struct PairNode **pairs)
+void synchronizeFiles(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, HWND tabHwnd, struct Pair **pairIndex)
 {
 	HANDLE threads[1];
 	DWORD threadIDs[1];
 
-	struct SyncArguments syncArgs = { pbHwnd, lbSyncHwnd, bSync, tabHwnd, pairs };
+	static struct SyncArguments args;
+	args.pbHwnd = pbHwnd;
+	args.lbSyncHwnd = lbSyncHwnd;
+	args.bSync = bSync;
+	args.tabHwnd = tabHwnd;
+	args.pairIndex = pairIndex;
 
-	threads[0] = CreateThread(NULL, 0, entryPointSync, &syncArgs, 0, &threadIDs[0]);
+	threads[0] = CreateThread(NULL, 0, entryPointSync, &args, 0, &threadIDs[0]);
+
 	if (threads[0] == NULL)
 	{
 		wchar_t buf[MAX_LINE] = L"Failed to create sync thread";
@@ -26,30 +32,10 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 	HWND lbSyncHwnd = args->lbSyncHwnd;
 	HWND bSync = args->bSync;
 	HWND tabHwnd = args->tabHwnd;
-
-	if (args->pairs == NULL)
-	{
-		wchar_t buf[MAX_LINE] = L"Can't sync, args->pairs list is empty";
-		logger(buf);
-		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-		return 0;
-	}
-
-	struct PairNode **pairs = args->pairs;
-	struct PairNode *current = *pairs;
-
-	if (current == NULL)
-	{
-		wchar_t buf[MAX_LINE] = L"Can't sync, current pointer to pairs list is null";
-		logger(buf);
-		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-		return 0;
-	}
-
+	struct Pair **pairIndex = args->pairIndex;
 	int position = 0;
 	int completed = 0;
-	int actionCount = countPairNodes(*pairs);
-	assert(actionCount > 0);
+	assert(pairCount > 0);
 	wchar_t buf[MAX_LINE] = { 0 };
 
 	SetWindowText(bSync, L"Working...");
@@ -58,150 +44,149 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 
 	startCount();
 
-	for (int i = 0; i < actionCount; ++i)
+	for (int i = 0; i < pairCount; ++i)
 	{
-		if (wcscmp(current->pair.source, L"Delete folder") == 0)
+		struct Pair *pair = pairIndex[i];
+		if (pair == NULL)
 			continue;
 
-		if (wcscmp(current->pair.source, L"Delete file") == 0)
+		if (wcscmp(pair->source, L"Delete folder") == 0)
+			continue;
+
+		if (wcscmp(pair->source, L"Delete file") == 0)
 		{
 			// delete file
-#if DANGEROUS
-			if (deleteFile(current->pair.destination))
+#if LIVE_UPDATE
+			if (deleteFile(pair->destination))
 			{
-				//swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);
 				wcscpy_s(buf, MAX_LINE, L"Deleted file ");
-				wcscat(buf, current->pair.destination);
+				wcscat(buf, pair->destination);
 				wcscat(buf, L" OK");
 			}
 			else
 			{
-				//swprintf(buf, MAX_LINE, L"Failed deleting file %s OK", current->pair.destination);
 				wcscpy_s(buf, MAX_LINE, L"Failed deleting file ");
-				wcscat(buf, current->pair.destination);
+				wcscat(buf, pair->destination);
 			}
 #else
-	//swprintf(buf, MAX_LINE, L"Deleted file %s OK", current->pair.destination);
-	wcscpy_s(buf, MAX_LINE, L"Deleted file ");
-	wcscat(buf, current->pair.destination);
-	wcscat(buf, L" OK");
+			wcscpy_s(buf, MAX_LINE, L"Deleted file ");
+			wcscat(buf, pair->destination);
+			wcscat(buf, L" OK");
 #endif
 		}
 		else
 		{
 			// create folder
-			size_t lastPosition = wcslen(current->pair.destination) - 1;
-			if (current->pair.destination[lastPosition] == '\\')
+			size_t lastPosition = wcslen(pair->destination) - 1;
+			if (pair->destination[lastPosition] == '\\')
 			{
-#if DANGEROUS
-				if (createFolder(current->pair.destination))
+#if LIVE_UPDATE
+				if (createFolder(pair->destination))
 				{
-					//swprintf(buf, MAX_LINE, L"Created folder %s -> %s OK", current->pair.source, current->pair.destination);
 					wcscpy_s(buf, MAX_LINE, L"Created folder ");
-					wcscat(buf, current->pair.source);
+					wcscat(buf, pair->source);
 					wcscat(buf, L" -> ");
-					wcscat(buf, current->pair.destination);
+					wcscat(buf, pair->destination);
 					wcscat(buf, L" OK");
 				}
 				else
 				{
-					//swprintf(buf, MAX_LINE, L"Failed creating folder %s -> %s", current->pair.source, current->pair.destination);
 					wcscpy_s(buf, MAX_LINE, L"Failed creating folder ");
-					wcscat(buf, current->pair.source);
+					wcscat(buf, pair->source);
 					wcscat(buf, L" -> ");
-					wcscat(buf, current->pair.destination);
+					wcscat(buf, pair->destination);
 				}
 #else
-	//swprintf(buf, MAX_LINE, L"Created folder %s -> %s OK", current->pair.source, current->pair.destination);
-	wcscpy_s(buf, MAX_LINE, L"Created folder ");
-	wcscat(buf, current->pair.source);
-	wcscat(buf, L" -> ");
-	wcscat(buf, current->pair.destination);
-	wcscat(buf, L" OK");
+				wcscpy_s(buf, MAX_LINE, L"Created folder ");
+				wcscat(buf, pair->source);
+				wcscat(buf, L" -> ");
+				wcscat(buf, pair->destination);
+				wcscat(buf, L" OK");
 #endif
 			}
 			else // copy file
 			{
-#if DANGEROUS
-				if (copyFile(current->pair.source, current->pair.destination))
+#if LIVE_UPDATE
+				if (copyFile(pair->source, pair->destination))
 				{
-					//swprintf(buf, MAX_LINE, L"Copied file %s -> %s OK", current->pair.source, current->pair.destination);
 					wcscpy_s(buf, MAX_LINE, L"Copied file ");
-					wcscat(buf, current->pair.source);
+					wcscat(buf, pair->source);
 					wcscat(buf, L" -> ");
-					wcscat(buf, current->pair.destination);
+					wcscat(buf, pair->destination);
 					wcscat(buf, L" OK");
 				}
 				else
 				{
-					//swprintf(buf, MAX_LINE, L"Failed copying file %s -> %s", current->pair.source, current->pair.destination);
 					wcscpy_s(buf, MAX_LINE, L"Failed copying file ");
-					wcscat(buf, current->pair.source);
+					wcscat(buf, pair->source);
 					wcscat(buf, L" -> ");
-					wcscat(buf, current->pair.destination);
+					wcscat(buf, pair->destination);
 			}
 #else
-	//swprintf(buf, MAX_LINE, L"Copied file %s -> %s OK", current->pair.source, current->pair.destination);
-	wcscpy_s(buf, MAX_LINE, L"Copied file ");
-	wcscat(buf, current->pair.source);
-	wcscat(buf, L" -> ");
-	wcscat(buf, current->pair.destination);
-	wcscat(buf, L" OK");
+				wcscpy_s(buf, MAX_LINE, L"Copied file ");
+				wcscat(buf, pair->source);
+				wcscat(buf, L" -> ");
+				wcscat(buf, pair->destination);
+				wcscat(buf, L" OK");
 #endif
 			}
 		}
 
 		logger(buf);
-		int progressPosition = (int)(((float)++completed / actionCount) * 100.0f);
+		int progressPosition = (int)(((float)++completed / pairCount) * 100.0f);
 		SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
 		SendMessage(lbSyncHwnd, LB_ADDSTRING, position++, (LPARAM)buf);
-		current = current->next;
 	}
 
-	// set current to last pair
-	current = *pairs;
-	for (int i = 0; i < actionCount; ++i)
+	// set current to last non-null pair
+	int pairPosition = pairCount-1;
+	if (pairPosition < 0)
 	{
-#if DEBUG_MODE
-	swprintf(buf, MAX_LINE, L"Action: %s -> %s", current->pair.source, current->pair.destination);
-	logger(buf);
-#endif
-		if (current->next != NULL)
-			current = current->next;
+		logger(L"Invalid pairPosition");
+		return 0;
+	}
+	struct Pair *pair = pairIndex[pairPosition];
+	while (pair == NULL && pairPosition > 0)
+	{
+		--pairPosition;
+		pair = pairIndex[pairPosition];
+	}
+
+	if (pair == NULL)
+	{
+		logger(L"No valid pair found");
+		return 0;
 	}
 
 	// search backwards for folder deletions
-	while (wcscmp(current->pair.source, L"Delete folder") == 0)
+	while (wcscmp(pair->source, L"Delete folder") == 0)
 	{
 		// delete folder
-#if DANGEROUS
-		if (deleteFolder(current->pair.destination))
+#if LIVE_UPDATE
+		if (deleteFolder(pair->destination))
 		{
-			//swprintf(buf, MAX_LINE, L"Deleted folder %s OK", current->pair.destination);
 			wcscpy_s(buf, MAX_LINE, L"Deleted folder ");
-			wcscat(buf, current->pair.destination);
+			wcscat(buf, pair->destination);
 			wcscat(buf, L" OK");
 		}
 		else
 		{
-			//swprintf(buf, MAX_LINE, L"Failed deleting folder %s", current->pair.destination);
 			wcscpy_s(buf, MAX_LINE, L"Failed deleting folder ");
-			wcscat(buf, current->pair.destination);
+			wcscat(buf, pair->destination);
 		}
 #else
-	//swprintf(buf, MAX_LINE, L"Deleted folder %s OK", current->pair.destination);
-	wcscpy_s(buf, MAX_LINE, L"Deleted folder ");
-	wcscat(buf, current->pair.destination);
-	wcscat(buf, L" OK");
+		wcscpy_s(buf, MAX_LINE, L"Deleted folder ");
+		wcscat(buf, pair->destination);
+		wcscat(buf, L" OK");
 #endif
 
 		logger(buf);
-		int progressPosition = (int)(((float)++completed / actionCount) * 100.0f);
+		int progressPosition = (int)(((float)++completed / pairCount) * 100.0f);
 		SendMessage(pbHwnd, PBM_SETPOS, progressPosition, 0);
 		SendMessage(lbSyncHwnd, LB_ADDSTRING, position++, (LPARAM)buf);
 
-		if (current->previous != NULL)
-			current = current->previous;
+		if (pairPosition > 0)
+			pair = pairIndex[--pairPosition];
 		else
 			break;
 	}
@@ -210,6 +195,6 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 	SetWindowText(bSync, L"Sync");
 	EnableWindow(bSync, false);
 	EnableWindow(tabHwnd, true);
-	deletePairList(pairs);
+	deleteAllPairs(pairIndex);
 	return 0;
 }

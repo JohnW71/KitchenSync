@@ -2,6 +2,7 @@
 
 static void sizeFormatted(LONGLONG, wchar_t *);
 static void clampWindowPosition(int *, int *, int *);
+static void compressPairs(struct Pair **);
 
 void startCount()
 {
@@ -266,7 +267,7 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 			return;
 		}
 
-		wcscpy_s(buf, MAX_LINE * 4, L"Name: ");
+		wcscpy_s(buf, MAX_LINE * 4, L"Project: ");
 		wcscat(buf, name);
 		wcscat(buf, L", source: ");
 		wcscat(buf, source);
@@ -333,27 +334,11 @@ void fillProjectListbox(HWND hwnd, struct ProjectNode **head_ref)
 }
 
 // load all file pair nodes into Sync listbox
-void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
+void fillSyncListbox(HWND hwnd, struct Pair **pairIndex)
 {
-	assert(head_ref != NULL);
-
-	wchar_t *currentPairName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
-	if (!currentPairName)
-	{
-		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for currentPairName from preview list";
-		logger(buf);
-		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-		return;
-	}
-
-	if (!head_ref)
-	{
-		free(currentPairName);
-		return;
-	}
-
+	compressPairs(pairIndex);
 	int position = 0;
-	struct PairNode *current = *head_ref;
+
 	struct DriveSpace
 	{
 		LONGLONG requiredSpace;
@@ -362,8 +347,12 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 	struct DriveSpace driveSpace[26] = { 0 };
 
 	// Add every pair to listbox
-	while (current != NULL)
+	for (int i = 0; i < pairCount; ++i)
 	{
+		struct Pair *pair = pairIndex[i];
+		if (pair == NULL)
+			continue;
+
 		wchar_t *buffer = (wchar_t *)calloc(FOLDER_PAIR_SIZE, sizeof(wchar_t));
 		if (!buffer)
 		{
@@ -373,8 +362,8 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 			return;
 		}
 
-		LONGLONG size = current->pair.filesize;
-		int drivePosition = ((int)(toupper(current->pair.destination[0])) - 65);
+		LONGLONG size = pair->filesize;
+		int drivePosition = ((int)(toupper(pair->destination[0])) - 65);
 
 		if (drivePosition >= 0 && drivePosition <= 25)
 		{
@@ -386,22 +375,19 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 
 		wchar_t formatted[MAX_LINE] = { 0 };
 		sizeFormatted(size, formatted);
-		wcscpy_s(buffer, FOLDER_PAIR_SIZE, current->pair.source);
+		wcscpy_s(buffer, FOLDER_PAIR_SIZE, pair->source);
 		wcscat(buffer, L" -> ");
-		wcscat(buffer, current->pair.destination);
+		wcscat(buffer, pair->destination);
 		wcscat(buffer, L"  (");
 		wcscat(buffer, formatted);
 		wcscat(buffer, L")");
 		SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)buffer);
-		current = current->next;
 	}
 
 	SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)L"");
 
-	current = *head_ref;
-	int pc = countPairNodes(current);
-	wchar_t pairCount[MAX_LINE] = { 0 };
-	sizeFormatted(pc, pairCount);
+	wchar_t pairCountFormatted[MAX_LINE] = { 0 };
+	sizeFormatted(pairCount, pairCountFormatted);
 
 	// Display every drive's summary
 	for (int i = 0; i < 26; ++i)
@@ -424,10 +410,10 @@ void fillSyncListbox(HWND hwnd, struct PairNode **head_ref)
 			buf[0] = (wchar_t)(i + 65);
 			wcscat(buf, L": space required ");
 			wcscat(buf, required);
-			wcscat(buf, L", available ");
+			wcscat(buf, L" available ");
 			wcscat(buf, available);
-			wcscat(buf, L", pair count ");
-			wcscat(buf, pairCount);
+			wcscat(buf, L" pair count ");
+			wcscat(buf, pairCountFormatted);
 			wcscat(buf, L"... ");
 			wcscat(buf, result);
 			SendMessage(hwnd, LB_ADDSTRING, position, (LPARAM)buf);
@@ -556,13 +542,13 @@ void reloadFolderPairs(HWND src, HWND dst, struct ProjectNode *projectsHead, wch
 
 	while (current != NULL)
 	{
-		// add all folder pairs from current project
-		if (wcscmp(projectName, current->project.name) == 0)
-		{
-			SendMessage(src, LB_ADDSTRING, position, (LPARAM)current->project.pair.source);
-			SendMessage(dst, LB_ADDSTRING, position++, (LPARAM)current->project.pair.destination);
-		}
-		current = current->next;
+	// add all folder pairs from current project
+	if (wcscmp(projectName, current->project.name) == 0)
+	{
+		SendMessage(src, LB_ADDSTRING, position, (LPARAM)current->project.pair.source);
+		SendMessage(dst, LB_ADDSTRING, position++, (LPARAM)current->project.pair.destination);
+	}
+	current = current->next;
 	}
 }
 
@@ -594,4 +580,121 @@ void fillInProject(struct Project *project, wchar_t *name, wchar_t *source, wcha
 	wcscpy_s(project->name, MAX_LINE, name);
 	wcscpy_s(project->pair.source, MAX_LINE, source);
 	wcscpy_s(project->pair.destination, MAX_LINE, destination);
+}
+
+void deleteAllPairs(struct Pair **pairIndex)
+{
+	for (int i = 0; i < pairCount; ++i)
+		if (pairIndex[i] != NULL)
+		{
+			free(pairIndex[i]);
+			pairIndex[i] = NULL;
+		}
+
+	pairCount = 0;
+	memset(pairIndex, '\0', sizeof(struct Pair *) * MAX_PAIRS);
+}
+
+void deleteFilePair(struct Pair **pairIndex, wchar_t *filePair)
+{
+	size_t length = wcslen(filePair);
+	assert(length > 0);
+
+	if (length > 0)
+	{
+		wchar_t src[MAX_LINE] = { 0 };
+		wchar_t dst[MAX_LINE] = { 0 };
+		splitPair(filePair, src, dst, length);
+
+		int position = findPair(pairIndex, src, dst);
+		if (position >= 0)
+		{
+			free(pairIndex[position]);
+			pairIndex[position] = NULL;
+		}
+		else
+			logger(L"Failed to delete pair, position wasn't found");
+	}
+}
+
+int findPair(struct Pair **pairIndex, wchar_t *src, wchar_t *dst)
+{
+	for (int i = 0; i < pairCount; ++i)
+	{
+		struct Pair *pair = pairIndex[i];
+		if (pair == NULL)
+			continue;
+
+		if (wcscmp(pair->source, src) == 0 && wcscmp(pair->destination, dst) == 0)
+			return i;
+	}
+
+	return -1;
+}
+
+void sortPairs(struct Pair **pairIndex)
+{
+	bool changed;
+	struct Pair *current;
+	struct Pair *next;
+
+	do
+	{
+		int i = 0;
+		changed = false;
+
+		while (i < pairCount - 1)
+		{
+			current = (struct Pair *) pairIndex[i];
+			next = (struct Pair *) pairIndex[i + 1];
+
+			if (wcscmp(current->source, next->source) > 0 ||
+				(wcscmp(current->source, next->source) == 0 &&
+					wcscmp(current->destination, next->destination) > 0))
+			{
+				struct Pair *tmp = pairIndex[i];
+				pairIndex[i] = pairIndex[i + 1];
+				pairIndex[i + 1] = tmp;
+
+				changed = true;
+			}
+			++i;
+		}
+	} while (changed);
+}
+
+void addPair(struct Pair **pairIndex, wchar_t *source, wchar_t *destination, LONGLONG size)
+{
+	struct Pair *pair = (struct Pair *)malloc(sizeof(struct Pair));
+	if (!pair)
+	{
+		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for new pair";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+		return;
+	}
+
+	wcscpy_s(pair->source, MAX_LINE, source);
+	wcscpy_s(pair->destination, MAX_LINE, destination);
+	pair->filesize = size;
+
+	pairIndex[pairCount] = pair;
+	++pairCount;
+}
+
+void compressPairs(struct Pair **pairIndex)
+{
+	int newCount = 0;
+
+	for (int i = 0; i < pairCount; ++i)
+	{
+		struct Pair *pair = pairIndex[i];
+
+		if (pair == NULL)
+			continue;
+
+		pairIndex[newCount++] = pairIndex[i];
+	}
+
+	pairCount = newCount;
 }
