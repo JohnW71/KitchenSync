@@ -1,6 +1,6 @@
 #include "kitchen_sync.h"
 
-#define DETAIL_MODE 1
+#define DETAIL_MODE 0
 
 static void previewFolderPairSource(HWND, struct Pair **, struct Project *);
 static void previewFolderPairTarget(HWND, struct Pair **, struct Project *);
@@ -95,7 +95,9 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 		findProjectName(lbProjectsHwnd, selectedRow, sourceProject.name);
 		SetWindowText(bSync, L"Scanning...");
 		SendMessage(pbHwnd, PBM_SETPOS, 25, 0);
-		previewFolderPair(pbHwnd, lbSyncHwnd, pairIndex, &sourceProject);
+		wchar_t driveList[MAX_LINE] = { 0 };
+		DWORD drivesLength = getDriveStrings(MAX_LINE, driveList);
+		previewFolderPair(pbHwnd, lbSyncHwnd, pairIndex, &sourceProject, driveList, drivesLength);
 		SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 		SetWindowText(bSync, L"Sorting...");
 		SendMessage(pbHwnd, PBM_SETPOS, 50, 0);
@@ -106,7 +108,6 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 		SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
 	}
 
-	endCount(L"Preview");
 	EnableWindow(tabHwnd, true);
 	SetWindowText(bSync, L"Sync");
 
@@ -130,13 +131,15 @@ void previewProject(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, struct ProjectNode
 
 	SetWindowText(bSync, L"Scanning...");
 	SendMessage(pbHwnd, PBM_SETPOS, 25, 0);
+	wchar_t driveList[MAX_LINE] = { 0 };
+	DWORD drivesLength = getDriveStrings(MAX_LINE, driveList);
 	do
 	{
 		if (wcscmp(current->project.name, projectName) == 0)
 		{
 			struct Project project = { 0 };
 			fillInProject(&project, projectName, current->project.pair.source, current->project.pair.destination);
-			previewFolderPair(pbHwnd, lbSyncHwnd, pairIndex, &project);
+			previewFolderPair(pbHwnd, lbSyncHwnd, pairIndex, &project, driveList, drivesLength);
 		}
 		current = current->next;
 	} while (*head_ref != NULL && current != NULL);
@@ -155,11 +158,9 @@ void previewProject(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, struct ProjectNode
 }
 
 // send one specific folder pair for Preview in both directions
-void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct Pair **pairIndex, struct Project *project)
+void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct Pair **pairIndex, struct Project *project, wchar_t *driveList, DWORD drivesLength)
 {
 	// abort if source or destination drive is missing
-	wchar_t driveList[MAX_LINE] = { 0 };
-	DWORD drivesLength = getDriveStrings(MAX_LINE, driveList);
 	wchar_t srcDrive = project->pair.source[0];
 	wchar_t dstDrive = project->pair.destination[0];
 	bool foundSrc = false;
@@ -203,7 +204,10 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct Pair **pairIndex, st
 	HANDLE threads[2];
 	DWORD threadIDs[2];
 
-	struct PreviewFolderArguments sourceArgs = { lbSyncHwnd, pairIndex, project };
+	static struct PreviewFolderArguments sourceArgs;
+	sourceArgs.hwnd = lbSyncHwnd;
+	sourceArgs.pairIndex = pairIndex;
+	sourceArgs.project = project;
 
 	threads[0] = CreateThread(NULL, 0, entryPointSource, &sourceArgs, 0, &threadIDs[0]);
 	if (threads[0] == NULL)
@@ -213,7 +217,10 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct Pair **pairIndex, st
 		return;
 	}
 
-	struct PreviewFolderArguments targetArgs = { lbSyncHwnd, pairIndex, &reversed };
+	static struct PreviewFolderArguments targetArgs;
+	targetArgs.hwnd = lbSyncHwnd;
+	targetArgs.pairIndex = pairIndex;
+	targetArgs.project = &reversed;
 
 	threads[1] = CreateThread(NULL, 0, entryPointTarget, &targetArgs, 0, &threadIDs[1]);
 	if (threads[1] == NULL)

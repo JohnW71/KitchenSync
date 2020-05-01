@@ -3,7 +3,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define UNICODE
 #define _UNICODE
-#define DEBUG_MODE 1
+#define DEBUG_MODE 0
 
 #include <stdio.h>
 #include <stdint.h> // int64_t
@@ -25,12 +25,14 @@
 #define WINDOW_HEIGHT 1024
 #define WINDOW_HEIGHT_MINIMUM 200
 
+#if DEBUG_MODE
 uint64_t firstCount;
 uint64_t beginCycleCount;
 uint64_t endCycleCount;
 
 uint64_t results[10000];
 int resultCount;
+#endif
 int pairCount;
 
 #if DEBUG_MODE
@@ -71,7 +73,7 @@ bool hiddenFile(wchar_t *);
 bool isProjectName(wchar_t *, int);
 bool listSubFolders(HWND, wchar_t *);
 void loadProjects(HWND, char *, struct ProjectNode **);
-void previewFolderPair(HWND, HWND, struct Pair **, struct Project *);
+void previewFolderPair(HWND, HWND, struct Pair **, struct Project *, wchar_t *, DWORD);
 void previewProject(HWND, HWND, HWND, struct ProjectNode **, struct Pair **, wchar_t *);
 bool readOnly(wchar_t *);
 void readSettings(HWND, char *);

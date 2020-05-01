@@ -88,8 +88,8 @@ void readSettings(HWND hwnd, char *filename)
 	int windowHeight = 0;
 	int windowCol = 0;
 	int windowRow = 0;
-	char *line = (char *)malloc(MAX_LINE);
 
+	char *line = (char *)malloc(MAX_LINE);
 	if (!line)
 	{
 		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for line from settings file";
@@ -99,30 +99,36 @@ void readSettings(HWND hwnd, char *filename)
 		return;
 	}
 
+	char *setting = (char *)calloc(MAX_LINE, sizeof(char));
+	if (!setting)
+	{
+		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for setting from settings file";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+		fclose(f);
+		free(line);
+		return;
+	}
+
+	char *value = (char *)calloc(MAX_LINE, sizeof(char));
+	if (!value)
+	{
+		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for value from settings file";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+		fclose(f);
+		free(line);
+		free(setting);
+		return;
+	}
+
 	while (fgets(line, MAX_LINE, f) != NULL)
 	{
 		if (line[0] == '#')
 			continue;
 
-		char *setting = (char *)calloc(MAX_LINE, sizeof(char));
-		if (!setting)
-		{
-			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for setting from settings file";
-			logger(buf);
-			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-			fclose(f);
-			return;
-		}
-
-		char *value = (char *)calloc(MAX_LINE, sizeof(char));
-		if (!value)
-		{
-			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for value from settings file";
-			logger(buf);
-			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-			fclose(f);
-			return;
-		}
+		memset(setting, '\0', MAX_LINE);
+		memset(value, '\0', MAX_LINE);
 
 		char *l = line;
 		char *s = setting;
@@ -145,6 +151,9 @@ void readSettings(HWND hwnd, char *filename)
 	}
 
 	fclose(f);
+	free(line);
+	free(setting);
+	free(value);
 
 	clampWindowPosition(&windowCol, &windowRow, &windowHeight);
 	SetWindowPos(hwnd, HWND_TOP, windowCol, windowRow, WINDOW_WIDTH, windowHeight, SWP_SHOWWINDOW);
@@ -200,40 +209,50 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 		return;
 	}
 
+	wchar_t *name = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
+	if (!name)
+	{
+		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for name from projects file";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+		fclose(f);
+		free(line);
+		return;
+	}
+
+	wchar_t *source = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
+	if (!source)
+	{
+		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for source from projects file";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+		fclose(f);
+		free(line);
+		free(name);
+		return;
+	}
+
+	wchar_t *destination = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
+	if (!destination)
+	{
+		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for destination from projects file";
+		logger(buf);
+		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
+		fclose(f);
+		free(line);
+		free(name);
+		free(source);
+		return;
+	}
+
 	while (fgetws(line, MAX_LINE * 2, f) != NULL)
 	{
 		if (line[0] == '#' || line[0] == '\n' || line[0] == '\0')
 			continue;
 
-		wchar_t *name = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
-		if (!name)
-		{
-			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for name from projects file";
-			logger(buf);
-			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-			fclose(f);
-			return;
-		}
-
-		wchar_t *source = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
-		if (!source)
-		{
-			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for source from projects file";
-			logger(buf);
-			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-			fclose(f);
-			return;
-		}
-
-		wchar_t *destination = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
-		if (!destination)
-		{
-			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for destination from projects file";
-			logger(buf);
-			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-			fclose(f);
-			return;
-		}
+		memset(name, '\0', MAX_LINE);
+		memset(source, '\0', MAX_LINE);
+		memset(destination, '\0', MAX_LINE);
 
 		wchar_t *l = line;
 		wchar_t *n = name;
@@ -264,6 +283,10 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 			logger(buff);
 			MessageBox(NULL, buff, L"Error", MB_ICONEXCLAMATION | MB_OK);
 			fclose(f);
+			free(line);
+			free(name);
+			free(source);
+			free(destination);
 			return;
 		}
 
@@ -274,6 +297,7 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 		wcscat(buf, L", dest: ");
 		wcscat(buf, destination);
 		logger(buf);
+		free(buf);
 
 		appendProjectNode(head_ref, name, source, destination);
 	}
@@ -284,6 +308,10 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 #endif
 
 	fclose(f);
+	free(line);
+	free(name);
+	free(source);
+	free(destination);
 	sortProjectNodes(head_ref);
 	fillProjectListbox(hwnd, head_ref);
 }
@@ -291,17 +319,18 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 // load all project nodes into Projects listbox
 void fillProjectListbox(HWND hwnd, struct ProjectNode **head_ref)
 {
-	wchar_t *currentProjectName = (wchar_t *)calloc(MAX_LINE, sizeof(wchar_t));
-	if (!currentProjectName)
+	wchar_t currentProjectName[MAX_LINE] = { 0 };
+	int position = 0;
+	struct ProjectNode *current = *head_ref;
+
+	wchar_t *buffer = (wchar_t *)calloc(FOLDER_PAIR_SIZE, sizeof(wchar_t));
+	if (!buffer)
 	{
-		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for currentProjectName from projects file";
+		wchar_t buf[MAX_LINE] = L"Failed to allocate memory for folder pair buffer from projects file";
 		logger(buf);
 		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
-
-	int position = 0;
-	struct ProjectNode *current = *head_ref;
 
 	while (current != NULL)
 	{
@@ -315,15 +344,6 @@ void fillProjectListbox(HWND hwnd, struct ProjectNode **head_ref)
 			SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)current->project.name);
 		}
 
-		wchar_t *buffer = (wchar_t *)calloc(FOLDER_PAIR_SIZE, sizeof(wchar_t));
-		if (!buffer)
-		{
-			wchar_t buf[MAX_LINE] = L"Failed to allocate memory for folder pair buffer from projects file";
-			logger(buf);
-			MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
-			return;
-		}
-
 		wcscpy_s(buffer, FOLDER_PAIR_SIZE, current->project.pair.source);
 		wcscat(buffer, L" -> ");
 		wcscat(buffer, current->project.pair.destination);
@@ -331,6 +351,7 @@ void fillProjectListbox(HWND hwnd, struct ProjectNode **head_ref)
 		wcscpy_s(currentProjectName, MAX_LINE, current->project.name);
 		current = current->next;
 	}
+	free(buffer);
 }
 
 // load all file pair nodes into Sync listbox
@@ -382,6 +403,7 @@ void fillSyncListbox(HWND hwnd, struct Pair **pairIndex)
 		wcscat(buffer, formatted);
 		wcscat(buffer, L")");
 		SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)buffer);
+		free(buffer);
 	}
 
 	SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)L"");
@@ -406,17 +428,17 @@ void fillSyncListbox(HWND hwnd, struct Pair **pairIndex)
 			else
 				wcscpy_s(result, MAX_LINE, L"Not enough space!");
 
-			wchar_t buf[MAX_LINE] = { 0 };
-			buf[0] = (wchar_t)(i + 65);
-			wcscat(buf, L": space required ");
-			wcscat(buf, required);
-			wcscat(buf, L" available ");
-			wcscat(buf, available);
-			wcscat(buf, L" pair count ");
-			wcscat(buf, pairCountFormatted);
-			wcscat(buf, L"... ");
-			wcscat(buf, result);
-			SendMessage(hwnd, LB_ADDSTRING, position, (LPARAM)buf);
+			wchar_t summary[MAX_LINE] = { 0 };
+			summary[0] = (wchar_t)(i + 65);
+			wcscat(summary, L": space required ");
+			wcscat(summary, required);
+			wcscat(summary, L" available ");
+			wcscat(summary, available);
+			wcscat(summary, L" pair count ");
+			wcscat(summary, pairCountFormatted);
+			wcscat(summary, L"... ");
+			wcscat(summary, result);
+			SendMessage(hwnd, LB_ADDSTRING, position, (LPARAM)summary);
 		}
 }
 
@@ -466,17 +488,17 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 	struct ProjectNode *current = *head_ref;
 	int count = 0;
 
+	wchar_t *buf = (wchar_t *)calloc(MAX_LINE * 4, sizeof(wchar_t));
+	if (!buf)
+	{
+		wchar_t buff[MAX_LINE] = L"Failed to allocate memory for buf for projects file";
+		logger(buff);
+		MessageBox(NULL, buff, L"Error", MB_ICONEXCLAMATION | MB_OK);
+		fclose(f);
+		return;
+	}
 	while (current != NULL)
 	{
-		wchar_t *buf = (wchar_t *)calloc(MAX_LINE * 4, sizeof(wchar_t));
-		if (!buf)
-		{
-			wchar_t buff[MAX_LINE] = L"Failed to allocate memory for buf for projects file";
-			logger(buff);
-			MessageBox(NULL, buff, L"Error", MB_ICONEXCLAMATION | MB_OK);
-			return;
-		}
-
 		// don't save project with no pairs
 		if (wcslen(current->project.pair.source) > 0 && wcslen(current->project.pair.destination) > 0)
 		{
@@ -500,12 +522,13 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 		current = current->next;
 	}
 #if DEBUG_MODE
-	wchar_t buf[100] = { 0 };
-	swprintf(buf, 100, L"Saved %d projects", count);
-	logger(buf);
+	wchar_t buff[100] = { 0 };
+	swprintf(buff, 100, L"Saved %d projects", count);
+	logger(buff);
 #endif
 
 	fclose(f);
+	free(buf);
 }
 
 // determine if text is a project name by absence of > character
