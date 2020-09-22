@@ -71,6 +71,8 @@ void writeSettings(HWND hwnd, char *filename)
 	fprintf(f, "window_row=%d\n", windowRow);
 	fprintf(f, "window_col=%d\n", windowCol);
 	fprintf(f, "window_height=%d\n", windowHeight);
+	fprintf(f, "skip_desktop_ini=%d\n", settings.skipDesktopIni);
+	fprintf(f, "skip_document_links=%d\n", settings.skipDocumentLinks);
 	fclose(f);
 }
 
@@ -85,6 +87,8 @@ void readSettings(HWND hwnd, char *filename)
 		return;
 	}
 
+	settings.skipDesktopIni = true;
+	settings.skipDocumentLinks = false;
 	int windowHeight = 0;
 	int windowCol = 0;
 	int windowRow = 0;
@@ -145,9 +149,11 @@ void readSettings(HWND hwnd, char *filename)
 			*v++ = *l++;
 		*v = '\0';
 
-		if (strcmp(setting, "window_row") == 0)		windowRow = atoi(value);
-		if (strcmp(setting, "window_col") == 0)		windowCol = atoi(value);
-		if (strcmp(setting, "window_height") == 0)	windowHeight = atoi(value);
+		if (strcmp(setting, "window_row") == 0)				windowRow = atoi(value);
+		if (strcmp(setting, "window_col") == 0)				windowCol = atoi(value);
+		if (strcmp(setting, "window_height") == 0)			windowHeight = atoi(value);
+		if (strcmp(setting, "skip_desktop_ini") == 0)		settings.skipDesktopIni = atoi(value);
+		if (strcmp(setting, "skip_document_links") == 0)	settings.skipDocumentLinks = atoi(value);
 	}
 
 	fclose(f);

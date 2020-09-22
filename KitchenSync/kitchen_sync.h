@@ -138,3 +138,9 @@ struct SyncArguments
 	HWND tabHwnd;
 	struct Pair **pairIndex;
 };
+
+struct Settings
+{
+	bool skipDesktopIni;
+	bool skipDocumentLinks;
+} settings;

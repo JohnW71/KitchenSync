@@ -21,6 +21,10 @@
 #define ID_EDIT_PAIR_DEST 45
 #define ID_PROGRESS_BAR 50
 #define ID_TIMER1 51
+#define ID_SETTINGS_DESKTOP_LABEL 60
+#define ID_SETTINGS_DESKTOP_CHECKBOX 61
+#define ID_SETTINGS_DOCUMENT_LABEL 62
+#define ID_SETTINGS_DOCUMENT_CHECKBOX 63
 
 #include "kitchen_sync.h"
 #pragma comment(lib, "comctl32.lib")
@@ -94,7 +98,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 	mainHwnd = CreateWindowEx(WS_EX_LEFT,
 		wc.lpszClassName,
-		L"KitchenSync v0.10",
+		L"KitchenSync v0.2",
 		//WS_OVERLAPPEDWINDOW,
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
 		CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH, WINDOW_HEIGHT,
@@ -127,7 +131,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static INITCOMMONCONTROLSEX icex = { 0 };
-	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, tabHwnd, lbSyncHwnd;
+	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, tabHwnd, lbSyncHwnd, lSkipDesktop, cbSkipDesktop, lSkipDocument, cbSkipDocument;
 	static bool listboxClicked = false;
 
 	enum Tabs
@@ -170,8 +174,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			TabCtrl_InsertItem(tabHwnd, 1, &tie);
 			tie.pszText = L"Sync";
 			TabCtrl_InsertItem(tabHwnd, 2, &tie);
-			//tie.pszText = L"Settings";
-			//TabCtrl_InsertItem(tabHwnd, 3, &tie);
+			tie.pszText = L"Settings";
+			TabCtrl_InsertItem(tabHwnd, 3, &tie);
 
 		// projects
 
@@ -239,6 +243,24 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			SendMessage(pbHwnd, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
 			SendMessage(pbHwnd, PBM_SETSTEP, (WPARAM)1, 0);
 
+		// settings
+
+			lSkipDesktop = CreateWindowEx(WS_EX_LEFT, L"Static", L"Skip desktop.ini files",
+				WS_CHILD,
+				10, 50, 150, 25, hwnd, (HMENU)ID_SETTINGS_DESKTOP_LABEL, NULL, NULL);
+
+			cbSkipDesktop = CreateWindowEx(WS_EX_LEFT, L"Button", NULL,
+				BS_CHECKBOX | WS_CHILD,
+				180, 43, 30, 30, hwnd, (HMENU)ID_SETTINGS_DESKTOP_CHECKBOX, NULL, NULL);
+
+			lSkipDocument = CreateWindowEx(WS_EX_LEFT, L"Static", L"Skip Documents links",
+				WS_CHILD,
+				10, 80, 150, 25, hwnd, (HMENU)ID_SETTINGS_DOCUMENT_LABEL, NULL, NULL);
+
+			cbSkipDocument = CreateWindowEx(WS_EX_LEFT, L"Button", NULL,
+				BS_CHECKBOX | WS_CHILD,
+				180, 73, 30, 30, hwnd, (HMENU)ID_SETTINGS_DOCUMENT_CHECKBOX, NULL, NULL);
+
 			break;
 		case WM_NOTIFY:
 		{
@@ -285,6 +307,10 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bSync, SW_HIDE);
 							ShowWindow(bDelete, SW_SHOW);
 							ShowWindow(pbHwnd, SW_HIDE);
+							ShowWindow(lSkipDesktop, SW_HIDE);
+							ShowWindow(cbSkipDesktop, SW_HIDE);
+							ShowWindow(lSkipDocument, SW_HIDE);
+							ShowWindow(cbSkipDocument, SW_HIDE);
 							break;
 						}
 						case 1: // folder pairs
@@ -302,6 +328,10 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bSync, SW_HIDE);
 							ShowWindow(bDelete, SW_SHOW);
 							ShowWindow(pbHwnd, SW_HIDE);
+							ShowWindow(lSkipDesktop, SW_HIDE);
+							ShowWindow(cbSkipDesktop, SW_HIDE);
+							ShowWindow(lSkipDocument, SW_HIDE);
+							ShowWindow(cbSkipDocument, SW_HIDE);
 
 							// if a project name is detected load the pairs
 							if (wcslen(projectName) > 0)
@@ -334,23 +364,34 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(bSync, SW_SHOW);
 							ShowWindow(bDelete, SW_SHOW);
 							ShowWindow(pbHwnd, SW_SHOW);
+							ShowWindow(lSkipDesktop, SW_HIDE);
+							ShowWindow(cbSkipDesktop, SW_HIDE);
+							ShowWindow(lSkipDocument, SW_HIDE);
+							ShowWindow(cbSkipDocument, SW_HIDE);
 							break;
 						}
-						//case 3: // settings
-						//{
-							//ShowWindow(lbProjectsHwnd, SW_HIDE);
-							//ShowWindow(lbSyncHwnd, SW_HIDE);
-							//ShowWindow(lbSourceHwnd, SW_HIDE);
-							//ShowWindow(lbDestHwnd, SW_HIDE);
-							//ShowWindow(bAddProject, SW_HIDE);
-							//ShowWindow(bAddFolders, SW_HIDE);
-							//ShowWindow(bAddPair, SW_HIDE);
-							//ShowWindow(bPreview, SW_HIDE);
-							//ShowWindow(bSync, SW_HIDE);
-							//ShowWindow(bDelete, SW_HIDE);
-							//ShowWindow(pbHwnd, SW_HIDE);
-							//break;
-						//}
+						case 3: // settings
+						{
+							ShowWindow(lbProjectsHwnd, SW_HIDE);
+							ShowWindow(lbSyncHwnd, SW_HIDE);
+							ShowWindow(lbSourceHwnd, SW_HIDE);
+							ShowWindow(lbDestHwnd, SW_HIDE);
+							ShowWindow(bAddProject, SW_HIDE);
+							ShowWindow(bAddFolders, SW_HIDE);
+							ShowWindow(bAddPair, SW_HIDE);
+							ShowWindow(bPreview, SW_HIDE);
+							ShowWindow(bSync, SW_HIDE);
+							ShowWindow(bDelete, SW_HIDE);
+							ShowWindow(pbHwnd, SW_HIDE);
+							ShowWindow(lSkipDesktop, SW_SHOW);
+							ShowWindow(cbSkipDesktop, SW_SHOW);
+							ShowWindow(lSkipDocument, SW_SHOW);
+							ShowWindow(cbSkipDocument, SW_SHOW);
+
+							SendMessage(cbSkipDesktop, BM_SETCHECK, settings.skipDesktopIni, 0);
+							SendMessage(cbSkipDocument, BM_SETCHECK, settings.skipDocumentLinks, 0);
+							break;
+						}
 					}
 				}
 			}
@@ -731,6 +772,25 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				synchronizeFiles(pbHwnd, lbSyncHwnd, bSync, tabHwnd, pairIndex);
 				recentlySynced = true;
 			}
+
+			if (LOWORD(wParam) == ID_SETTINGS_DESKTOP_CHECKBOX)
+			{
+#if DEBUG_MODE
+	logger(L"Desktop checkbox");
+#endif
+				SendMessage((HWND)lParam, BM_SETCHECK, (WPARAM)!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0), 0);
+				settings.skipDesktopIni = !settings.skipDesktopIni;
+			}
+
+			if (LOWORD(wParam) == ID_SETTINGS_DOCUMENT_CHECKBOX)
+			{
+#if DEBUG_MODE
+	logger(L"Document checkbox");
+#endif
+				SendMessage((HWND)lParam, BM_SETCHECK, (WPARAM)!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0), 0);
+				settings.skipDocumentLinks = !settings.skipDocumentLinks;
+			}
+
 			break;
 		//case WM_SIZE:
 		//{

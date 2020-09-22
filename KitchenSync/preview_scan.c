@@ -288,6 +288,9 @@ static void listTreeContent(struct Pair **pairIndex, wchar_t *source, wchar_t *d
 		if (wcscmp(ffd.cFileName, L".") == 0 || wcscmp(ffd.cFileName, L"..") == 0)
 			continue;
 
+		if (settings.skipDesktopIni && wcscmp(ffd.cFileName, L"desktop.ini") == 0)
+			continue;
+
 		// combine source path \ new filename
 		wchar_t currentItem[MAX_LINE] = { 0 };
 		if (wcslen(source) + wcslen(ffd.cFileName) + 2 > MAX_LINE)
@@ -390,6 +393,9 @@ void listForRemoval(struct Pair **pairIndex, wchar_t *path)
 		if (wcscmp(ffd.cFileName, L".") == 0 || wcscmp(ffd.cFileName, L"..") == 0)
 			continue;
 
+		if (settings.skipDesktopIni && wcscmp(ffd.cFileName, L"desktop.ini") == 0)
+			continue;
+
 		// combine path \ new filename
 		wchar_t currentItem[MAX_LINE] = { 0 };
 		if (wcslen(path) + wcslen(ffd.cFileName) + 2 > MAX_LINE)
@@ -463,6 +469,9 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 		if (wcscmp(ffd.cFileName, L".") == 0 || wcscmp(ffd.cFileName, L"..") == 0)
 			continue;
 
+		if (settings.skipDesktopIni && wcscmp(ffd.cFileName, L"desktop.ini") == 0)
+			continue;
+
 		LARGE_INTEGER filesize;
 		filesize.LowPart = ffd.nFileSizeLow;
 		filesize.HighPart = ffd.nFileSizeHigh;
@@ -482,16 +491,16 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 				struct Project destinationSubFolder = { 0 };
 				fillInProject(&destinationSubFolder, project->name, source, destination);
 #if DETAIL_MODE
-	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSource() for %s -> %s", source, destination);
-	logger(buf);
+				swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSource() for %s -> %s", source, destination);
+				logger(buf);
 #endif
 				previewFolderPairSource(hwnd, pairIndex, &destinationSubFolder);
 			}
 			else // target folder does not exist
 			{
 #if DETAIL_MODE
-	swprintf(buf, MAX_LINE, L"dump entire tree with listTreeContent() for %s -> %s", source, destination);
-	logger(buf);
+				swprintf(buf, MAX_LINE, L"dump entire tree with listTreeContent() for %s -> %s", source, destination);
+				logger(buf);
 #endif
 				// if new, add entire folder contents to list (recursive but without comparison)
 				wchar_t sourceSlash[MAX_LINE] = { 0 };
@@ -512,17 +521,17 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 		if (!fileExists(destination))
 		{
 #if DETAIL_MODE
-	swprintf(buf, MAX_LINE, L"target file does not exist, add %s to list", destination);
-	logger(buf);
+			swprintf(buf, MAX_LINE, L"target file does not exist, add %s to list", destination);
+			logger(buf);
 #endif
 			addPair(pairIndex, source, destination, filesize.QuadPart);
 			continue;
 		}
 #if DETAIL_MODE
-{
-	swprintf(buf, MAX_LINE, L"target file exists, compare date/time and sizes");
-	logger(buf);
-}
+		{
+			swprintf(buf, MAX_LINE, L"target file exists, compare date/time and sizes");
+			logger(buf);
+		}
 #endif
 		LONGLONG targetSize = getFileSize(destination);
 
@@ -530,8 +539,8 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 		if (targetSize != filesize.QuadPart)
 		{
 #if DETAIL_MODE
-	swprintf(buf, MAX_LINE, L"target file is out of date, add %s to list", destination);
-	logger(buf);
+			swprintf(buf, MAX_LINE, L"target file is out of date, add %s to list", destination);
+			logger(buf);
 #endif
 			addPair(pairIndex, source, destination, filesize.QuadPart);
 			continue;
@@ -542,8 +551,8 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 		if (fileDateIsDifferent(ffd.ftCreationTime, ffd.ftLastAccessTime, ffd.ftLastWriteTime, destination))
 		{
 #if DETAIL_MODE
-	swprintf(buf, MAX_LINE, L"source & target files have different date/time, add %s to list", destination);
-	logger(buf);
+			swprintf(buf, MAX_LINE, L"source & target files have different date/time, add %s to list", destination);
+			logger(buf);
 #endif
 			addPair(pairIndex, source, destination, filesize.QuadPart);
 		}
@@ -588,6 +597,9 @@ static void previewFolderPairTarget(HWND hwnd, struct Pair **pairIndex, struct P
 		if (wcscmp(ffd.cFileName, L".") == 0 || wcscmp(ffd.cFileName, L"..") == 0)
 			continue;
 
+		if (settings.skipDesktopIni && wcscmp(ffd.cFileName, L"desktop.ini") == 0)
+			continue;
+
 		LARGE_INTEGER filesize;
 		filesize.LowPart = ffd.nFileSizeLow;
 		filesize.HighPart = ffd.nFileSizeHigh;
@@ -607,18 +619,18 @@ static void previewFolderPairTarget(HWND hwnd, struct Pair **pairIndex, struct P
 				struct Project destinationSubFolder = { 0 };
 				fillInProject(&destinationSubFolder, project->name, source, destination);
 #if DETAIL_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairTarget() for %s -> %s", source, destination);
-	logger(buf);
+				wchar_t buf[MAX_LINE] = { 0 };
+				swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairTarget() for %s -> %s", source, destination);
+				logger(buf);
 #endif
 				previewFolderPairTarget(hwnd, pairIndex, &destinationSubFolder);
 			}
 			else // target folder does not exist
 			{
 #if DETAIL_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"Entire folder tree to be removed %s", source);
-	logger(buf);
+				wchar_t buf[MAX_LINE] = { 0 };
+				swprintf(buf, MAX_LINE, L"Entire folder tree to be removed %s", source);
+				logger(buf);
 #endif
 				wchar_t sourceSlash[MAX_LINE] = { 0 };
 				wcscpy_s(sourceSlash, MAX_LINE, source);
@@ -635,9 +647,9 @@ static void previewFolderPairTarget(HWND hwnd, struct Pair **pairIndex, struct P
 		{
 			// delete source file
 #if DETAIL_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"target file does not exist, add source %s for deletion", source);
-	logger(buf);
+			wchar_t buf[MAX_LINE] = { 0 };
+			swprintf(buf, MAX_LINE, L"target file does not exist, add source %s for deletion", source);
+			logger(buf);
 #endif
 			addPair(pairIndex, L"Delete file", source, -filesize.QuadPart);
 		}
