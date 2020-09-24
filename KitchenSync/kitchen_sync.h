@@ -142,5 +142,5 @@ struct SyncArguments
 struct Settings
 {
 	bool skipDesktopIni;
-	bool skipDocumentLinks;
+	bool skipSymbolicLinks;
 } settings;

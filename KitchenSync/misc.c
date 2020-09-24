@@ -72,7 +72,7 @@ void writeSettings(HWND hwnd, char *filename)
 	fprintf(f, "window_col=%d\n", windowCol);
 	fprintf(f, "window_height=%d\n", windowHeight);
 	fprintf(f, "skip_desktop_ini=%d\n", settings.skipDesktopIni);
-	fprintf(f, "skip_document_links=%d\n", settings.skipDocumentLinks);
+	fprintf(f, "skip_symbolic_links=%d\n", settings.skipSymbolicLinks);
 	fclose(f);
 }
 
@@ -88,7 +88,7 @@ void readSettings(HWND hwnd, char *filename)
 	}
 
 	settings.skipDesktopIni = true;
-	settings.skipDocumentLinks = false;
+	settings.skipSymbolicLinks = false;
 	int windowHeight = 0;
 	int windowCol = 0;
 	int windowRow = 0;
@@ -153,7 +153,7 @@ void readSettings(HWND hwnd, char *filename)
 		if (strcmp(setting, "window_col") == 0)				windowCol = atoi(value);
 		if (strcmp(setting, "window_height") == 0)			windowHeight = atoi(value);
 		if (strcmp(setting, "skip_desktop_ini") == 0)		settings.skipDesktopIni = atoi(value);
-		if (strcmp(setting, "skip_document_links") == 0)	settings.skipDocumentLinks = atoi(value);
+		if (strcmp(setting, "skip_symbolic_links") == 0)	settings.skipSymbolicLinks = atoi(value);
 	}
 
 	fclose(f);
@@ -296,11 +296,11 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 			return;
 		}
 
-		wcscpy_s(buf, MAX_LINE * 4, L"Project: ");
+		wcscpy_s(buf, MAX_LINE * 4, L"Loaded project: ");
 		wcscat(buf, name);
 		wcscat(buf, L", source: ");
 		wcscat(buf, source);
-		wcscat(buf, L", dest: ");
+		wcscat(buf, L",dest: ");
 		wcscat(buf, destination);
 		logger(buf);
 		free(buf);
@@ -516,7 +516,7 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 			fwprintf(f, L"%s\n", buf);
 		}
 
-		wcscpy_s(buf, MAX_LINE * 4, L"Name: ");
+		wcscpy_s(buf, MAX_LINE * 4, L"Saved project: ");
 		wcscat(buf, current->project.name);
 		wcscat(buf, L", source: ");
 		wcscat(buf, current->project.pair.source);

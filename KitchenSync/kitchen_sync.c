@@ -23,8 +23,8 @@
 #define ID_TIMER1 51
 #define ID_SETTINGS_DESKTOP_LABEL 60
 #define ID_SETTINGS_DESKTOP_CHECKBOX 61
-#define ID_SETTINGS_DOCUMENT_LABEL 62
-#define ID_SETTINGS_DOCUMENT_CHECKBOX 63
+#define ID_SETTINGS_SYMBOLIC_LABEL 62
+#define ID_SETTINGS_SYMBOLIC_CHECKBOX 63
 
 #include "kitchen_sync.h"
 #pragma comment(lib, "comctl32.lib")
@@ -131,7 +131,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static INITCOMMONCONTROLSEX icex = { 0 };
-	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, tabHwnd, lbSyncHwnd, lSkipDesktop, cbSkipDesktop, lSkipDocument, cbSkipDocument;
+	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, tabHwnd, lbSyncHwnd, lSkipDesktop, cbSkipDesktop, lSkipSymbolic, cbSkipSymbolic;
 	static bool listboxClicked = false;
 
 	enum Tabs
@@ -253,13 +253,13 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				BS_CHECKBOX | WS_CHILD,
 				180, 43, 30, 30, hwnd, (HMENU)ID_SETTINGS_DESKTOP_CHECKBOX, NULL, NULL);
 
-			lSkipDocument = CreateWindowEx(WS_EX_LEFT, L"Static", L"Skip Documents links",
+			lSkipSymbolic = CreateWindowEx(WS_EX_LEFT, L"Static", L"Skip symbolic links",
 				WS_CHILD,
-				10, 80, 150, 25, hwnd, (HMENU)ID_SETTINGS_DOCUMENT_LABEL, NULL, NULL);
+				10, 80, 150, 25, hwnd, (HMENU)ID_SETTINGS_SYMBOLIC_LABEL, NULL, NULL);
 
-			cbSkipDocument = CreateWindowEx(WS_EX_LEFT, L"Button", NULL,
+			cbSkipSymbolic = CreateWindowEx(WS_EX_LEFT, L"Button", NULL,
 				BS_CHECKBOX | WS_CHILD,
-				180, 73, 30, 30, hwnd, (HMENU)ID_SETTINGS_DOCUMENT_CHECKBOX, NULL, NULL);
+				180, 73, 30, 30, hwnd, (HMENU)ID_SETTINGS_SYMBOLIC_CHECKBOX, NULL, NULL);
 
 			break;
 		case WM_NOTIFY:
@@ -309,8 +309,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(pbHwnd, SW_HIDE);
 							ShowWindow(lSkipDesktop, SW_HIDE);
 							ShowWindow(cbSkipDesktop, SW_HIDE);
-							ShowWindow(lSkipDocument, SW_HIDE);
-							ShowWindow(cbSkipDocument, SW_HIDE);
+							ShowWindow(lSkipSymbolic, SW_HIDE);
+							ShowWindow(cbSkipSymbolic, SW_HIDE);
 							break;
 						}
 						case 1: // folder pairs
@@ -330,8 +330,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(pbHwnd, SW_HIDE);
 							ShowWindow(lSkipDesktop, SW_HIDE);
 							ShowWindow(cbSkipDesktop, SW_HIDE);
-							ShowWindow(lSkipDocument, SW_HIDE);
-							ShowWindow(cbSkipDocument, SW_HIDE);
+							ShowWindow(lSkipSymbolic, SW_HIDE);
+							ShowWindow(cbSkipSymbolic, SW_HIDE);
 
 							// if a project name is detected load the pairs
 							if (wcslen(projectName) > 0)
@@ -366,8 +366,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(pbHwnd, SW_SHOW);
 							ShowWindow(lSkipDesktop, SW_HIDE);
 							ShowWindow(cbSkipDesktop, SW_HIDE);
-							ShowWindow(lSkipDocument, SW_HIDE);
-							ShowWindow(cbSkipDocument, SW_HIDE);
+							ShowWindow(lSkipSymbolic, SW_HIDE);
+							ShowWindow(cbSkipSymbolic, SW_HIDE);
 							break;
 						}
 						case 3: // settings
@@ -385,11 +385,11 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(pbHwnd, SW_HIDE);
 							ShowWindow(lSkipDesktop, SW_SHOW);
 							ShowWindow(cbSkipDesktop, SW_SHOW);
-							ShowWindow(lSkipDocument, SW_SHOW);
-							ShowWindow(cbSkipDocument, SW_SHOW);
+							ShowWindow(lSkipSymbolic, SW_SHOW);
+							ShowWindow(cbSkipSymbolic, SW_SHOW);
 
 							SendMessage(cbSkipDesktop, BM_SETCHECK, settings.skipDesktopIni, 0);
-							SendMessage(cbSkipDocument, BM_SETCHECK, settings.skipDocumentLinks, 0);
+							SendMessage(cbSkipSymbolic, BM_SETCHECK, settings.skipSymbolicLinks, 0);
 							break;
 						}
 					}
@@ -782,13 +782,13 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 				settings.skipDesktopIni = !settings.skipDesktopIni;
 			}
 
-			if (LOWORD(wParam) == ID_SETTINGS_DOCUMENT_CHECKBOX)
+			if (LOWORD(wParam) == ID_SETTINGS_SYMBOLIC_CHECKBOX)
 			{
 #if DEBUG_MODE
 	logger(L"Document checkbox");
 #endif
 				SendMessage((HWND)lParam, BM_SETCHECK, (WPARAM)!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0), 0);
-				settings.skipDocumentLinks = !settings.skipDocumentLinks;
+				settings.skipSymbolicLinks = !settings.skipSymbolicLinks;
 			}
 
 			break;
