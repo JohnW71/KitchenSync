@@ -1,6 +1,6 @@
 #include "kitchen_sync.h"
 
-#define DETAIL_MODE 0
+#define DETAILED_LOGGING 0
 
 static void previewFolderPairSource(HWND, struct Pair **, struct Project *);
 static void previewFolderPairTarget(HWND, struct Pair **, struct Project *);
@@ -453,8 +453,7 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
 		wchar_t buf[MAX_LINE];
-
-		if ((ffd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT))
+		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
 		{
 			if (settings.skipSymbolicLinks)
 			{
@@ -478,7 +477,7 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 		return;
 	}
 
-#if DETAIL_MODE
+#if DETAILED_LOGGING
 	wchar_t buf[MAX_LINE];
 #endif
 	do
@@ -507,7 +506,7 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 			{
 				struct Project destinationSubFolder = { 0 };
 				fillInProject(&destinationSubFolder, project->name, source, destination);
-#if DETAIL_MODE
+#if DETAILED_LOGGING
 	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSource() for %s -> %s", source, destination);
 	logger(buf);
 #endif
@@ -515,7 +514,7 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 			}
 			else // target folder does not exist
 			{
-#if DETAIL_MODE
+#if DETAILED_LOGGING
 	swprintf(buf, MAX_LINE, L"dump entire tree with listTreeContent() for %s -> %s", source, destination);
 	logger(buf);
 #endif
@@ -537,14 +536,14 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 		// item is a file
 		if (!fileExists(destination))
 		{
-#if DETAIL_MODE
+#if DETAILED_LOGGING
 	swprintf(buf, MAX_LINE, L"target file does not exist, add %s to list", destination);
 	logger(buf);
 #endif
 			addPair(pairIndex, source, destination, filesize.QuadPart);
 			continue;
 		}
-#if DETAIL_MODE
+#if DETAILED_LOGGING
 {
 	swprintf(buf, MAX_LINE, L"target file exists, compare date/time and sizes");
 	logger(buf);
@@ -555,7 +554,7 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 		// if different size, add file to list
 		if (targetSize != filesize.QuadPart)
 		{
-#if DETAIL_MODE
+#if DETAILED_LOGGING
 	swprintf(buf, MAX_LINE, L"target file is out of date, add %s to list", destination);
 	logger(buf);
 #endif
@@ -567,7 +566,7 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 		// if last write time is different between source and destination, add file to list
 		if (fileDateIsDifferent(ffd.ftCreationTime, ffd.ftLastAccessTime, ffd.ftLastWriteTime, destination))
 		{
-#if DETAIL_MODE
+#if DETAILED_LOGGING
 	swprintf(buf, MAX_LINE, L"source & target files have different date/time, add %s to list", destination);
 	logger(buf);
 #endif
@@ -635,7 +634,7 @@ static void previewFolderPairTarget(HWND hwnd, struct Pair **pairIndex, struct P
 			{
 				struct Project destinationSubFolder = { 0 };
 				fillInProject(&destinationSubFolder, project->name, source, destination);
-#if DETAIL_MODE
+#if DETAILED_LOGGING
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairTarget() for %s -> %s", source, destination);
 	logger(buf);
@@ -644,7 +643,7 @@ static void previewFolderPairTarget(HWND hwnd, struct Pair **pairIndex, struct P
 			}
 			else // target folder does not exist
 			{
-#if DETAIL_MODE
+#if DETAILED_LOGGING
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"Entire folder tree to be removed %s", source);
 	logger(buf);
@@ -663,7 +662,7 @@ static void previewFolderPairTarget(HWND hwnd, struct Pair **pairIndex, struct P
 		if (!fileExists(destination))
 		{
 			// delete source file
-#if DETAIL_MODE
+#if DETAILED_LOGGING
 	wchar_t buf[MAX_LINE] = { 0 };
 	swprintf(buf, MAX_LINE, L"target file does not exist, add source %s for deletion", source);
 	logger(buf);

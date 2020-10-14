@@ -1,6 +1,6 @@
 #include "kitchen_sync.h"
 
-#define LIVE_UPDATE 1
+#define LIVE_NOT_SIMULATED 1
 
 DWORD CALLBACK entryPointSync(LPVOID);
 
@@ -56,7 +56,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 		if (wcscmp(pair->source, L"Delete file") == 0)
 		{
 			// delete file
-#if LIVE_UPDATE
+#if LIVE_NOT_SIMULATED
 			if (deleteFile(pair->destination))
 			{
 				wcscpy_s(buf, MAX_LINE, L"Deleted file ");
@@ -80,7 +80,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 			size_t lastPosition = wcslen(pair->destination) - 1;
 			if (pair->destination[lastPosition] == '\\')
 			{
-#if LIVE_UPDATE
+#if LIVE_NOT_SIMULATED
 				if (createFolder(pair->destination))
 				{
 					wcscpy_s(buf, MAX_LINE, L"Created folder ");
@@ -106,7 +106,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 			}
 			else // copy file
 			{
-#if LIVE_UPDATE
+#if LIVE_NOT_SIMULATED
 				if (copyFile(pair->source, pair->destination))
 				{
 					wcscpy_s(buf, MAX_LINE, L"Copied file ");
@@ -162,7 +162,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 	while (wcscmp(pair->source, L"Delete folder") == 0)
 	{
 		// delete folder
-#if LIVE_UPDATE
+#if LIVE_NOT_SIMULATED
 		if (deleteFolder(pair->destination))
 		{
 			wcscpy_s(buf, MAX_LINE, L"Deleted folder ");

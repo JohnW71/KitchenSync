@@ -104,6 +104,7 @@ static void deleteLoggerNode(struct LoggerNode **head_ref)
 
 	// remove head
 	*head_ref = temp->next;
+	free(temp->text);
 	free(temp);
 	return;
 }
