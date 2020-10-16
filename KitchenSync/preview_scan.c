@@ -259,7 +259,7 @@ DWORD CALLBACK entryPointTarget(LPVOID arguments)
 // this recursively adds all the files/folders in and below the supplied folder to the pairs list
 static void listTreeContent(struct Pair **pairIndex, wchar_t *source, wchar_t *destination)
 {
-	wchar_t szDir[MAX_LINE];
+	wchar_t currentPath[MAX_LINE];
 	if (wcslen(source) >= MAX_LINE)
 	{
 		wchar_t buf[MAX_LINE] = L"Folder path is full, can't add \\";
@@ -267,11 +267,11 @@ static void listTreeContent(struct Pair **pairIndex, wchar_t *source, wchar_t *d
 		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
-	addPath(szDir, source, L"*");
+	addPath(currentPath, source, L"*");
 
 	WIN32_FIND_DATA ffd;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
-	hFind = FindFirstFile(szDir, &ffd);
+	hFind = FindFirstFile(currentPath, &ffd);
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
@@ -364,7 +364,7 @@ static void listTreeContent(struct Pair **pairIndex, wchar_t *source, wchar_t *d
 // this recursively adds all the files/folders in and below the supplied folder to the pairs list for removal
 void listForRemoval(struct Pair **pairIndex, wchar_t *path)
 {
-	wchar_t szDir[MAX_LINE];
+	wchar_t currentPath[MAX_LINE];
 	if (wcslen(path) >= MAX_LINE)
 	{
 		wchar_t buf[MAX_LINE] = L"Folder path is full, can't add \\";
@@ -372,11 +372,11 @@ void listForRemoval(struct Pair **pairIndex, wchar_t *path)
 		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
-	addPath(szDir, path, L"*");
+	addPath(currentPath, path, L"*");
 
 	WIN32_FIND_DATA ffd;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
-	hFind = FindFirstFile(szDir, &ffd);
+	hFind = FindFirstFile(currentPath, &ffd);
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
@@ -436,7 +436,7 @@ void listForRemoval(struct Pair **pairIndex, wchar_t *path)
 
 static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct Project *project)
 {
-	wchar_t szDir[MAX_LINE];
+	wchar_t currentPath[MAX_LINE];
 	if (wcslen(project->pair.source) >= MAX_LINE)
 	{
 		wchar_t buf[MAX_LINE] = L"Folder path is full, can't add \\";
@@ -444,11 +444,11 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
-	addPath(szDir, project->pair.source, L"*");
+	addPath(currentPath, project->pair.source, L"*");
 
-	WIN32_FIND_DATA ffd;
+	static WIN32_FIND_DATA ffd;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
-	hFind = FindFirstFile(szDir, &ffd);
+	hFind = FindFirstFile(currentPath, &ffd);
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
@@ -458,20 +458,20 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 			if (settings.skipSymbolicLinks)
 			{
 				wcscpy_s(buf, MAX_LINE, L"Skipped symbolic link to ");
-				wcscat(buf, szDir);
+				wcscat(buf, currentPath);
 				logger(buf);
 				return;
 			}
 			else
 			{
 				wcscpy_s(buf, MAX_LINE, L"Detected symbolic link ");
-				wcscat(buf, szDir);
+				wcscat(buf, currentPath);
 				logger(buf);
 			}
 		}
 
 		wcscpy_s(buf, MAX_LINE, L"Unable to access ");
-		wcscat(buf, szDir);
+		wcscat(buf, currentPath);
 		logger(buf);
 		displayErrorBox(TEXT("previewFolderPairSource"));
 		return;
@@ -584,7 +584,7 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 // reversed folder direction
 static void previewFolderPairTarget(HWND hwnd, struct Pair **pairIndex, struct Project *project)
 {
-	wchar_t szDir[MAX_LINE];
+	wchar_t currentPath[MAX_LINE];
 	if (wcslen(project->pair.source) >= MAX_LINE)
 	{
 		wchar_t buf[MAX_LINE] = L"Folder path is full, can't add \\";
@@ -592,17 +592,17 @@ static void previewFolderPairTarget(HWND hwnd, struct Pair **pairIndex, struct P
 		MessageBox(NULL, buf, L"Error", MB_ICONEXCLAMATION | MB_OK);
 		return;
 	}
-	addPath(szDir, project->pair.source, L"*");
+	addPath(currentPath, project->pair.source, L"*");
 
 	WIN32_FIND_DATA ffd;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
-	hFind = FindFirstFile(szDir, &ffd);
+	hFind = FindFirstFile(currentPath, &ffd);
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
 		wchar_t buf[MAX_LINE] = { 0 };
 		wcscpy_s(buf, MAX_LINE, L"Unable to access ");
-		wcscat(buf, szDir);
+		wcscat(buf, currentPath);
 		logger(buf);
 		displayErrorBox(TEXT("previewFolderPairTarget"));
 		return;
