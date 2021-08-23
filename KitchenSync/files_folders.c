@@ -102,12 +102,12 @@ bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWri
 	FileTimeToSystemTime(&dstWrite, &dstInfo);
 	SystemTimeToTzSpecificLocalTime(NULL, &dstInfo, &dstLocal);
 
-	if (srcInfo.wYear != dstInfo.wYear) return true;
-	if (srcInfo.wMonth != dstInfo.wMonth) return true;
-	if (srcInfo.wDay != dstInfo.wDay) return true;
-	if (srcInfo.wHour != dstInfo.wHour) return true;
-	if (srcInfo.wMinute != dstInfo.wMinute) return true;
-	if (srcInfo.wSecond != dstInfo.wSecond) return true;
+	if (srcLocal.wYear != dstLocal.wYear) return true;
+	if (srcLocal.wMonth != dstLocal.wMonth) return true;
+	if (srcLocal.wDay != dstLocal.wDay) return true;
+	if (srcLocal.wHour != dstLocal.wHour) return true;
+	if (srcLocal.wMinute != dstLocal.wMinute) return true;
+	if (srcLocal.wSecond != dstLocal.wSecond) return true;
 
 	return false;
 }
