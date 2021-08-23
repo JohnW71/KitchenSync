@@ -373,6 +373,7 @@ void fillSyncListbox(HWND hwnd, struct Pair **pairIndex)
 	};
 	struct DriveSpace driveSpace[26] = { 0 };
 
+//NOTE this is the slow part
 	// Add every pair to listbox
 	for (int i = 0; i < pairCount; ++i)
 	{

@@ -192,6 +192,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 	}
 
 	endCount(L"Sync");
+	SendMessage(pbHwnd, PBM_SETPOS, 100, 0); // force 100%
 	SetWindowText(bSync, L"Sync");
 	EnableWindow(bSync, false);
 	EnableWindow(tabHwnd, true);
