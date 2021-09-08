@@ -17,7 +17,7 @@ void displayErrorBox(LPTSTR lpszFunction)
 	DWORD dw = GetLastError();
 
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL, dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
+				  NULL, dw, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
 
 	lpDisplayBuf = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (lstrlen((LPCTSTR)lpMsgBuf) + (size_t)lstrlen((LPCTSTR)lpszFunction) + (size_t)40) * sizeof(TCHAR));
 	if (lpDisplayBuf)
@@ -30,10 +30,10 @@ void displayErrorBox(LPTSTR lpszFunction)
 }
 
 void startPreviewScanThread(HWND pbHwnd, HWND lbSyncHwnd, HWND lbProjectsHwnd, HWND bSync, HWND tabHwnd,
-	struct ProjectNode **head_ref,
-	struct Pair **pairIndex,
-	wchar_t selectedRowText[MAX_LINE],
-	LRESULT selectedRow)
+							struct ProjectNode **head_ref,
+							struct Pair **pairIndex,
+							wchar_t selectedRowText[MAX_LINE],
+							LRESULT selectedRow)
 {
 	HANDLE threads[1];
 	DWORD threadIDs[1];
@@ -80,7 +80,11 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 		return 0;
 	}
 
+#if DEBUG_MODE
 	startCount();
+	firstCount = beginCycleCount;
+	resultCount = 0;
+#endif
 
 	if (isProjectName(selectedRowText, textLen))
 	{
@@ -90,24 +94,46 @@ static DWORD CALLBACK entryPointPreviewScan(LPVOID arguments)
 	else
 	{
 		// preview one folder pair
-		struct Project sourceProject = { 0 };
+		struct Project sourceProject = {0};
 		splitPair(selectedRowText, sourceProject.pair.source, sourceProject.pair.destination, textLen);
+#if DEBUG_MODE
+		startCount();
+#endif
 		findProjectName(lbProjectsHwnd, selectedRow, sourceProject.name);
+#if DEBUG_MODE
+		endCount(L"findProjectName");
+		startCount();
+#endif
 		SetWindowText(bSync, L"Scanning...");
 		SendMessage(pbHwnd, PBM_SETPOS, 25, 0);
-		wchar_t driveList[MAX_LINE] = { 0 };
+		wchar_t driveList[MAX_LINE] = {0};
 		DWORD drivesLength = getDriveStrings(MAX_LINE, driveList);
 		previewFolderPair(pbHwnd, lbSyncHwnd, pairIndex, &sourceProject, driveList, drivesLength);
+#if DEBUG_MODE
+		endCount(L"previewFolderPair");
+		startCount();
+#endif
 		SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 		SetWindowText(bSync, L"Sorting...");
 		SendMessage(pbHwnd, PBM_SETPOS, 50, 0);
 		sortPairs(pairIndex);
+#if DEBUG_MODE
+		endCount(L"sortPairNodes");
+		startCount();
+#endif
 		SetWindowText(bSync, L"Loading...");
 		SendMessage(pbHwnd, PBM_SETPOS, 75, 0);
 		fillSyncListbox(lbSyncHwnd, pairIndex);
+#if DEBUG_MODE
+		endCount(L"fillSyncListbox");
+#endif
 		SendMessage(pbHwnd, PBM_SETPOS, 100, 0);
 	}
 
+#if DEBUG_MODE
+	beginCycleCount = firstCount;
+	endCount(L"Preview total");
+#endif
 	EnableWindow(tabHwnd, true);
 	SetWindowText(bSync, L"Sync");
 
@@ -131,13 +157,13 @@ void previewProject(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, struct ProjectNode
 
 	SetWindowText(bSync, L"Scanning...");
 	SendMessage(pbHwnd, PBM_SETPOS, 25, 0);
-	wchar_t driveList[MAX_LINE] = { 0 };
+	wchar_t driveList[MAX_LINE] = {0};
 	DWORD drivesLength = getDriveStrings(MAX_LINE, driveList);
 	do
 	{
 		if (wcscmp(current->project.name, projectName) == 0)
 		{
-			struct Project project = { 0 };
+			struct Project project = {0};
 			fillInProject(&project, projectName, current->project.pair.source, current->project.pair.destination);
 			previewFolderPair(pbHwnd, lbSyncHwnd, pairIndex, &project, driveList, drivesLength);
 		}
@@ -194,7 +220,7 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct Pair **pairIndex, st
 	}
 
 	// get reversed source & destination
-	struct Project reversed = { 0 };
+	struct Project reversed = {0};
 	fillInProject(&reversed, project->name, project->pair.destination, project->pair.source);
 
 #if 0
@@ -275,7 +301,7 @@ static void listTreeContent(struct Pair **pairIndex, wchar_t *source, wchar_t *d
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		wchar_t buf[MAX_LINE] = { 0 };
+		wchar_t buf[MAX_LINE] = {0};
 		wcscpy_s(buf, MAX_LINE, L"Unable to access ");
 		wcscat(buf, source);
 		logger(buf);
@@ -292,7 +318,7 @@ static void listTreeContent(struct Pair **pairIndex, wchar_t *source, wchar_t *d
 			continue;
 
 		// combine source path \ new filename
-		wchar_t currentItem[MAX_LINE] = { 0 };
+		wchar_t currentItem[MAX_LINE] = {0};
 		if (wcslen(source) + wcslen(ffd.cFileName) + 2 > MAX_LINE)
 		{
 			wchar_t buf[MAX_LINE] = L"Folder path is full, can't add filename";
@@ -309,7 +335,7 @@ static void listTreeContent(struct Pair **pairIndex, wchar_t *source, wchar_t *d
 		// recursive folder reading
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
-			wchar_t currentItemSlash[MAX_LINE] = { 0 };
+			wchar_t currentItemSlash[MAX_LINE] = {0};
 			wcscpy_s(currentItemSlash, MAX_LINE, currentItem);
 			if (wcslen(currentItemSlash) + 2 >= MAX_LINE)
 			{
@@ -321,7 +347,7 @@ static void listTreeContent(struct Pair **pairIndex, wchar_t *source, wchar_t *d
 			wcscat(currentItemSlash, L"\\");
 
 			// make new destination subfolder path
-			wchar_t destinationSubFolder[MAX_LINE] = { 0 };
+			wchar_t destinationSubFolder[MAX_LINE] = {0};
 			wcscpy_s(destinationSubFolder, MAX_LINE, destination);
 			if ((wcslen(destinationSubFolder) + wcslen(currentItem) + 2) >= MAX_LINE)
 			{
@@ -332,7 +358,7 @@ static void listTreeContent(struct Pair **pairIndex, wchar_t *source, wchar_t *d
 			}
 			addPath(destinationSubFolder, destinationSubFolder, ffd.cFileName);
 
-			wchar_t destinationSubFolderSlash[MAX_LINE] = { 0 };
+			wchar_t destinationSubFolderSlash[MAX_LINE] = {0};
 			wcscpy_s(destinationSubFolderSlash, MAX_LINE, destinationSubFolder);
 			if (wcslen(destinationSubFolderSlash) + 2 >= MAX_LINE)
 			{
@@ -348,7 +374,7 @@ static void listTreeContent(struct Pair **pairIndex, wchar_t *source, wchar_t *d
 		}
 		else // item is a file
 		{
-			wchar_t newDestination[MAX_LINE] = { 0 };
+			wchar_t newDestination[MAX_LINE] = {0};
 			addPath(newDestination, destination, ffd.cFileName);
 			addPair(pairIndex, currentItem, newDestination, filesize.QuadPart);
 		}
@@ -380,7 +406,7 @@ void listForRemoval(struct Pair **pairIndex, wchar_t *path)
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		wchar_t buf[MAX_LINE] = { 0 };
+		wchar_t buf[MAX_LINE] = {0};
 		wcscpy_s(buf, MAX_LINE, L"Unable to access ");
 		wcscat(buf, path);
 		logger(buf);
@@ -397,7 +423,7 @@ void listForRemoval(struct Pair **pairIndex, wchar_t *path)
 			continue;
 
 		// combine path \ new filename
-		wchar_t currentItem[MAX_LINE] = { 0 };
+		wchar_t currentItem[MAX_LINE] = {0};
 		if (wcslen(path) + wcslen(ffd.cFileName) + 2 > MAX_LINE)
 		{
 			wchar_t buf[MAX_LINE] = L"Folder path is full, can't add filename";
@@ -414,7 +440,7 @@ void listForRemoval(struct Pair **pairIndex, wchar_t *path)
 		// recursive folder reading
 		if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
-			wchar_t currentItemSlash[MAX_LINE] = { 0 };
+			wchar_t currentItemSlash[MAX_LINE] = {0};
 			wcscpy_s(currentItemSlash, MAX_LINE, currentItem);
 			wcscat(currentItemSlash, L"\\");
 
@@ -504,26 +530,26 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 			// check if target folder exists. if exists do recursive search in folder
 			if (folderExists(destination))
 			{
-				struct Project destinationSubFolder = { 0 };
+				struct Project destinationSubFolder = {0};
 				fillInProject(&destinationSubFolder, project->name, source, destination);
 #if DETAILED_LOGGING
-	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSource() for %s -> %s", source, destination);
-	logger(buf);
+				swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairSource() for %s -> %s", source, destination);
+				logger(buf);
 #endif
 				previewFolderPairSource(hwnd, pairIndex, &destinationSubFolder);
 			}
 			else // target folder does not exist
 			{
 #if DETAILED_LOGGING
-	swprintf(buf, MAX_LINE, L"dump entire tree with listTreeContent() for %s -> %s", source, destination);
-	logger(buf);
+				swprintf(buf, MAX_LINE, L"dump entire tree with listTreeContent() for %s -> %s", source, destination);
+				logger(buf);
 #endif
 				// if new, add entire folder contents to list (recursive but without comparison)
-				wchar_t sourceSlash[MAX_LINE] = { 0 };
+				wchar_t sourceSlash[MAX_LINE] = {0};
 				wcscpy_s(sourceSlash, MAX_LINE, source);
 				wcscat(sourceSlash, L"\\");
 
-				wchar_t destinationSlash[MAX_LINE] = { 0 };
+				wchar_t destinationSlash[MAX_LINE] = {0};
 				wcscpy_s(destinationSlash, MAX_LINE, destination);
 				wcscat(destinationSlash, L"\\");
 
@@ -537,17 +563,17 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 		if (!fileExists(destination))
 		{
 #if DETAILED_LOGGING
-	swprintf(buf, MAX_LINE, L"target file does not exist, add %s to list", destination);
-	logger(buf);
+			swprintf(buf, MAX_LINE, L"target file does not exist, add %s to list", destination);
+			logger(buf);
 #endif
 			addPair(pairIndex, source, destination, filesize.QuadPart);
 			continue;
 		}
 #if DETAILED_LOGGING
-{
-	swprintf(buf, MAX_LINE, L"target file exists, compare date/time and sizes");
-	logger(buf);
-}
+		{
+			swprintf(buf, MAX_LINE, L"target file exists, compare date/time and sizes");
+			logger(buf);
+		}
 #endif
 		LONGLONG targetSize = getFileSize(destination);
 
@@ -555,8 +581,8 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 		if (targetSize != filesize.QuadPart)
 		{
 #if DETAILED_LOGGING
-	swprintf(buf, MAX_LINE, L"target file is out of date, add %s to list", destination);
-	logger(buf);
+			swprintf(buf, MAX_LINE, L"target file is out of date, add %s to list", destination);
+			logger(buf);
 #endif
 			addPair(pairIndex, source, destination, filesize.QuadPart);
 			continue;
@@ -567,8 +593,8 @@ static void previewFolderPairSource(HWND hwnd, struct Pair **pairIndex, struct P
 		if (fileDateIsDifferent(ffd.ftCreationTime, ffd.ftLastAccessTime, ffd.ftLastWriteTime, destination))
 		{
 #if DETAILED_LOGGING
-	swprintf(buf, MAX_LINE, L"source & target files have different date/time, add %s to list", destination);
-	logger(buf);
+			swprintf(buf, MAX_LINE, L"source & target files have different date/time, add %s to list", destination);
+			logger(buf);
 #endif
 			addPair(pairIndex, source, destination, filesize.QuadPart);
 		}
@@ -600,7 +626,7 @@ static void previewFolderPairTarget(HWND hwnd, struct Pair **pairIndex, struct P
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		wchar_t buf[MAX_LINE] = { 0 };
+		wchar_t buf[MAX_LINE] = {0};
 		wcscpy_s(buf, MAX_LINE, L"Unable to access ");
 		wcscat(buf, currentPath);
 		logger(buf);
@@ -632,23 +658,23 @@ static void previewFolderPairTarget(HWND hwnd, struct Pair **pairIndex, struct P
 			// if target folder exists do recursive search in folder
 			if (folderExists(destination))
 			{
-				struct Project destinationSubFolder = { 0 };
+				struct Project destinationSubFolder = {0};
 				fillInProject(&destinationSubFolder, project->name, source, destination);
 #if DETAILED_LOGGING
-	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairTarget() for %s -> %s", source, destination);
-	logger(buf);
+				wchar_t buf[MAX_LINE] = {0};
+				swprintf(buf, MAX_LINE, L"recursive call to previewFolderPairTarget() for %s -> %s", source, destination);
+				logger(buf);
 #endif
 				previewFolderPairTarget(hwnd, pairIndex, &destinationSubFolder);
 			}
 			else // target folder does not exist
 			{
 #if DETAILED_LOGGING
-	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"Entire folder tree to be removed %s", source);
-	logger(buf);
+				wchar_t buf[MAX_LINE] = {0};
+				swprintf(buf, MAX_LINE, L"Entire folder tree to be removed %s", source);
+				logger(buf);
 #endif
-				wchar_t sourceSlash[MAX_LINE] = { 0 };
+				wchar_t sourceSlash[MAX_LINE] = {0};
 				wcscpy_s(sourceSlash, MAX_LINE, source);
 				wcscat(sourceSlash, L"\\");
 
@@ -663,9 +689,9 @@ static void previewFolderPairTarget(HWND hwnd, struct Pair **pairIndex, struct P
 		{
 			// delete source file
 #if DETAILED_LOGGING
-	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"target file does not exist, add source %s for deletion", source);
-	logger(buf);
+			wchar_t buf[MAX_LINE] = {0};
+			swprintf(buf, MAX_LINE, L"target file does not exist, add source %s for deletion", source);
+			logger(buf);
 #endif
 			addPair(pairIndex, L"Delete file", source, -filesize.QuadPart);
 		}

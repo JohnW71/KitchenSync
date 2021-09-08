@@ -33,11 +33,11 @@ bool hiddenFile(wchar_t *path)
 
 LONGLONG getFileSize(wchar_t *path)
 {
-	WIN32_FILE_ATTRIBUTE_DATA info = { 0 };
+	WIN32_FILE_ATTRIBUTE_DATA info = {0};
 
 	if (!GetFileAttributesEx(path, GetFileExInfoStandard, &info))
 	{
-		wchar_t buf[MAX_LINE] = { 0 };
+		wchar_t buf[MAX_LINE] = {0};
 		wcscpy_s(buf, MAX_LINE, L"Error reading file attributes for ");
 		wcscat(buf, path);
 		logger(buf);
@@ -73,21 +73,21 @@ LONGLONG getFileSize(wchar_t *path)
 //	return;
 //}
 
-bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWrite, wchar_t * dstPath)
+bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWrite, wchar_t *dstPath)
 {
-	SYSTEMTIME srcInfo = { 0 };
-	SYSTEMTIME dstInfo = { 0 };
-	SYSTEMTIME srcLocal = { 0 };
-	SYSTEMTIME dstLocal = { 0 };
-	FILETIME dstCreate = { 0 };
-	FILETIME dstAccess = { 0 };
-	FILETIME dstWrite = { 0 };
+	SYSTEMTIME srcInfo = {0};
+	SYSTEMTIME dstInfo = {0};
+	SYSTEMTIME srcLocal = {0};
+	SYSTEMTIME dstLocal = {0};
+	FILETIME dstCreate = {0};
+	FILETIME dstAccess = {0};
+	FILETIME dstWrite = {0};
 
 	HANDLE dst = CreateFile(dstPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 
 	if (!GetFileTime(dst, &dstCreate, &dstAccess, &dstWrite))
 	{
-		wchar_t buf[MAX_LINE] = { 0 };
+		wchar_t buf[MAX_LINE] = {0};
 		wcscpy_s(buf, MAX_LINE, L"Failed to get file time for destination ");
 		wcscat(buf, dstPath);
 		logger(buf);
@@ -120,7 +120,7 @@ bool copyFile(wchar_t *source, wchar_t *dest)
 	if ((readOnly(dest) || hiddenFile(dest)) && setNormalFile(dest) && CopyFile(source, dest, false))
 		return true;
 
-	wchar_t buf[MAX_LINE] = { 0 };
+	wchar_t buf[MAX_LINE] = {0};
 	wcscpy_s(buf, MAX_LINE, L"Error copying file ");
 	wcscat(buf, source);
 	logger(buf);
@@ -133,7 +133,7 @@ bool createFolder(wchar_t *path)
 	if (CreateDirectory(path, NULL))
 		return true;
 
-	wchar_t buf[MAX_LINE] = { 0 };
+	wchar_t buf[MAX_LINE] = {0};
 	wcscpy_s(buf, MAX_LINE, L"Error creating folder ");
 	wcscat(buf, path);
 	logger(buf);
@@ -149,7 +149,7 @@ bool deleteFile(wchar_t *path)
 	if ((readOnly(path) || hiddenFile(path)) && setNormalFile(path) && DeleteFile(path))
 		return true;
 
-	wchar_t buf[MAX_LINE] = { 0 };
+	wchar_t buf[MAX_LINE] = {0};
 	wcscpy_s(buf, MAX_LINE, L"Error deleting file ");
 	wcscat(buf, path);
 	logger(buf);
@@ -163,7 +163,7 @@ bool deleteFolder(wchar_t *path)
 	if (RemoveDirectory(path))
 		return true;
 
-	wchar_t buf[MAX_LINE] = { 0 };
+	wchar_t buf[MAX_LINE] = {0};
 	wcscpy_s(buf, MAX_LINE, L"Error deleting folder ");
 	wcscat(buf, path);
 	logger(buf);
@@ -175,14 +175,14 @@ bool setNormalFile(wchar_t *path)
 {
 	if (SetFileAttributes(path, FILE_ATTRIBUTE_NORMAL))
 	{
-		wchar_t buf[MAX_LINE] = { 0 };
+		wchar_t buf[MAX_LINE] = {0};
 		wcscpy_s(buf, MAX_LINE, L"Removed read-only/hidden attribute for ");
 		wcscat(buf, path);
 		logger(buf);
 		return true;
 	}
 
-	wchar_t buf[MAX_LINE] = { 0 };
+	wchar_t buf[MAX_LINE] = {0};
 	wcscpy_s(buf, MAX_LINE, L"Error setting normal attributes for ");
 	wcscat(buf, path);
 	logger(buf);
@@ -219,7 +219,7 @@ bool listSubFolders(HWND hwnd, wchar_t *path)
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		wchar_t buf[MAX_LINE] = { 0 };
+		wchar_t buf[MAX_LINE] = {0};
 		wcscpy_s(buf, MAX_LINE, L"Unable to access ");
 		wcscat(buf, path);
 		logger(buf);
@@ -230,25 +230,25 @@ bool listSubFolders(HWND hwnd, wchar_t *path)
 	int position = 0;
 
 	// insert drive names into the list before adding the folders underneath
-	wchar_t driveList[MAX_LINE] = { 0 };
-	DWORD drivesLength = getDriveStrings(MAX_LINE, driveList);
+	wchar_t drivesList[MAX_LINE] = {0};
+	DWORD driveListLength = getDriveStrings(MAX_LINE, drivesList);
 
-	for (size_t i = 0; i < drivesLength - 1; ++i)
-		if (driveList[i] == '\0')
-			driveList[i] = '\n';
+	for (size_t i = 0; i < driveListLength; ++i)
+		if (drivesList[i] == '\0')
+			drivesList[i] = '\n';
 
 	size_t i = 0;
 	do
 	{
-		wchar_t name[MAX_LINE] = { 0 };
+		wchar_t name[MAX_LINE] = {0};
 		size_t j = 0;
 
-		while(driveList[i] != '\n' && driveList[i] != '\0')
-			name[j++] = driveList[i++];
+		while (drivesList[i] != '\n' && drivesList[i] != '\0')
+			name[j++] = drivesList[i++];
 
 		SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)name);
 		++i;
-	} while (driveList[i] != '\0');
+	} while (drivesList[i] != '\0');
 
 	// add folders to list
 	do
@@ -276,7 +276,10 @@ DWORD getDriveStrings(DWORD length, wchar_t *buffer)
 		logger(L"GetLogicalDriveStrings() failed");
 
 	if (result > length)
+	{
 		logger(L"GetLogicalDriveStrings() buffer too small");
+		result = length;
+	}
 
 	return result;
 }
@@ -288,7 +291,7 @@ LONGLONG getDriveSpace(int driveIndex)
 	if (driveLetter < 65 || driveLetter > 95)
 		return 0;
 
-	wchar_t drivePath[3] = { 0 };
+	wchar_t drivePath[3] = {0};
 	drivePath[0] = driveLetter;
 	drivePath[1] = ':';
 
@@ -296,15 +299,15 @@ LONGLONG getDriveSpace(int driveIndex)
 	if (GetDiskFreeSpaceEx(drivePath, NULL, NULL, &size))
 	{
 #if DEBUG_MODE
-	wchar_t buf[MAX_LINE] = { 0 };
-	swprintf(buf, MAX_LINE, L"total free bytes = %lld", size.QuadPart);
-	logger(buf);
-	swprintf(buf, MAX_LINE, L"total free KB 1024 = %lld", size.QuadPart /1024);
-	logger(buf);
-	swprintf(buf, MAX_LINE, L"total free MB 1024 / 1024 = %lld", size.QuadPart /1024/1024);
-	logger(buf);
-	swprintf(buf, MAX_LINE, L"total free GB 1024 / 1024 / 1024 = %lld", size.QuadPart /1024/1024/1024);
-	logger(buf);
+		wchar_t buf[MAX_LINE] = {0};
+		swprintf(buf, MAX_LINE, L"total free bytes = %lld", size.QuadPart);
+		logger(buf);
+		swprintf(buf, MAX_LINE, L"total free KB 1024 = %lld", size.QuadPart / 1024);
+		logger(buf);
+		swprintf(buf, MAX_LINE, L"total free MB 1024 / 1024 = %lld", size.QuadPart / 1024 / 1024);
+		logger(buf);
+		swprintf(buf, MAX_LINE, L"total free GB 1024 / 1024 / 1024 = %lld", size.QuadPart / 1024 / 1024 / 1024);
+		logger(buf);
 #endif
 		return size.QuadPart;
 	}

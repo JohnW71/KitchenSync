@@ -20,8 +20,8 @@ void startLoggingThread()
 	else
 		fclose(f);
 
-	HANDLE threads[1];
-	DWORD threadIDs[1];
+	HANDLE threads[1] = {0};
+	DWORD threadIDs[1] = {0};
 	int initialCount = 0;
 	int threadCount = 1;
 	loggerSemaphoreHandle = CreateSemaphoreEx(0, initialCount, threadCount, 0, 0, SEMAPHORE_ALL_ACCESS);

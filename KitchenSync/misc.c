@@ -39,7 +39,7 @@ void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 
 void centerWindow(HWND hwnd)
 {
-	RECT rc = { 0 };
+	RECT rc = {0};
 
 	GetWindowRect(hwnd, &rc);
 	int windowWidth = rc.right - rc.left;
@@ -48,7 +48,7 @@ void centerWindow(HWND hwnd)
 	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
 	SetWindowPos(hwnd, HWND_TOP, (screenWidth - windowWidth) / 2,
-		(screenHeight - windowHeight) / 2, 0, 0, SWP_NOSIZE);
+				 (screenHeight - windowHeight) / 2, 0, 0, SWP_NOSIZE);
 }
 
 void writeSettings(HWND hwnd, char *filename)
@@ -62,7 +62,7 @@ void writeSettings(HWND hwnd, char *filename)
 		return;
 	}
 
-	RECT rc = { 0 };
+	RECT rc = {0};
 	GetWindowRect(hwnd, &rc);
 	int windowHeight = rc.bottom - rc.top;
 	int windowCol = rc.left;
@@ -308,7 +308,7 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 		appendProjectNode(head_ref, name, source, destination);
 	}
 #if DEBUG_MODE
-	wchar_t buf[100] = { 0 };
+	wchar_t buf[100] = {0};
 	swprintf(buf, 100, L"Loaded %d projects", countProjectNodes(*head_ref));
 	logger(buf);
 #endif
@@ -325,7 +325,7 @@ void loadProjects(HWND hwnd, char *filename, struct ProjectNode **head_ref)
 // load all project nodes into Projects listbox
 void fillProjectListbox(HWND hwnd, struct ProjectNode **head_ref)
 {
-	wchar_t currentProjectName[MAX_LINE] = { 0 };
+	wchar_t currentProjectName[MAX_LINE] = {0};
 	int position = 0;
 	struct ProjectNode *current = *head_ref;
 
@@ -371,9 +371,9 @@ void fillSyncListbox(HWND hwnd, struct Pair **pairIndex)
 		LONGLONG requiredSpace;
 		bool used;
 	};
-	struct DriveSpace driveSpace[26] = { 0 };
+	struct DriveSpace driveSpace[26] = {0};
 
-//NOTE this is the slow part
+	// NOTE this is the slow part
 	// Add every pair to listbox
 	for (int i = 0; i < pairCount; ++i)
 	{
@@ -401,7 +401,7 @@ void fillSyncListbox(HWND hwnd, struct Pair **pairIndex)
 		else
 			logger(L"drivePosition outside expected limits");
 
-		wchar_t formatted[MAX_LINE] = { 0 };
+		wchar_t formatted[MAX_LINE] = {0};
 		sizeFormatted(size, formatted);
 		wcscpy_s(buffer, FOLDER_PAIR_SIZE, pair->source);
 		wcscat(buffer, L" -> ");
@@ -415,27 +415,27 @@ void fillSyncListbox(HWND hwnd, struct Pair **pairIndex)
 
 	SendMessage(hwnd, LB_ADDSTRING, position++, (LPARAM)L"");
 
-	wchar_t pairCountFormatted[MAX_LINE] = { 0 };
+	wchar_t pairCountFormatted[MAX_LINE] = {0};
 	sizeFormatted(pairCount, pairCountFormatted);
 
 	// Display every drive's summary
 	for (int i = 0; i < 26; ++i)
 		if (driveSpace[i].used)
 		{
-			wchar_t required[MAX_LINE] = { 0 };
+			wchar_t required[MAX_LINE] = {0};
 			sizeFormatted(driveSpace[i].requiredSpace, required);
 
-			wchar_t available[MAX_LINE] = { 0 };
+			wchar_t available[MAX_LINE] = {0};
 			LONGLONG availableSpace = getDriveSpace(i);
 			sizeFormatted(availableSpace, available);
 
-			wchar_t result[MAX_LINE] = { 0 };
+			wchar_t result[MAX_LINE] = {0};
 			if (availableSpace > driveSpace[i].requiredSpace)
 				wcscpy_s(result, MAX_LINE, L"OK");
 			else
 				wcscpy_s(result, MAX_LINE, L"Not enough space!");
 
-			wchar_t summary[MAX_LINE] = { 0 };
+			wchar_t summary[MAX_LINE] = {0};
 			summary[0] = (wchar_t)(i + 65);
 			wcscat(summary, L": space required ");
 			wcscat(summary, required);
@@ -454,12 +454,12 @@ static void sizeFormatted(LONGLONG size, wchar_t *buf)
 #define LIMIT 256
 
 	// convert size to string
-	wchar_t text[LIMIT] = { 0 };
+	wchar_t text[LIMIT] = {0};
 	swprintf(text, LIMIT, L"%lld", size);
 	size_t length = wcslen(text);
 	wchar_t *t = text + (length - 1);
 
-	wchar_t reversed[LIMIT] = { 0 };
+	wchar_t reversed[LIMIT] = {0};
 	wchar_t *r = reversed;
 
 	// reverse it and add commas
@@ -529,7 +529,7 @@ void saveProjects(char *filename, struct ProjectNode **head_ref)
 		current = current->next;
 	}
 #if DEBUG_MODE
-	wchar_t buff[100] = { 0 };
+	wchar_t buff[100] = {0};
 	swprintf(buff, 100, L"Saved %d projects", count);
 	logger(buff);
 #endif
@@ -550,7 +550,7 @@ bool isProjectName(wchar_t *text, int len)
 // search backwards to find project name from selected pair
 void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *projectName)
 {
-	wchar_t selectedRowText[MAX_LINE] = { 0 };
+	wchar_t selectedRowText[MAX_LINE] = {0};
 
 	do
 	{
@@ -560,8 +560,7 @@ void findProjectName(HWND hwnd, LRESULT selectedRow, wchar_t *projectName)
 			wcscpy_s(projectName, MAX_LINE, selectedRowText);
 			return;
 		}
-	}
-	while (selectedRow >= 0);
+	} while (selectedRow >= 0);
 }
 
 // reload source & destination folder pair listboxes
@@ -572,13 +571,13 @@ void reloadFolderPairs(HWND src, HWND dst, struct ProjectNode *projectsHead, wch
 
 	while (current != NULL)
 	{
-	// add all folder pairs from current project
-	if (wcscmp(projectName, current->project.name) == 0)
-	{
-		SendMessage(src, LB_ADDSTRING, position, (LPARAM)current->project.pair.source);
-		SendMessage(dst, LB_ADDSTRING, position++, (LPARAM)current->project.pair.destination);
-	}
-	current = current->next;
+		// add all folder pairs from current project
+		if (wcscmp(projectName, current->project.name) == 0)
+		{
+			SendMessage(src, LB_ADDSTRING, position, (LPARAM)current->project.pair.source);
+			SendMessage(dst, LB_ADDSTRING, position++, (LPARAM)current->project.pair.destination);
+		}
+		current = current->next;
 	}
 }
 
@@ -632,8 +631,8 @@ void deleteFilePair(struct Pair **pairIndex, wchar_t *filePair)
 
 	if (length > 0)
 	{
-		wchar_t src[MAX_LINE] = { 0 };
-		wchar_t dst[MAX_LINE] = { 0 };
+		wchar_t src[MAX_LINE] = {0};
+		wchar_t dst[MAX_LINE] = {0};
 		splitPair(filePair, src, dst, length);
 
 		int position = findPair(pairIndex, src, dst);
@@ -675,12 +674,12 @@ void sortPairs(struct Pair **pairIndex)
 
 		while (i < pairCount - 1)
 		{
-			current = (struct Pair *) pairIndex[i];
-			next = (struct Pair *) pairIndex[i + 1];
+			current = (struct Pair *)pairIndex[i];
+			next = (struct Pair *)pairIndex[i + 1];
 
 			if (wcscmp(current->source, next->source) > 0 ||
 				(wcscmp(current->source, next->source) == 0 &&
-					wcscmp(current->destination, next->destination) > 0))
+				 wcscmp(current->destination, next->destination) > 0))
 			{
 				struct Pair *tmp = pairIndex[i];
 				pairIndex[i] = pairIndex[i + 1];

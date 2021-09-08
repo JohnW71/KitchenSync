@@ -87,7 +87,7 @@ void sortProjectNodes(struct ProjectNode **);
 void sortPairs(struct Pair **);
 void splitPair(wchar_t *, wchar_t *, wchar_t *, size_t);
 void startCount(void);
-void startPreviewScanThread(HWND, HWND, HWND, HWND, HWND, struct ProjectNode **, struct Pair **, wchar_t [MAX_LINE], LRESULT);
+void startPreviewScanThread(HWND, HWND, HWND, HWND, HWND, struct ProjectNode **, struct Pair **, wchar_t[MAX_LINE], LRESULT);
 void synchronizeFiles(HWND, HWND, HWND, HWND, struct Pair **);
 void writeSettings(HWND, char *);
 

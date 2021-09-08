@@ -4,7 +4,7 @@ static void deleteProjectNode(struct ProjectNode **, int);
 
 void appendProjectNode(struct ProjectNode **head_ref, wchar_t *projectName, wchar_t *sourceFolder, wchar_t *destFolder)
 {
-	struct Project project = { 0 };
+	struct Project project = {0};
 	fillInProject(&project, projectName, sourceFolder, destFolder);
 
 	struct ProjectNode *newProjectNode = (struct ProjectNode *)malloc(sizeof(struct ProjectNode));
@@ -78,8 +78,7 @@ void deleteProject(struct ProjectNode **head_ref, wchar_t *projectName)
 			current = current->next;
 			++i;
 		}
-	}
-	while (*head_ref != NULL && current != NULL);
+	} while (*head_ref != NULL && current != NULL);
 }
 
 // delete single folder pair by name
@@ -91,8 +90,8 @@ void deleteFolderPair(struct ProjectNode **head_ref, wchar_t *folderPair, wchar_
 
 	if (length > 0)
 	{
-		wchar_t src[MAX_LINE] = { 0 };
-		wchar_t dst[MAX_LINE] = { 0 };
+		wchar_t src[MAX_LINE] = {0};
+		wchar_t dst[MAX_LINE] = {0};
 		splitPair(folderPair, src, dst, length);
 
 		struct ProjectNode *current = *head_ref;
@@ -124,8 +123,8 @@ void replaceFolderPair(struct ProjectNode **head_ref, wchar_t *oldFolderPair, wc
 	if (length > 0)
 	{
 		// extract old folder pair
-		wchar_t src[MAX_LINE] = { 0 };
-		wchar_t dst[MAX_LINE] = { 0 };
+		wchar_t src[MAX_LINE] = {0};
+		wchar_t dst[MAX_LINE] = {0};
 		splitPair(oldFolderPair, src, dst, length);
 
 		// find & replace folder pair
@@ -264,7 +263,7 @@ void sortProjectNodes(struct ProjectNode **head_ref)
 		{
 			if (wcscmp(current->project.name, current->next->project.name) > 0 ||
 				(wcscmp(current->project.name, current->next->project.name) == 0 &&
-					wcscmp(current->project.pair.source, current->next->project.pair.source) > 0))
+				 wcscmp(current->project.pair.source, current->next->project.pair.source) > 0))
 			{
 				struct ProjectNode *temp = current->next;
 
@@ -282,6 +281,5 @@ void sortProjectNodes(struct ProjectNode **head_ref)
 
 			previous = previous->next;
 		}
-	}
-	while (changed);
+	} while (changed);
 }

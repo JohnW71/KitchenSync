@@ -36,7 +36,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 	int position = 0;
 	int completed = 0;
 	assert(pairCount > 0);
-	wchar_t buf[MAX_LINE] = { 0 };
+	wchar_t buf[MAX_LINE] = {0};
 
 	SetWindowText(bSync, L"Working...");
 	SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
@@ -121,7 +121,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 					wcscat(buf, pair->source);
 					wcscat(buf, L" -> ");
 					wcscat(buf, pair->destination);
-			}
+				}
 #else
 				wcscpy_s(buf, MAX_LINE, L"Copied file ");
 				wcscat(buf, pair->source);
@@ -139,7 +139,7 @@ DWORD CALLBACK entryPointSync(LPVOID arguments)
 	}
 
 	// set current to last non-null pair
-	int pairPosition = pairCount-1;
+	int pairPosition = pairCount - 1;
 	if (pairPosition < 0)
 	{
 		logger(L"Invalid pairPosition");
