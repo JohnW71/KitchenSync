@@ -106,8 +106,18 @@ bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWri
 	if (srcLocal.wMonth != dstLocal.wMonth) return true;
 	if (srcLocal.wDay != dstLocal.wDay) return true;
 	if (srcLocal.wHour != dstLocal.wHour) return true;
-	if (srcLocal.wMinute != dstLocal.wMinute) return true;
-	if (srcLocal.wSecond != dstLocal.wSecond) return true;
+	//if (srcLocal.wMinute != dstLocal.wMinute) return true;
+	//if (srcLocal.wSecond != dstLocal.wSecond) return true;
+
+	// files copied to network drive have a modified time inaccurate to the second so are detected as changed.
+	// this takes the minutes & seconds combined for src & dst and only marks the file as outdated if there is
+	// more than 1 second difference. GetFileTime & SetFileTime do not help as the file still receives the
+	// inaccurate timestamp
+	int srcTime = (srcLocal.wMinute * 60) + srcLocal.wSecond;
+	int dstTime = (dstLocal.wMinute * 60) + dstLocal.wSecond;
+
+	if (abs(srcTime - dstTime) > 1)
+		return true;
 
 	return false;
 }

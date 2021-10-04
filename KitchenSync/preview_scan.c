@@ -223,6 +223,7 @@ void previewFolderPair(HWND pbHwnd, HWND lbSyncHwnd, struct Pair **pairIndex, st
 	struct Project reversed = {0};
 	fillInProject(&reversed, project->name, project->pair.destination, project->pair.source);
 
+// why is this like this?
 #if 0
 	previewFolderPairSource(lbSyncHwnd, pairIndex, project);
 	previewFolderPairTarget(lbSyncHwnd, pairIndex, &reversed);
