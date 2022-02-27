@@ -25,6 +25,17 @@
 #define ID_SETTINGS_DESKTOP_CHECKBOX 61
 #define ID_SETTINGS_SYMBOLIC_LABEL 62
 #define ID_SETTINGS_SYMBOLIC_CHECKBOX 63
+#define TAB_TOP 5
+#define TAB_LEFT 5
+#define TAB_MARGIN 10
+#define LISTBOX_TOP 80
+#define LISTBOX_LEFT 10
+#define BUTTON_WIDTH 80
+#define BUTTON_HEIGHT 25
+#define BIG_BUTTON_WIDTH 120
+#define BIG_BUTTON_HEIGHT 30
+#define PROGRESS_BAR_HEIGHT 25
+#define RIGHT_MARGIN 20
 
 #include "kitchen_sync.h"
 #pragma comment(lib, "comctl32.lib")
@@ -51,14 +62,21 @@ static HWND lbSourceHwnd;
 static HWND lbDestHwnd;
 static HWND lbPairSourceHwnd;
 static HWND lbPairDestHwnd;
+static HWND lbSyncHwnd;
 static HWND bProjectNameOK;
 static HWND bDelete;
 static HWND pbHwnd;
+static HWND tabHwnd;
 static HINSTANCE instance;
 static HFONT hFont;
 
 static void getProjectName(void);
 static void addFolderPair(void);
+static void resizeProjectTab();
+static void resizePairsTab();
+static void resizeSyncTab();
+static void resizeSettingsTab();
+static void resizeTab(int, int);
 
 static bool showingFolderPair = false;
 static bool showingProjectName = false;
@@ -98,9 +116,9 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 	mainHwnd = CreateWindowEx(WS_EX_LEFT,
 							  wc.lpszClassName,
-							  L"KitchenSync v0.51",
-							  //WS_OVERLAPPEDWINDOW,
-							  WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
+							  L"KitchenSync v0.6",
+							  WS_OVERLAPPEDWINDOW,
+							  //WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
 							  CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH, WINDOW_HEIGHT,
 							  NULL, NULL, hInstance, NULL);
 
@@ -131,7 +149,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static INITCOMMONCONTROLSEX icex = {0};
-	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, tabHwnd, lbSyncHwnd, lSkipDesktop, cbSkipDesktop, lSkipSymbolic, cbSkipSymbolic;
+	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, lSkipDesktop, cbSkipDesktop, lSkipSymbolic, cbSkipSymbolic;
 	static bool listboxClicked = false;
 
 	enum Tabs
@@ -155,7 +173,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			tabHwnd = CreateWindow(WC_TABCONTROL, L"",
 								   WS_VISIBLE | WS_CHILD | WS_CLIPSIBLINGS,
-								   5, 5, rc.right - 10, rc.bottom - 10, hwnd, NULL, instance, NULL);
+								   TAB_TOP, TAB_LEFT, rc.right - TAB_MARGIN, rc.bottom - TAB_MARGIN, hwnd, NULL, instance, NULL);
 
 			if (tabHwnd == NULL)
 			{
@@ -182,63 +200,63 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			// listbox
 			lbProjectsHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 											WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER,
-											10, 80, rc.right - 20, rc.bottom - 90, hwnd, (HMENU)ID_LISTBOX_PROJECTS, NULL, NULL);
+											LISTBOX_LEFT, LISTBOX_TOP, rc.right - RIGHT_MARGIN, rc.bottom - LISTBOX_TOP - TAB_MARGIN, hwnd, (HMENU)ID_LISTBOX_PROJECTS, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbProjectsHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 			SendMessage(lbProjectsHwnd, WM_SETFONT, (WPARAM)hFont, 0);
 
 			bAddProject = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add Project",
 										 WS_VISIBLE | WS_CHILD | WS_TABSTOP,
-										 10, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_ADD_PROJECT, NULL, NULL);
+										 LISTBOX_LEFT, 40, BIG_BUTTON_WIDTH, BIG_BUTTON_HEIGHT, hwnd, (HMENU)ID_BUTTON_ADD_PROJECT, NULL, NULL);
 
 			bAddFolders = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add Folder Pair",
 										 WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_DISABLED,
-										 140, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_ADD_FOLDER_PAIR, NULL, NULL);
+										 140, 40, BIG_BUTTON_WIDTH, BIG_BUTTON_HEIGHT, hwnd, (HMENU)ID_BUTTON_ADD_FOLDER_PAIR, NULL, NULL);
 
 			bDelete = CreateWindowEx(WS_EX_LEFT, L"Button", L"Delete",
 									 WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_DISABLED,
-									 270, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_DELETE, NULL, NULL);
+									 270, 40, BIG_BUTTON_WIDTH, BIG_BUTTON_HEIGHT, hwnd, (HMENU)ID_BUTTON_DELETE, NULL, NULL);
 
 			bPreview = CreateWindowEx(WS_EX_LEFT, L"Button", L"Preview",
 									  WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_DISABLED,
-									  400, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_PREVIEW, NULL, NULL);
+									  400, 40, BIG_BUTTON_WIDTH, BIG_BUTTON_HEIGHT, hwnd, (HMENU)ID_BUTTON_PREVIEW, NULL, NULL);
 
 		// folder pairs
 
 			// source listbox
 			lbSourceHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 										  WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER,
-										  10, 80, (rc.right / 2) - 20, rc.bottom - 90, hwnd, (HMENU)ID_LISTBOX_PAIRS_SOURCE, NULL, NULL);
+										  LISTBOX_LEFT, LISTBOX_TOP, (rc.right / 2) - TAB_MARGIN, rc.bottom - LISTBOX_TOP - TAB_MARGIN, hwnd, (HMENU)ID_LISTBOX_PAIRS_SOURCE, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbSourceHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 			SendMessage(lbSourceHwnd, WM_SETFONT, (WPARAM)hFont, 0);
 
 			// destination listbox
 			lbDestHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 										WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER,
-										(rc.right / 2) + 5, 80, (rc.right / 2) - 20, rc.bottom - 90, hwnd, (HMENU)ID_LISTBOX_PAIRS_DEST, NULL, NULL);
+										(rc.right / 2) + 5, LISTBOX_TOP, (rc.right / 2) - TAB_MARGIN - 5, rc.bottom - LISTBOX_TOP - TAB_MARGIN, hwnd, (HMENU)ID_LISTBOX_PAIRS_DEST, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbDestHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 			SendMessage(lbDestHwnd, WM_SETFONT, (WPARAM)hFont, 0);
 
 			bAddPair = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add Pair",
 									  WS_CHILD | WS_TABSTOP,
-									  10, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_ADD_PAIR, NULL, NULL);
+									  LISTBOX_LEFT, 40, BIG_BUTTON_WIDTH, BIG_BUTTON_HEIGHT, hwnd, (HMENU)ID_BUTTON_ADD_PAIR, NULL, NULL);
 
 		// sync
 
 			// listbox
 			lbSyncHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 										WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER,// | LBS_EXTENDEDSEL,
-										10, 80, rc.right - 20, rc.bottom - 110, hwnd, (HMENU)ID_LISTBOX_SYNC, NULL, NULL);
+										LISTBOX_LEFT, LISTBOX_TOP, rc.right - RIGHT_MARGIN, rc.bottom - LISTBOX_TOP - PROGRESS_BAR_HEIGHT - 5, hwnd, (HMENU)ID_LISTBOX_SYNC, NULL, NULL);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbSyncHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 			SendMessage(lbSyncHwnd, WM_SETFONT, (WPARAM)hFont, 0);
 
 			bSync = CreateWindowEx(WS_EX_LEFT, L"Button", L"Sync",
 								   WS_CHILD | WS_TABSTOP | WS_DISABLED,
-								   10, 40, 120, 30, hwnd, (HMENU)ID_BUTTON_SYNC, NULL, NULL);
+								   LISTBOX_LEFT, 40, BIG_BUTTON_WIDTH, BIG_BUTTON_HEIGHT, hwnd, (HMENU)ID_BUTTON_SYNC, NULL, NULL);
 
 			// progress bar
 			pbHwnd = CreateWindowEx(WS_EX_LEFT, PROGRESS_CLASS, NULL,
 									WS_CHILD | PBS_SMOOTH,
-									10, rc.bottom - 35, rc.right - 20, 25, hwnd, (HMENU)ID_PROGRESS_BAR, NULL, NULL);
+									LISTBOX_LEFT, rc.bottom - PROGRESS_BAR_HEIGHT - TAB_MARGIN, rc.right - RIGHT_MARGIN, PROGRESS_BAR_HEIGHT, hwnd, (HMENU)ID_PROGRESS_BAR, NULL, NULL);
 
 			SendMessage(pbHwnd, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
 			SendMessage(pbHwnd, PBM_SETSTEP, (WPARAM)1, 0);
@@ -247,7 +265,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			lSkipDesktop = CreateWindowEx(WS_EX_LEFT, L"Static", L"Skip desktop.ini files",
 										  WS_CHILD,
-										  10, 50, 150, 25, hwnd, (HMENU)ID_SETTINGS_DESKTOP_LABEL, NULL, NULL);
+										  LISTBOX_LEFT, 50, 150, 25, hwnd, (HMENU)ID_SETTINGS_DESKTOP_LABEL, NULL, NULL);
 
 			cbSkipDesktop = CreateWindowEx(WS_EX_LEFT, L"Button", NULL,
 										   BS_CHECKBOX | WS_CHILD,
@@ -255,12 +273,11 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			lSkipSymbolic = CreateWindowEx(WS_EX_LEFT, L"Static", L"Skip symbolic links",
 										   WS_CHILD,
-										   10, 80, 150, 25, hwnd, (HMENU)ID_SETTINGS_SYMBOLIC_LABEL, NULL, NULL);
+										   LISTBOX_LEFT, 80, 150, 25, hwnd, (HMENU)ID_SETTINGS_SYMBOLIC_LABEL, NULL, NULL);
 
 			cbSkipSymbolic = CreateWindowEx(WS_EX_LEFT, L"Button", NULL,
 											BS_CHECKBOX | WS_CHILD,
 											180, 73, 30, 30, hwnd, (HMENU)ID_SETTINGS_SYMBOLIC_CHECKBOX, NULL, NULL);
-
 			break;
 		case WM_NOTIFY:
 		{
@@ -311,6 +328,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(cbSkipDesktop, SW_HIDE);
 							ShowWindow(lSkipSymbolic, SW_HIDE);
 							ShowWindow(cbSkipSymbolic, SW_HIDE);
+
+							resizeProjectTab();
 							break;
 						}
 						case 1: // folder pairs
@@ -343,6 +362,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							}
 							else
 								EnableWindow(bAddPair, false);
+
+							resizePairsTab();
 							break;
 						}
 						case 2: // sync
@@ -368,6 +389,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(cbSkipDesktop, SW_HIDE);
 							ShowWindow(lSkipSymbolic, SW_HIDE);
 							ShowWindow(cbSkipSymbolic, SW_HIDE);
+
+							resizeSyncTab();
 							break;
 						}
 						case 3: // settings
@@ -792,24 +815,27 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 			}
 
 			break;
-		//case WM_SIZE:
-		//{
-		//	RECT rc = { 0 };
-		//	GetWindowRect(hwnd, &rc);
-		//	int windowHeight = rc.bottom - rc.top;
-
-		//	// resize listbox & textbox to fit window
-		//	SetWindowPos(listboxProjectsHwnd, HWND_TOP, 10, 10, 500, windowHeight - 320, SWP_SHOWWINDOW);
-		//	SetWindowPos(listboxPairsHwnd, HWND_TOP, 520, 10, WINDOW_WIDTH-500-45, 25, SWP_SHOWWINDOW);
-
-		//	// maintain main window width
-		//	SetWindowPos(hwnd, HWND_TOP, rc.left, rc.top, WINDOW_WIDTH, windowHeight, SWP_SHOWWINDOW);
-
-		//	// force minimum height
-		//	if (windowHeight < WINDOW_HEIGHT_MINIMUM)
-		//		SetWindowPos(hwnd, HWND_TOP, rc.left, rc.top, WINDOW_WIDTH, WINDOW_HEIGHT_MINIMUM, SWP_SHOWWINDOW);
-		//}
-		//	break;
+		case WM_SIZE:
+		{
+			// resize listboxes to fit window
+			int tab = TabCtrl_GetCurSel(tabHwnd);
+			switch (tab)
+			{
+				case 0:
+					resizeProjectTab();
+					break;
+				case 1:
+					resizePairsTab();
+					break;
+				case 2:
+					resizeSyncTab();
+					break;
+				case 3:
+					resizeSettingsTab();
+					break;
+			}
+		}
+			break;
 		case WM_KEYUP:
 			switch (wParam)
 			{
@@ -915,20 +941,20 @@ static LRESULT CALLBACK projectNameWndProc(HWND hwnd, UINT msg, WPARAM wParam, L
 
 			lProjectName = CreateWindowEx(WS_EX_LEFT, L"Static", L"Enter project name",
 										  WS_VISIBLE | WS_CHILD,
-										  10, 15, 150, 25, hwnd, (HMENU)ID_LABEL_ADD_PROJECT_NAME, NULL, NULL);
+										  10, 15, 150, BUTTON_HEIGHT, hwnd, (HMENU)ID_LABEL_ADD_PROJECT_NAME, NULL, NULL);
 
 			eProjectName = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
 										  WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER,
-										  140, 10, 170, 25, hwnd, (HMENU)ID_EDIT_ADD_PROJECT_NAME, NULL, NULL);
+										  140, 10, 170, BUTTON_HEIGHT, hwnd, (HMENU)ID_EDIT_ADD_PROJECT_NAME, NULL, NULL);
 			originalProjectNameProc = (WNDPROC)SetWindowLongPtr(eProjectName, GWLP_WNDPROC, (LONG_PTR)customProjectNameProc);
 
 			bProjectNameOK = CreateWindowEx(WS_EX_LEFT, L"Button", L"OK",
 											WS_VISIBLE | WS_CHILD | WS_TABSTOP,
-											320, 10, 80, 25, hwnd, (HMENU)ID_BUTTON_OK, NULL, NULL);
+											320, 10, BUTTON_WIDTH, BUTTON_HEIGHT, hwnd, (HMENU)ID_BUTTON_OK, NULL, NULL);
 
 			bProjectNameCancel = CreateWindowEx(WS_EX_LEFT, L"Button", L"Cancel",
 												WS_VISIBLE | WS_CHILD | WS_TABSTOP,
-												320, 45, 80, 25, hwnd, (HMENU)ID_BUTTON_CANCEL, NULL, NULL);
+												320, 45, BUTTON_WIDTH, BUTTON_HEIGHT, hwnd, (HMENU)ID_BUTTON_CANCEL, NULL, NULL);
 
 			SendMessage(eProjectName, EM_LIMITTEXT, MAX_LINE, 0);
 			if (wcslen(projectName) > 0)
@@ -1100,22 +1126,22 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 		case WM_CREATE:
 			lSource = CreateWindowEx(WS_EX_LEFT, L"Static", L"Source",
 									 WS_VISIBLE | WS_CHILD,
-									 10, 10, 80, 25, hwnd, (HMENU)ID_LABEL_PAIR_SOURCE, NULL, NULL);
+									 LISTBOX_LEFT, 10, BUTTON_WIDTH, BUTTON_HEIGHT, hwnd, (HMENU)ID_LABEL_PAIR_SOURCE, NULL, NULL);
 
 			eSource = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
 									 WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL,
-									 10, 30, 370, 25, hwnd, (HMENU)ID_EDIT_PAIR_SOURCE, NULL, NULL);
+									 LISTBOX_LEFT, 30, 370, 25, hwnd, (HMENU)ID_EDIT_PAIR_SOURCE, NULL, NULL);
 			originalSourceEditboxProc = (WNDPROC)SetWindowLongPtr(eSource, GWLP_WNDPROC, (LONG_PTR)customSourceEditboxProc);
 
 			lbPairSourceHwnd = CreateWindowEx(WS_EX_LEFT, L"ListBox", NULL,
 											  WS_VISIBLE | WS_CHILD | LBS_NOTIFY | WS_VSCROLL | WS_BORDER | LBS_EXTENDEDSEL,
-											  10, 60, 370, 450, hwnd, (HMENU)ID_LISTBOX_ADD_SOURCE, NULL, NULL);
+											  LISTBOX_LEFT, 60, 370, 450, hwnd, (HMENU)ID_LISTBOX_ADD_SOURCE, NULL, NULL);
 			//			originalSourceListboxProc = (WNDPROC)SetWindowLongPtr(lbPairSourceHwnd, GWLP_WNDPROC, (LONG_PTR)customSourceListboxProc);
 			originalListboxProc = (WNDPROC)SetWindowLongPtr(lbPairSourceHwnd, GWLP_WNDPROC, (LONG_PTR)customListboxProc);
 
 			lDestination = CreateWindowEx(WS_EX_LEFT, L"Static", L"Destination",
 										  WS_VISIBLE | WS_CHILD,
-										  400, 10, 80, 25, hwnd, (HMENU)ID_LABEL_PAIR_DEST, NULL, NULL);
+										  400, 10, BUTTON_WIDTH, BUTTON_HEIGHT, hwnd, (HMENU)ID_LABEL_PAIR_DEST, NULL, NULL);
 
 			eDestination = CreateWindowEx(WS_EX_LEFT, L"Edit", NULL,
 										  WS_VISIBLE | WS_CHILD | WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL,
@@ -1130,11 +1156,11 @@ static LRESULT CALLBACK folderPairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 
 			bFolderPairAdd = CreateWindowEx(WS_EX_LEFT, L"Button", L"Add",
 											WS_VISIBLE | WS_CHILD | WS_TABSTOP,
-											290, 520, 80, 25, hwnd, (HMENU)ID_BUTTON_PAIR_ADD, NULL, NULL);
+											290, 520, BUTTON_WIDTH, BUTTON_HEIGHT, hwnd, (HMENU)ID_BUTTON_PAIR_ADD, NULL, NULL);
 
 			bFolderPairCancel = CreateWindowEx(WS_EX_LEFT, L"Button", L"Cancel",
 											   WS_VISIBLE | WS_CHILD | WS_TABSTOP,
-											   410, 520, 80, 25, hwnd, (HMENU)ID_BUTTON_CANCEL, NULL, NULL);
+											   410, 520, BUTTON_WIDTH, BUTTON_HEIGHT, hwnd, (HMENU)ID_BUTTON_CANCEL, NULL, NULL);
 
 			SendMessage(eSource, EM_LIMITTEXT, MAX_LINE, 0);
 			SendMessage(eDestination, EM_LIMITTEXT, MAX_LINE, 0);
@@ -1444,3 +1470,68 @@ static LRESULT CALLBACK customDestinationEditboxProc(HWND hwnd, UINT msg, WPARAM
 //	}
 //	return CallWindowProc(originalDestinationListboxProc, hwnd, msg, wParam, lParam);
 //}
+
+static void forceMinimumSize(int windowWidth, int windowHeight, int left, int top)
+{
+	// force minimum height
+	if (windowHeight < WINDOW_HEIGHT_MINIMUM)
+		SetWindowPos(mainHwnd, HWND_TOP, left, top, windowWidth, WINDOW_HEIGHT_MINIMUM, SWP_SHOWWINDOW);
+
+	// force minimum width
+	if (windowWidth < WINDOW_WIDTH_MINIMUM)
+		SetWindowPos(mainHwnd, HWND_TOP, left, top, WINDOW_WIDTH_MINIMUM, windowHeight, SWP_SHOWWINDOW);
+}
+
+static void resizeTab(int windowWidth, int windowHeight)
+{
+	SetWindowPos(tabHwnd, HWND_TOP, TAB_TOP, TAB_LEFT, windowWidth - 25, windowHeight - 50, SWP_SHOWWINDOW);
+}
+
+static void resizeProjectTab()
+{
+	RECT rc = {0};
+	GetWindowRect(mainHwnd, &rc);
+	int windowHeight = rc.bottom - rc.top;
+	int windowWidth = rc.right - rc.left;
+
+	resizeTab(windowWidth, windowHeight);
+	SetWindowPos(lbProjectsHwnd, HWND_TOP, LISTBOX_LEFT, LISTBOX_TOP, windowWidth - RIGHT_MARGIN - 15, windowHeight - LISTBOX_TOP - TAB_MARGIN - 40, SWP_SHOWWINDOW);
+	forceMinimumSize(windowWidth, windowHeight, rc.left, rc.top);
+}
+
+static void resizePairsTab()
+{
+	RECT rc = {0};
+	GetWindowRect(mainHwnd, &rc);
+	int windowHeight = rc.bottom - rc.top;
+	int windowWidth = rc.right - rc.left;
+
+	resizeTab(windowWidth, windowHeight);
+	SetWindowPos(lbSourceHwnd, HWND_TOP, LISTBOX_LEFT, LISTBOX_TOP, (windowWidth / 2) - TAB_MARGIN, windowHeight - LISTBOX_TOP - TAB_MARGIN - 40, SWP_SHOWWINDOW);
+	SetWindowPos(lbDestHwnd, HWND_TOP, (windowWidth / 2) + 5, LISTBOX_TOP, (windowWidth / 2) - TAB_MARGIN - 20, windowHeight - LISTBOX_TOP - TAB_MARGIN - 40, SWP_SHOWWINDOW);
+	forceMinimumSize(windowWidth, windowHeight, rc.left, rc.top);
+}
+
+static void resizeSyncTab()
+{
+	RECT rc = {0};
+	GetWindowRect(mainHwnd, &rc);
+	int windowHeight = rc.bottom - rc.top;
+	int windowWidth = rc.right - rc.left;
+
+	resizeTab(windowWidth, windowHeight);
+	SetWindowPos(lbSyncHwnd, HWND_TOP, LISTBOX_LEFT, LISTBOX_TOP, windowWidth - RIGHT_MARGIN - 15, windowHeight - LISTBOX_TOP - PROGRESS_BAR_HEIGHT - 50, SWP_SHOWWINDOW);
+	SetWindowPos(pbHwnd, HWND_TOP, LISTBOX_LEFT, windowHeight - PROGRESS_BAR_HEIGHT - TAB_MARGIN - 40, windowWidth - RIGHT_MARGIN - 15, PROGRESS_BAR_HEIGHT, SWP_SHOWWINDOW);
+	forceMinimumSize(windowWidth, windowHeight, rc.left, rc.top);
+}
+
+static void resizeSettingsTab()
+{
+	RECT rc = {0};
+	GetWindowRect(mainHwnd, &rc);
+	int windowHeight = rc.bottom - rc.top;
+	int windowWidth = rc.right - rc.left;
+
+	resizeTab(windowWidth, windowHeight);
+	forceMinimumSize(windowWidth, windowHeight, rc.left, rc.top);
+}

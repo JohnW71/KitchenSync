@@ -1,7 +1,7 @@
 #include "kitchen_sync.h"
 
 static void sizeFormatted(LONGLONG, wchar_t *);
-static void clampWindowPosition(int *, int *, int *);
+static void clampWindowPosition(int *, int *, int *, int *);
 static void compressPairs(struct Pair **);
 
 void startCount()
@@ -65,12 +65,15 @@ void writeSettings(HWND hwnd, char *filename)
 	RECT rc = {0};
 	GetWindowRect(hwnd, &rc);
 	int windowHeight = rc.bottom - rc.top;
+	int windowWidth = rc.right - rc.left;
+
 	int windowCol = rc.left;
 	int windowRow = rc.top;
 
 	fprintf(f, "window_row=%d\n", windowRow);
 	fprintf(f, "window_col=%d\n", windowCol);
 	fprintf(f, "window_height=%d\n", windowHeight);
+	fprintf(f, "window_width=%d\n", windowWidth);
 	fprintf(f, "skip_desktop_ini=%d\n", settings.skipDesktopIni);
 	fprintf(f, "skip_symbolic_links=%d\n", settings.skipSymbolicLinks);
 	fclose(f);
@@ -90,6 +93,7 @@ void readSettings(HWND hwnd, char *filename)
 	settings.skipDesktopIni = true;
 	settings.skipSymbolicLinks = false;
 	int windowHeight = 0;
+	int windowWidth = 0;
 	int windowCol = 0;
 	int windowRow = 0;
 
@@ -152,6 +156,7 @@ void readSettings(HWND hwnd, char *filename)
 		if (strcmp(setting, "window_row") == 0)				windowRow = atoi(value);
 		if (strcmp(setting, "window_col") == 0)				windowCol = atoi(value);
 		if (strcmp(setting, "window_height") == 0)			windowHeight = atoi(value);
+		if (strcmp(setting, "window_width") == 0)			windowWidth = atoi(value);
 		if (strcmp(setting, "skip_desktop_ini") == 0)		settings.skipDesktopIni = atoi(value);
 		if (strcmp(setting, "skip_symbolic_links") == 0)	settings.skipSymbolicLinks = atoi(value);
 	}
@@ -161,14 +166,17 @@ void readSettings(HWND hwnd, char *filename)
 	free(setting);
 	free(value);
 
-	clampWindowPosition(&windowCol, &windowRow, &windowHeight);
-	SetWindowPos(hwnd, HWND_TOP, windowCol, windowRow, WINDOW_WIDTH, windowHeight, SWP_SHOWWINDOW);
+	clampWindowPosition(&windowCol, &windowRow, &windowHeight, &windowWidth);
+	SetWindowPos(hwnd, HWND_TOP, windowCol, windowRow, windowWidth, windowHeight, SWP_SHOWWINDOW);
 }
 
-static void clampWindowPosition(int *windowCol, int *windowRow, int *windowHeight)
+static void clampWindowPosition(int *windowCol, int *windowRow, int *windowHeight, int *windowWidth)
 {
 	if (*windowHeight == 0)
 		*windowHeight = WINDOW_HEIGHT;
+
+	if (*windowWidth == 0)
+		*windowWidth = WINDOW_WIDTH;
 
 	if (*windowRow == 0) // center by default
 	{

@@ -174,7 +174,7 @@ void previewProject(HWND pbHwnd, HWND lbSyncHwnd, HWND bSync, struct ProjectNode
 	SendMessage(pbHwnd, PBM_SETPOS, 50, 0);
 	sortPairs(pairIndex);
 
-	SetWindowText(bSync, L"Loading...");
+	SetWindowText(bSync, L"Updating...");
 	SendMessage(lbSyncHwnd, LB_RESETCONTENT, 0, 0);
 	SendMessage(pbHwnd, PBM_SETPOS, 75, 0);
 	fillSyncListbox(lbSyncHwnd, pairIndex);
