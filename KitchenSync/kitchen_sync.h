@@ -144,4 +144,5 @@ struct Settings
 {
 	bool skipDesktopIni;
 	bool skipSymbolicLinks;
+	bool skipSmallDifferences;
 } settings;

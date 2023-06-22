@@ -76,6 +76,7 @@ void writeSettings(HWND hwnd, char *filename)
 	fprintf(f, "window_width=%d\n", windowWidth);
 	fprintf(f, "skip_desktop_ini=%d\n", settings.skipDesktopIni);
 	fprintf(f, "skip_symbolic_links=%d\n", settings.skipSymbolicLinks);
+	fprintf(f, "skip_small_differences=%d\n", settings.skipSmallDifferences);
 	fclose(f);
 }
 
@@ -92,6 +93,7 @@ void readSettings(HWND hwnd, char *filename)
 
 	settings.skipDesktopIni = true;
 	settings.skipSymbolicLinks = false;
+	settings.skipSmallDifferences = false;
 	int windowHeight = 0;
 	int windowWidth = 0;
 	int windowCol = 0;
@@ -159,6 +161,7 @@ void readSettings(HWND hwnd, char *filename)
 		if (strcmp(setting, "window_width") == 0)			windowWidth = atoi(value);
 		if (strcmp(setting, "skip_desktop_ini") == 0)		settings.skipDesktopIni = atoi(value);
 		if (strcmp(setting, "skip_symbolic_links") == 0)	settings.skipSymbolicLinks = atoi(value);
+		if (strcmp(setting, "skip_small_differences") == 0)	settings.skipSmallDifferences = atoi(value);
 	}
 
 	fclose(f);

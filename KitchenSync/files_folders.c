@@ -115,9 +115,20 @@ bool fileDateIsDifferent(FILETIME srcCreate, FILETIME srcAccess, FILETIME srcWri
 	// inaccurate timestamp
 	int srcTime = (srcLocal.wMinute * 60) + srcLocal.wSecond;
 	int dstTime = (dstLocal.wMinute * 60) + dstLocal.wSecond;
+	int difference = abs(srcTime - dstTime);
 
-	if (abs(srcTime - dstTime) > 1)
-		return true;
+	if (difference > 1)
+	{
+		if (settings.skipSmallDifferences)
+		{
+			if (difference < 3)
+				return false;
+			else
+				return true;
+		}
+		else
+			return true;
+	}
 
 	return false;
 }

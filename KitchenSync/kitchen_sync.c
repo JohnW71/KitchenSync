@@ -25,6 +25,8 @@
 #define ID_SETTINGS_DESKTOP_CHECKBOX 61
 #define ID_SETTINGS_SYMBOLIC_LABEL 62
 #define ID_SETTINGS_SYMBOLIC_CHECKBOX 63
+#define ID_SETTINGS_SMALL_DIFF_LABEL 64
+#define ID_SETTINGS_SMALL_DIFF_CHECKBOX 65
 #define TAB_TOP 5
 #define TAB_LEFT 5
 #define TAB_MARGIN 10
@@ -116,7 +118,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 	mainHwnd = CreateWindowEx(WS_EX_LEFT,
 							  wc.lpszClassName,
-							  L"KitchenSync v0.6",
+							  L"KitchenSync v0.61",
 							  WS_OVERLAPPEDWINDOW,
 							  //WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
 							  CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH, WINDOW_HEIGHT,
@@ -149,7 +151,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static INITCOMMONCONTROLSEX icex = {0};
-	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, lSkipDesktop, cbSkipDesktop, lSkipSymbolic, cbSkipSymbolic;
+	static HWND bPreview, bSync, bAddProject, bAddFolders, bAddPair, lSkipDesktop, cbSkipDesktop, lSkipSymbolic, cbSkipSymbolic, lSkipSmallDiff, cbSkipSmallDiff;
 	static bool listboxClicked = false;
 
 	enum Tabs
@@ -269,7 +271,7 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			cbSkipDesktop = CreateWindowEx(WS_EX_LEFT, L"Button", NULL,
 										   BS_CHECKBOX | WS_CHILD,
-										   180, 43, 30, 30, hwnd, (HMENU)ID_SETTINGS_DESKTOP_CHECKBOX, NULL, NULL);
+										   240, 43, 30, 30, hwnd, (HMENU)ID_SETTINGS_DESKTOP_CHECKBOX, NULL, NULL);
 
 			lSkipSymbolic = CreateWindowEx(WS_EX_LEFT, L"Static", L"Skip symbolic links",
 										   WS_CHILD,
@@ -277,7 +279,15 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
 			cbSkipSymbolic = CreateWindowEx(WS_EX_LEFT, L"Button", NULL,
 											BS_CHECKBOX | WS_CHILD,
-											180, 73, 30, 30, hwnd, (HMENU)ID_SETTINGS_SYMBOLIC_CHECKBOX, NULL, NULL);
+											240, 73, 30, 30, hwnd, (HMENU)ID_SETTINGS_SYMBOLIC_CHECKBOX, NULL, NULL);
+
+			lSkipSmallDiff = CreateWindowEx(WS_EX_LEFT, L"Static", L"Skip update differences < 3 secs",
+										   WS_CHILD,
+										   LISTBOX_LEFT, 110, 250, 25, hwnd, (HMENU)ID_SETTINGS_SMALL_DIFF_LABEL, NULL, NULL);
+
+			cbSkipSmallDiff = CreateWindowEx(WS_EX_LEFT, L"Button", NULL,
+											BS_CHECKBOX | WS_CHILD,
+											240, 103, 30, 30, hwnd, (HMENU)ID_SETTINGS_SMALL_DIFF_CHECKBOX, NULL, NULL);
 			break;
 		case WM_NOTIFY:
 		{
@@ -328,6 +338,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(cbSkipDesktop, SW_HIDE);
 							ShowWindow(lSkipSymbolic, SW_HIDE);
 							ShowWindow(cbSkipSymbolic, SW_HIDE);
+							ShowWindow(lSkipSmallDiff, SW_HIDE);
+							ShowWindow(cbSkipSmallDiff, SW_HIDE);
 
 							resizeProjectTab();
 							break;
@@ -351,6 +363,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(cbSkipDesktop, SW_HIDE);
 							ShowWindow(lSkipSymbolic, SW_HIDE);
 							ShowWindow(cbSkipSymbolic, SW_HIDE);
+							ShowWindow(lSkipSmallDiff, SW_HIDE);
+							ShowWindow(cbSkipSmallDiff, SW_HIDE);
 
 							// if a project name is detected load the pairs
 							if (wcslen(projectName) > 0)
@@ -389,6 +403,8 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(cbSkipDesktop, SW_HIDE);
 							ShowWindow(lSkipSymbolic, SW_HIDE);
 							ShowWindow(cbSkipSymbolic, SW_HIDE);
+							ShowWindow(lSkipSmallDiff, SW_HIDE);
+							ShowWindow(cbSkipSmallDiff, SW_HIDE);
 
 							resizeSyncTab();
 							break;
@@ -410,9 +426,12 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 							ShowWindow(cbSkipDesktop, SW_SHOW);
 							ShowWindow(lSkipSymbolic, SW_SHOW);
 							ShowWindow(cbSkipSymbolic, SW_SHOW);
+							ShowWindow(lSkipSmallDiff, SW_SHOW);
+							ShowWindow(cbSkipSmallDiff, SW_SHOW);
 
 							SendMessage(cbSkipDesktop, BM_SETCHECK, settings.skipDesktopIni, 0);
 							SendMessage(cbSkipSymbolic, BM_SETCHECK, settings.skipSymbolicLinks, 0);
+							SendMessage(cbSkipSmallDiff, BM_SETCHECK, settings.skipSmallDifferences, 0);
 							break;
 						}
 					}
@@ -812,6 +831,15 @@ static LRESULT CALLBACK mainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 #endif
 				SendMessage((HWND)lParam, BM_SETCHECK, (WPARAM)!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0), 0);
 				settings.skipSymbolicLinks = !settings.skipSymbolicLinks;
+			}
+
+			if (LOWORD(wParam) == ID_SETTINGS_SMALL_DIFF_CHECKBOX)
+			{
+#if DEBUG_MODE
+				logger(L"Small diff checkbox");
+#endif
+				SendMessage((HWND)lParam, BM_SETCHECK, (WPARAM)!SendMessage((HWND)lParam, BM_GETCHECK, 0, 0), 0);
+				settings.skipSmallDifferences = !settings.skipSmallDifferences;
 			}
 
 			break;
