@@ -53,6 +53,7 @@ static DWORD CALLBACK entryPointLogger(LPVOID arguments)
 			}
 			fclose(f);
 		}
+
 		WaitForSingleObjectEx(loggerSemaphoreHandle, INFINITE, FALSE);
 	}
 }
@@ -113,5 +114,14 @@ bool loggingFinished()
 {
 	if (loggerHead == NULL)
 		return true;
+
+	wchar_t buff[200] = { 0 };
+	swprintf(buff, 200, L"Logging blocked by %s", loggerHead->text);
+	logger(buff);
+	MessageBox(NULL, buff, L"Error", MB_ICONEXCLAMATION | MB_OK);
+
+	deleteLoggerNode(&loggerHead);
+	ReleaseSemaphore(loggerSemaphoreHandle, 1, 0);
+
 	return false;
 }
