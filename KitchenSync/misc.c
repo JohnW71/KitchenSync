@@ -43,7 +43,7 @@ void centerWindow(HWND hwnd)
 	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
 	SetWindowPos(hwnd, HWND_TOP, (screenWidth - windowWidth) / 2,
-		(screenHeight - windowHeight) / 2, 0, 0, SWP_NOSIZE);
+				 (screenHeight - windowHeight) / 2, 0, 0, SWP_NOSIZE);
 }
 
 void writeSettings(HWND hwnd, char *filename)
@@ -685,7 +685,7 @@ void sortPairs(struct Pair **pairIndex)
 
 			if (wcscmp(current->source, next->source) > 0 ||
 				(wcscmp(current->source, next->source) == 0 &&
-					wcscmp(current->destination, next->destination) > 0))
+				 wcscmp(current->destination, next->destination) > 0))
 			{
 				struct Pair *tmp = pairIndex[i];
 				pairIndex[i] = pairIndex[i + 1];
