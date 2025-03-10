@@ -11,7 +11,6 @@
 
 void logger(wchar_t *);
 void startLoggingThread(void);
-bool loggingFinished(void);
 
 struct LoggerNode
 {

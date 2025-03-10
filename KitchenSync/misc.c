@@ -27,11 +27,6 @@ void endCount(wchar_t *text)
 
 void shutDown(HWND hwnd, struct ProjectNode **head_ref)
 {
-	while (!loggingFinished())
-	{
-		if (MessageBox(NULL, L"Logging still in progress, close application?", L"Error", MB_ICONEXCLAMATION | MB_YESNO) == IDYES)
-			break;
-	}
 	writeSettings(hwnd, INI_FILE);
 	saveProjects(PRJ_FILE, head_ref);
 	PostQuitMessage(0);
@@ -48,7 +43,7 @@ void centerWindow(HWND hwnd)
 	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
 	SetWindowPos(hwnd, HWND_TOP, (screenWidth - windowWidth) / 2,
-				 (screenHeight - windowHeight) / 2, 0, 0, SWP_NOSIZE);
+		(screenHeight - windowHeight) / 2, 0, 0, SWP_NOSIZE);
 }
 
 void writeSettings(HWND hwnd, char *filename)
@@ -690,7 +685,7 @@ void sortPairs(struct Pair **pairIndex)
 
 			if (wcscmp(current->source, next->source) > 0 ||
 				(wcscmp(current->source, next->source) == 0 &&
-				 wcscmp(current->destination, next->destination) > 0))
+					wcscmp(current->destination, next->destination) > 0))
 			{
 				struct Pair *tmp = pairIndex[i];
 				pairIndex[i] = pairIndex[i + 1];
